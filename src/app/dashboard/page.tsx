@@ -300,10 +300,15 @@ export default function Dashboard() {
 
   // Dummy Leaderboard Data
   const leaderboard = [
-    { rank: 1, name: 'BudiKanji', level: 8, points: 940, active: true },
-    { rank: 2, name: 'WaniCrab', level: 5, points: 520, active: false },
-    { rank: 3, name: username, level: 1, points: itemDetails.filter(i => i.srs_stage >= 5).length * 10 + itemDetails.filter(i => i.srs_stage > 0).length, active: true, isSelf: true },
-    { rank: 4, name: 'NihonLover', level: 1, points: 35, active: false },
+    { rank: 1, name: 'TanakaSan', level: 10, points: 1200, active: true },
+    { rank: 2, name: 'BudiKanji', level: 8, points: 940, active: true },
+    { rank: 3, name: 'SakuraChan', level: 7, points: 780, active: false },
+    { rank: 4, name: 'KaniMaster', level: 6, points: 640, active: true },
+    { rank: 5, name: 'WaniCrab', level: 5, points: 520, active: false },
+    { rank: 6, name: username, level: stats?.level || 1, points: itemDetails.filter(i => i.srs_stage >= 5).length * 10 + itemDetails.filter(i => i.srs_stage > 0).length, active: true, isSelf: true },
+    { rank: 7, name: 'GanyDev', level: 3, points: 210, active: true },
+    { rank: 8, name: 'NihonLover', level: 1, points: 35, active: false },
+    { rank: 9, name: 'WaniGuru', level: 1, points: 20, active: true },
   ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
 
   return (
@@ -858,7 +863,7 @@ export default function Dashboard() {
               </div>
 
               {/* Leaderboard list */}
-              <div className="space-y-3.5">
+              <div className="space-y-3.5 max-h-[295px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 {leaderboard.map((user, idx) => (
                   <div
                     key={idx}
@@ -887,14 +892,13 @@ export default function Dashboard() {
                           </span>
                           {user.isSelf && <UserCheck className="w-3.5 h-3.5 text-indigo-400" />}
                         </div>
-                        <span className="text-3xs font-semibold text-slate-400 uppercase tracking-widest block">
-                          Level {user.level}
-                        </span>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <span className="text-xs font-black text-slate-200 block">{user.points} XP</span>
+                    <div className="flex items-center space-x-2.5">
+                      <span className="text-3xs font-extrabold px-2 py-0.5 bg-slate-850/80 border border-slate-800 text-slate-300 rounded-md">
+                        Level {user.level}
+                      </span>
                       <span className={`inline-block w-1.5 h-1.5 rounded-full ${user.active ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`}></span>
                     </div>
                   </div>
