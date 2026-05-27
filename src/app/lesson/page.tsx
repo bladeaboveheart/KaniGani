@@ -157,10 +157,16 @@ export default function LessonPage() {
     }
   };
 
-  // Focus input automatically
+  // Focus input automatically (skip on mobile to avoid keyboard popups and scroll jumping)
   useEffect(() => {
     if (phase === 'quiz' && activeCard && inputRef.current) {
-      inputRef.current.focus();
+      const isMobile = typeof window !== 'undefined' && (
+        window.matchMedia('(pointer: coarse)').matches ||
+        window.innerWidth < 768
+      );
+      if (!isMobile) {
+        inputRef.current.focus({ preventScroll: true });
+      }
     }
   }, [phase, activeCard, isAnswerSubmitted, incorrectActive]);
 

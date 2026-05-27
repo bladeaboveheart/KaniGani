@@ -202,10 +202,16 @@ export default function ReviewPage() {
     }, 50);
   };
 
-  // Auto focus input
+  // Auto focus input (skip on mobile to avoid keyboard popups and scroll jumping)
   useEffect(() => {
     if (phase === 'quiz' && activeCard && inputRef.current) {
-      inputRef.current.focus();
+      const isMobile = typeof window !== 'undefined' && (
+        window.matchMedia('(pointer: coarse)').matches ||
+        window.innerWidth < 768
+      );
+      if (!isMobile) {
+        inputRef.current.focus({ preventScroll: true });
+      }
     }
   }, [phase, activeCard, isAnswerSubmitted, incorrectActive]);
 
