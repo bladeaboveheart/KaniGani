@@ -659,7 +659,7 @@ export default function Dashboard() {
                             </div>
 
                             {/* X-Axis Time Labels Wrapper */}
-                            <div className="flex border-t border-slate-200/30 dark:border-slate-850/40 pt-2 ml-8 pr-1">
+                            <div className="flex border-t border-slate-200/30 dark:border-slate-800/40 pt-2 ml-8 pr-1">
                               <div className="flex justify-between w-full sm:min-w-[560px] text-3xs font-extrabold text-slate-400 dark:text-slate-500">
                                 {schedule.map((item, idx) => {
                                   const isSelected = selectedHourIdx === idx;
@@ -693,8 +693,8 @@ export default function Dashboard() {
                               : 0;
 
                             return (
-                              <div className="bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-850 p-4 sm:p-5 space-y-4 transition-all duration-300">
-                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/40 dark:border-slate-850/60 pb-3">
+                              <div className="bg-slate-55 dark:bg-slate-950/40 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 sm:p-5 space-y-4 transition-all duration-300">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/40 dark:border-slate-800/60 pb-3">
                                   <div className="flex items-center space-x-2.5">
                                     <div className="p-2 bg-indigo-500/10 text-indigo-500 rounded-xl">
                                       <Clock className="w-4 h-4" />
@@ -842,7 +842,7 @@ export default function Dashboard() {
                   { label: 'Enlightened', count: stats?.distribution[8] || 0, color: 'bg-teal-600' },
                   { label: 'Burned 🔥', count: stats?.distribution[9] || 0, color: 'bg-slate-700 text-amber-400 border border-amber-500/20' },
                 ].map((stage, idx) => (
-                  <div key={idx} className="flex flex-col items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850 text-center">
+                  <div key={idx} className="flex flex-col items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
                     <span className="text-xxs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stage.label}</span>
                     <span className="text-2xl font-black text-slate-800 dark:text-slate-200 my-2">{stage.count}</span>
                     <div className={`w-3 h-3 rounded-full ${stage.color.split(' ')[0]}`}></div>
@@ -856,7 +856,7 @@ export default function Dashboard() {
           {/* Right Gamified Leaderboard */}
           <div className="space-y-6">
 
-            <div className="bg-gradient-to-br from-indigo-900 to-slate-950 text-white rounded-3xl border border-slate-850 shadow-md p-6 sm:p-8 space-y-6">
+            <div className="bg-gradient-to-br from-indigo-900 to-slate-950 text-white rounded-3xl border border-slate-800 shadow-md p-6 sm:p-8 space-y-6">
 
               <div>
                 <div className="flex items-center space-x-2">

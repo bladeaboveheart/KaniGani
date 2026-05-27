@@ -425,7 +425,7 @@ export default function ReviewPage() {
 
         {/* PHASE 1: QUIZ REVIEW SESSION */}
         {phase === 'quiz' && activeCard && (
-          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-850 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
+          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
 
             {/* Header Colorful Character with Integrated Navbar */}
             <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
@@ -498,7 +498,7 @@ export default function ReviewPage() {
                       ? isCorrect
                         ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
                         : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100'
                     }`}
                   autoComplete="off"
                   autoCorrect="off"
@@ -550,7 +550,7 @@ export default function ReviewPage() {
                   title="Wrap Up (Selesaikan 10 item terakhir)"
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${wrapUpActive
                       ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10'
-                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                     }`}
                 >
                   <Clock className="w-5 h-5" />
@@ -565,7 +565,7 @@ export default function ReviewPage() {
                     setTimeout(() => inputRef.current?.focus(), 20);
                   }}
                   title="Undo Jawaban (Backspace)"
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed"
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
                   <RotateCcw className="w-5 h-5" />
                 </button>
@@ -581,7 +581,7 @@ export default function ReviewPage() {
                   title="Tampilkan Info Detail (F)"
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${showItemInfo
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
-                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                     } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
@@ -613,14 +613,14 @@ export default function ReviewPage() {
                     ) : (
                       <>
                         <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Sangat Bagus! Jawaban Anda Benar. <span className="text-xs font-normal opacity-85 ml-1">({getSrsStageName(activeCard.item.srs_stage || 1)})</span></span>
+                        <span>Sangat Bagus! Jawaban Anda Benar. <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
                       </>
                     )
                   ) : (
                     <>
                       <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                       <div>
-                        <span>Jawaban Salah! <span className="text-xs font-normal opacity-85 ml-1">({getSrsStageName(activeCard.item.srs_stage || 1)})</span></span>
+                        <span>Jawaban Salah! <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
                         <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
                           Jawaban benar: {
                             activeCard.cardType === 'meaning'
@@ -764,7 +764,7 @@ export default function ReviewPage() {
                     <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h4>
                     <div className="space-y-4">
                       {activeCard.item.context_sentences.map((s: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-1.5">
+                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1.5">
                           <p className="text-base font-bold text-indigo-500 select-all">{s.japanese}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-405">{s.indonesian}</p>
                         </div>
@@ -801,7 +801,7 @@ export default function ReviewPage() {
 
             {/* Accuracy & Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl text-center">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-center">
                 <span className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Akurasi Sesi</span>
                 <span className="text-2xl font-black text-indigo-500">
                   {accuracyStats.correct + accuracyStats.wrong > 0
@@ -809,7 +809,7 @@ export default function ReviewPage() {
                     : 100}%
                 </span>
               </div>
-              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850 rounded-2xl text-center">
+              <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-center">
                 <span className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Item Selesai</span>
                 <span className="text-2xl font-black text-indigo-500">
                   {submittedItemIds.length} / {totalItemsCount}

@@ -604,7 +604,7 @@ export default function LessonPage() {
                   {currentItem.context_sentences && currentItem.context_sentences.length > 0 ? (
                     <div className="space-y-6">
                       {currentItem.context_sentences.map((s, idx) => (
-                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-2">
+                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2">
                           <p className="text-lg font-bold text-indigo-500 select-all">{s.japanese}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-400">{s.indonesian}</p>
                         </div>
@@ -759,12 +759,12 @@ export default function LessonPage() {
                   onKeyDown={handleKeyDown}
                   readOnly={isAnswerSubmitted && !incorrectActive}
                   className={`w-full py-3.5 px-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${warningMsg
-                    ? 'bg-amber-55 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'
+                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'
                     : isAnswerSubmitted
                       ? isCorrect
                         ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
                         : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100'
+                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100'
                     }`}
                   autoComplete="off"
                   autoCorrect="off"
@@ -816,7 +816,7 @@ export default function LessonPage() {
                     }
                   }}
                   title="Keluar dari Kuis"
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-955 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
                 >
                   <Home className="w-5 h-5" />
                 </button>
@@ -833,7 +833,7 @@ export default function LessonPage() {
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${
                     showItemInfo
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
-                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                   } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
@@ -865,14 +865,14 @@ export default function LessonPage() {
                     ) : (
                       <>
                         <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Sangat Bagus! Jawaban Anda Benar. <span className="text-xs font-normal opacity-85 ml-1">({getSrsStageName(activeCard.item.srs_stage || 1)})</span></span>
+                        <span>Sangat Bagus! Jawaban Anda Benar. <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
                       </>
                     )
                   ) : (
                     <>
                       <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                       <div>
-                        <span>Jawaban Salah! <span className="text-xs font-normal opacity-85 ml-1">({getSrsStageName(activeCard.item.srs_stage || 1)})</span></span>
+                        <span>Jawaban Salah! <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
                         <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
                           Jawaban benar: {
                             activeCard.cardType === 'meaning'
@@ -1016,7 +1016,7 @@ export default function LessonPage() {
                     <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h4>
                     <div className="space-y-4">
                       {activeCard.item.context_sentences.map((s: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-850 space-y-1.5">
+                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1.5">
                           <p className="text-base font-bold text-indigo-500 select-all">{s.japanese}</p>
                           <p className="text-xs text-slate-500 dark:text-slate-405">{s.indonesian}</p>
                         </div>
