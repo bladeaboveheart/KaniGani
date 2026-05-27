@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — KaniGani</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="navbar-brand">
+      <a href="dashboard.html" class="logo-text">KaniGani</a>
+      <span class="level-badge">Level 1</span>
+    </div>
+    <div class="navbar-right">
+      <span id="user-email" class="user-email"></span>
+      <button id="btn-logout" class="btn btn--ghost btn--sm">Keluar</button>
+    </div>
+  </header>
+
+  <main class="dashboard-main">
+    <div id="loading" class="loading-overlay">
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Action Cards -->
+    <section class="action-cards">
+      <div class="action-card action-card--lesson" id="lesson-card">
+        <div class="action-card-icon">📚</div>
+        <div class="action-card-info">
+          <div class="action-card-label">Lesson Tersedia</div>
+          <div class="action-card-count" id="lesson-count">—</div>
+        </div>
+        <a href="lesson.html" id="btn-lesson" class="btn btn--lesson disabled">Mulai Lesson</a>
+      </div>
+
+      <div class="action-card action-card--review" id="review-card">
+        <div class="action-card-icon">⏰</div>
+        <div class="action-card-info">
+          <div class="action-card-label">Review Sekarang</div>
+          <div class="action-card-count" id="review-count">—</div>
+        </div>
+        <a href="review.html" id="btn-review" class="btn btn--review disabled">Mulai Review</a>
+      </div>
+    </section>
+
+    <!-- Progress per Type -->
+    <section class="progress-section">
+      <h2 class="section-title">Progres Level 1</h2>
+      <div class="progress-rows">
+        <div class="progress-row">
+          <div class="progress-label">
+            <span class="type-badge type-badge--radical">Radical</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar--radical" id="bar-radical" style="width: 0%"></div>
+          </div>
+          <div class="progress-text" id="text-radical">0/25 Guru</div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label">
+            <span class="type-badge type-badge--kanji">Kanji</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar--kanji" id="bar-kanji" style="width: 0%"></div>
+          </div>
+          <div class="progress-text" id="text-kanji">0/18 Guru</div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-label">
+            <span class="type-badge type-badge--vocab">Vocabulary</span>
+          </div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar progress-bar--vocab" id="bar-vocab" style="width: 0%"></div>
+          </div>
+          <div class="progress-text" id="text-vocab">0/37 Burned</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SRS Distribution -->
+    <section class="srs-section">
+      <h2 class="section-title">Distribusi SRS</h2>
+      <div class="srs-grid">
+        <div class="srs-card srs-card--apprentice">
+          <div class="srs-name">Apprentice</div>
+          <div class="srs-count" id="srs-apprentice">0</div>
+        </div>
+        <div class="srs-card srs-card--guru">
+          <div class="srs-name">Guru</div>
+          <div class="srs-count" id="srs-guru">0</div>
+        </div>
+        <div class="srs-card srs-card--master">
+          <div class="srs-name">Master</div>
+          <div class="srs-count" id="srs-master">0</div>
+        </div>
+        <div class="srs-card srs-card--enlightened">
+          <div class="srs-name">Enlightened</div>
+          <div class="srs-count" id="srs-enlightened">0</div>
+        </div>
+        <div class="srs-card srs-card--burned">
+          <div class="srs-name">Burned</div>
+          <div class="srs-count" id="srs-burned">0</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, signOut, getSession } from './js/auth.js'
+    import { getDashboardStats } from './js/engine.js'
+
+    async function init() {
+      const user = await requireAuth()
+      if (!user) return
+
+      document.getElementById('user-email').textContent = user.email
+
+      document.getElementById('btn-logout').addEventListener('click', async () => {
+        await signOut()
+      })
+
+      await loadDashboard(user.id)
+    }
+
+    async function loadDashboard(userId) {
+      const loading = document.getElementById('loading')
+      loading.classList.remove('hidden')
+      try {
+        const stats = await getDashboardStats(userId)
+        renderDashboard(stats)
+      } catch (err) {
+        console.error('Gagal memuat dashboard:', err)
+      } finally {
+        loading.classList.add('hidden')
+      }
+    }
+
+    function renderDashboard(stats) {
+      const lessonCount = stats.lessonsAvailable
+      const reviewCount = stats.reviewsDue
+
+      document.getElementById('lesson-count').textContent = lessonCount + ' item'
+      document.getElementById('review-count').textContent = reviewCount + ' item'
+
+      const btnLesson = document.getElementById('btn-lesson')
+      const btnReview = document.getElementById('btn-review')
+
+      if (lessonCount > 0) {
+        btnLesson.classList.remove('disabled')
+      } else {
+        btnLesson.classList.add('disabled')
+        btnLesson.addEventListener('click', (e) => e.preventDefault())
+      }
+
+      if (reviewCount > 0) {
+        btnReview.classList.remove('disabled')
+      } else {
+        btnReview.classList.add('disabled')
+        btnReview.addEventListener('click', (e) => e.preventDefault())
+      }
+
+      const rad = stats.byType.radical
+      const kan = stats.byType.kanji
+      const voc = stats.byType.vocabulary
+
+      const radPct = rad.total > 0 ? Math.round((rad.guru / rad.total) * 100) : 0
+      const kanPct = kan.total > 0 ? Math.round((kan.guru / kan.total) * 100) : 0
+      const vocPct = voc.total > 0 ? Math.round((voc.burned / voc.total) * 100) : 0
+
+      document.getElementById('bar-radical').style.width = radPct + '%'
+      document.getElementById('bar-kanji').style.width = kanPct + '%'
+      document.getElementById('bar-vocab').style.width = vocPct + '%'
+
+      document.getElementById('text-radical').textContent = `${rad.guru}/${rad.total} Guru`
+      document.getElementById('text-kanji').textContent = `${kan.guru}/${kan.total} Guru`
+      document.getElementById('text-vocab').textContent = `${voc.burned}/${voc.total} Burned`
+
+      const d = stats.distribution
+      const apprentice = (d[1] || 0) + (d[2] || 0) + (d[3] || 0) + (d[4] || 0)
+      const guru = (d[5] || 0) + (d[6] || 0)
+      const master = d[7] || 0
+      const enlightened = d[8] || 0
+      const burned = d[9] || 0
+
+      document.getElementById('srs-apprentice').textContent = apprentice
+      document.getElementById('srs-guru').textContent = guru
+      document.getElementById('srs-master').textContent = master
+      document.getElementById('srs-enlightened').textContent = enlightened
+      document.getElementById('srs-burned').textContent = burned
+    }
+
+    init()
+  </script>
+</body>
+</html>

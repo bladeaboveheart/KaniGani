@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KaniGani — Belajar Kanji Bahasa Indonesia</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body class="auth-page">
+    <div class="auth-container">
+      <div class="auth-logo">
+        <h1 class="logo-text">KaniGani</h1>
+        <p class="logo-sub">Belajar Kanji dalam Bahasa Indonesia</p>
+      </div>
+
+      <div class="auth-card">
+        <div id="login-form">
+          <h2 class="form-title">Masuk</h2>
+          <div id="auth-error" class="alert alert--error hidden"></div>
+          <div id="auth-success" class="alert alert--success hidden"></div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              class="form-input"
+              placeholder="contoh@email.com"
+              autocomplete="email"
+            />
+          </div>
+          <div class="form-group">
+            <label for="password">Kata Sandi</label>
+            <input
+              type="password"
+              id="password"
+              class="form-input"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+          </div>
+          <button id="btn-login" class="btn btn--primary btn--full">
+            <span class="btn-text">Masuk</span>
+            <span class="btn-loader hidden">Memuat...</span>
+          </button>
+          <p class="auth-toggle">
+            Belum punya akun?
+            <button class="link-btn" id="show-register">Daftar sekarang</button>
+          </p>
+        </div>
+
+        <div id="register-form" class="hidden">
+          <h2 class="form-title">Daftar</h2>
+          <div id="reg-error" class="alert alert--error hidden"></div>
+          <div id="reg-success" class="alert alert--success hidden"></div>
+
+          <div class="form-group">
+            <label for="reg-email">Email</label>
+            <input
+              type="email"
+              id="reg-email"
+              class="form-input"
+              placeholder="contoh@email.com"
+              autocomplete="email"
+            />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Kata Sandi</label>
+            <input
+              type="password"
+              id="reg-password"
+              class="form-input"
+              placeholder="Minimal 6 karakter"
+              autocomplete="new-password"
+            />
+          </div>
+          <button id="btn-register" class="btn btn--primary btn--full">
+            <span class="btn-text">Daftar</span>
+            <span class="btn-loader hidden">Memuat...</span>
+          </button>
+          <p class="auth-toggle">
+            Sudah punya akun?
+            <button class="link-btn" id="show-login">Masuk</button>
+          </p>
+        </div>
+      </div>
+
+      <p class="auth-footer">
+        Sistem pembelajaran Kanji dengan SRS — Radical → Kanji → Vocabulary
+      </p>
+    </div>
+
+    <script type="module">
+      import { signIn, signUp, getSession } from "./js/auth.js";
+
+      async function init() {
+        const session = await getSession();
+        if (session) {
+          window.location.href = "dashboard.html";
+          return;
+        }
+      }
+
+      function setLoading(btn, loading) {
+        const text = btn.querySelector(".btn-text");
+        const loader = btn.querySelector(".btn-loader");
+        btn.disabled = loading;
+        text.classList.toggle("hidden", loading);
+        loader.classList.toggle("hidden", !loading);
+      }
+
+      function showAlert(id, message) {
+        const el = document.getElementById(id);
+        el.textContent = message;
+        el.classList.remove("hidden");
+      }
+
+      function hideAlert(id) {
+        document.getElementById(id).classList.add("hidden");
+      }
+
+      document.getElementById("show-register").addEventListener("click", () => {
+        document.getElementById("login-form").classList.add("hidden");
+        document.getElementById("register-form").classList.remove("hidden");
+      });
+
+      document.getElementById("show-login").addEventListener("click", () => {
+        document.getElementById("register-form").classList.add("hidden");
+        document.getElementById("login-form").classList.remove("hidden");
+      });
+
+      document
+        .getElementById("btn-login")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("email").value.trim();
+          const password = document.getElementById("password").value;
+          const btn = document.getElementById("btn-login");
+
+          hideAlert("auth-error");
+          hideAlert("auth-success");
+
+          if (!email || !password) {
+            showAlert("auth-error", "Email dan kata sandi tidak boleh kosong.");
+            return;
+          }
+
+          setLoading(btn, true);
+          try {
+            await signIn(email, password);
+            window.location.href = "dashboard.html";
+          } catch (err) {
+            showAlert(
+              "auth-error",
+              "Login gagal: " +
+                (err.message || "Periksa email dan kata sandi."),
+            );
+          } finally {
+            setLoading(btn, false);
+          }
+        });
+
+      document.getElementById("password").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") document.getElementById("btn-login").click();
+      });
+
+      document
+        .getElementById("btn-register")
+        .addEventListener("click", async () => {
+          const email = document.getElementById("reg-email").value.trim();
+          const password = document.getElementById("reg-password").value;
+          const btn = document.getElementById("btn-register");
+
+          hideAlert("reg-error");
+          hideAlert("reg-success");
+
+          if (!email || !password) {
+            showAlert("reg-error", "Email dan kata sandi tidak boleh kosong.");
+            return;
+          }
+          if (password.length < 6) {
+            showAlert("reg-error", "Kata sandi minimal 6 karakter.");
+            return;
+          }
+
+          setLoading(btn, true);
+          try {
+            await signUp(email, password);
+            showAlert(
+              "reg-success",
+              "Pendaftaran berhasil! Silakan cek email untuk verifikasi, lalu masuk.",
+            );
+            document.getElementById("reg-email").value = "";
+            document.getElementById("reg-password").value = "";
+          } catch (err) {
+            showAlert(
+              "reg-error",
+              "Pendaftaran gagal: " + (err.message || "Coba lagi."),
+            );
+          } finally {
+            setLoading(btn, false);
+          }
+        });
+
+      document
+        .getElementById("reg-password")
+        .addEventListener("keydown", (e) => {
+          if (e.key === "Enter")
+            document.getElementById("btn-register").click();
+        });
+
+      init();
+    </script>
+  </body>
+</html>

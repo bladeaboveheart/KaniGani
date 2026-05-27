@@ -1,0 +1,104 @@
+@import "tailwindcss";
+
+@variant dark (.dark &);
+
+@theme {
+  --color-radical: #00a0f0;
+  --color-kanji: #f000a0;
+  --color-vocab: #a000f0;
+  
+  --color-radical-hover: #0088cc;
+  --color-kanji-hover: #cc0088;
+  --color-vocab-hover: #8800cc;
+
+  --color-apprentice: #f03e3e;
+  --color-guru: #a000f0;
+  --color-master: #228be6;
+  --color-enlightened: #12b886;
+  --color-burned: #495057;
+}
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --navbar-bg: #1e293b;
+  
+  --radical-bg: linear-gradient(135deg, #00b4db, #0083b0);
+  --kanji-bg: linear-gradient(135deg, #ec008c, #fc6767);
+  --vocab-bg: linear-gradient(135deg, #8a2387, #e94057);
+}
+
+.dark {
+  --background: #0b0f19;
+  --foreground: #f1f5f9;
+  
+  --card-bg: #131c2e;
+  --card-border: #1e293b;
+  --navbar-bg: #090d16;
+  
+  --radical-bg: linear-gradient(135deg, #0093e9, #80d0c7);
+  --kanji-bg: linear-gradient(135deg, #ff3cac, #784ba0, #2b86c5);
+  --vocab-bg: linear-gradient(135deg, #6b11b5, #4e0785);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Custom Card Classes */
+.bg-radical-gradient {
+  background: var(--radical-bg);
+}
+
+.bg-kanji-gradient {
+  background: var(--kanji-bg);
+}
+
+.bg-vocab-gradient {
+  background: var(--vocab-bg);
+}
+
+/* Glassmorphism card utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dark .glass-panel {
+  background: rgba(19, 28, 46, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Smooth fade-in animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Glowing effects */
+.glow-radical {
+  box-shadow: 0 4px 20px rgba(0, 160, 240, 0.3);
+}
+
+.glow-kanji {
+  box-shadow: 0 4px 20px rgba(240, 0, 160, 0.3);
+}
+
+.glow-vocab {
+  box-shadow: 0 4px 20px rgba(160, 0, 240, 0.3);
+}

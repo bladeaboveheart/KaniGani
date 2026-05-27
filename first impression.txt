@@ -1,0 +1,32 @@
+#ide/saran
+@login/signin page
+username! jangan cuman email
+tampilan gelap, dibuatkan yang terang (toggle)
+desain background ada tema kepiting-kepitingnya
+footer harus reuse-able
+halaman pengenalan gaada (low-prio)
+
+@dashboard
+navbar jelek(next ditambah: levels, radicals, kanji, vocabulary, help, search, account, setting)
+progress level? kapan naik level?
+email di kanan atas kelihatan(harusnya username aja yang ditampilkan)
+*tambah waktu kapan lagi reviewnya (dan item apa yang harus di review)
+footer gaada
+leaderboard
+
+
+update 7/5/2026
+@lesson
+harus ganti enter yg kedua kali jadi next
+setelah lesson selesai, harus bisa milih lanjut lesson lagi(skrg cuma bisa balik ke dashboard)
+harus center semua, kelihatan warna warni kayak wanikani
+kalau salah, harus bisa masukin sampai bener, jangan di skip aja
+
+
+@review
++kalau salah, sudah bagus. harus mengulang sampai betul dulu baru bisa lanjut
+(belum cek) kalau berhenti ditengah jalan bagaimana?
+(future)kalau wanikani punya "wrap up", review berhenti 10 item setelah tombol wrap up dipencet, berapapun jumlah review yang dimiliki
+
+ kurang username pada saat signin, otomatis pas di {{{dashboard.html}}} kanan atas harus diubah menjadi username juga.
+

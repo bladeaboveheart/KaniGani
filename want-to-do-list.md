@@ -1,0 +1,1 @@
+merombak kanji learning priority menjadi sesuai dengan JLPT, level kanigani max 100. level awal belajar kanji untuk JLPT N5. menurut wanikani jlpt sampai N1 butuh 2211 kanji untuk 100%.
