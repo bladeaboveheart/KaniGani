@@ -569,7 +569,7 @@ export default function Dashboard() {
                   <div className="space-y-6 animate-fade-in">
                     {(() => {
                       const maxCount = Math.max(...schedule.map(s => s.count), 0);
-                      const chartMax = maxCount > 0 ? maxCount : 5;
+                      const chartMax = maxCount > 0 ? Math.ceil(maxCount * 1.25) : 5;
                       const total24h = schedule.reduce((acc, curr) => acc + curr.count, 0);
 
                       return (
@@ -587,16 +587,16 @@ export default function Dashboard() {
                             </div>
 
                             {/* Main Chart Area with Y-Axis and Gridlines */}
-                            <div className="relative flex h-56 mt-2">
+                            <div className="relative flex h-64 mt-2">
                               {/* Y-Axis Labels */}
-                              <div className="flex flex-col justify-between text-right text-3xs font-extrabold text-slate-400 dark:text-slate-650 w-8 pr-2.5 select-none h-44 mt-1">
+                              <div className="flex flex-col justify-between text-right text-3xs font-extrabold text-slate-400 dark:text-slate-650 w-8 pr-2.5 select-none h-52 mt-1">
                                 <span>{chartMax}</span>
                                 <span>{Math.round(chartMax / 2)}</span>
                                 <span>0</span>
                               </div>
 
                               {/* Chart Grid Lines and Bars Container */}
-                              <div className="flex-1 relative h-44 mt-1">
+                              <div className="flex-1 relative h-52 mt-1">
                                 {/* Grid Lines */}
                                 <div className="absolute inset-0 flex flex-col justify-between pointer-events-none select-none">
                                   <div className="border-t border-slate-200/50 dark:border-slate-800/40 w-full h-0"></div>
