@@ -342,9 +342,9 @@ export default function LessonPage() {
 
   // Helper styles berdasarkan kategori item
   const getItemColorClass = (type: string) => {
-    if (type === 'radical') return 'bg-radical-gradient border-radical/20 glow-radical';
-    if (type === 'kanji') return 'bg-kanji-gradient border-kanji/20 glow-kanji';
-    return 'bg-vocab-gradient border-vocab/20 glow-vocab';
+    if (type === 'radical') return 'bg-radical border-radical/20 glow-radical';
+    if (type === 'kanji') return 'bg-kanji border-kanji/20 glow-kanji';
+    return 'bg-vocab border-vocab/20 glow-vocab';
   };
 
   const getItemBadgeName = (type: string) => {
@@ -462,7 +462,7 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
 
             {/* Header Colorful Character Card */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(currentItem.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
               
               {/* Integrated Header Bar Inside the Card (Learn phase) */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
@@ -484,10 +484,10 @@ export default function LessonPage() {
                 </div>
               </div>
 
-              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4 mt-2">
+              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4 mt-2 select-none">
                 {getItemBadgeName(currentItem.type)}
               </span>
-              <h1 className="text-7xl font-black tracking-tight">{currentItem.character}</h1>
+              <h1 className="text-7xl font-black tracking-tight select-text text-center">{currentItem.character}</h1>
               <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.slug}</p>
             </div>
 
@@ -702,7 +702,7 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-between">
 
             {/* Header quiz card with colors */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
               
               {/* Integrated Header Bar Inside the Card (Quiz phase) */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
@@ -733,11 +733,11 @@ export default function LessonPage() {
                 </div>
               </div>
 
-              <h1 className="text-7xl font-black tracking-tight">{activeCard.character}</h1>
+              <h1 className="text-7xl font-black tracking-tight select-text text-center">{activeCard.character}</h1>
             </div>
      
             {/* Prompt Label (WaniKani style bar right below character) */}
-            <div className="w-full py-2.5 bg-slate-55 dark:bg-slate-950/60 border-y border-slate-200/50 dark:border-slate-850/60 text-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
+            <div className="w-full py-2.5 bg-slate-55 dark:bg-slate-950/60 border-y border-slate-200/50 dark:border-slate-850/60 flex items-center justify-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
               {renderWaniKaniPrompt()}
             </div>
      
@@ -745,7 +745,7 @@ export default function LessonPage() {
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center items-center space-y-6">
      
               {/* Input Field with focus and submit events */}
-              <div className="w-full max-w-md relative select-none">
+              <div className="w-full max-w-md relative select-none mx-auto">
                 <input
                   ref={inputRef}
                   type="text"
@@ -820,7 +820,7 @@ export default function LessonPage() {
                 >
                   <Home className="w-5 h-5" />
                 </button>
-     
+      
                 {/* 2. Eye Button (Toggle Info Drawer) */}
                 <button
                   type="button"
@@ -837,27 +837,6 @@ export default function LessonPage() {
                   } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
-                </button>
-     
-                {/* 3. Reading/Meaning Visual Cue Badge */}
-                <div 
-                  title={activeCard.cardType === 'meaning' ? 'Meminta Arti' : 'Meminta Bacaan'}
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-slate-50/50 dark:bg-slate-950/30 text-slate-500 dark:text-slate-400 select-none text-base font-black shadow-xxs"
-                >
-                  {activeCard.cardType === 'meaning' ? 'Aa' : 'あ'}
-                </div>
-     
-                {/* 4. Help / Info Toggle Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleItemInfo();
-                    setTimeout(() => inputRef.current?.focus(), 20);
-                  }}
-                  title="Bantuan Mnemonic / Deskripsi"
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-white dark:bg-slate-950 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
-                >
-                  <HelpCircle className="w-5 h-5" />
                 </button>
               </div>
 

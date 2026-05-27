@@ -306,9 +306,9 @@ export default function ReviewPage() {
   }
 
   const getItemColorClass = (type: string) => {
-    if (type === 'radical') return 'bg-radical-gradient border-radical/20 glow-radical';
-    if (type === 'kanji') return 'bg-kanji-gradient border-kanji/20 glow-kanji';
-    return 'bg-vocab-gradient border-vocab/20 glow-vocab';
+    if (type === 'radical') return 'bg-radical border-radical/20 glow-radical';
+    if (type === 'kanji') return 'bg-kanji border-kanji/20 glow-kanji';
+    return 'bg-vocab border-vocab/20 glow-vocab';
   };
 
   const getItemBadgeName = (type: string) => {
@@ -428,7 +428,7 @@ export default function ReviewPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-850 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
 
             {/* Header Colorful Character with Integrated Navbar */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
               
               {/* Integrated Header Bar Inside the Card */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
@@ -468,18 +468,18 @@ export default function ReviewPage() {
                 </div>
               </div>
 
-              <h1 className="text-7xl font-black tracking-tight">{activeCard.character}</h1>
+              <h1 className="text-7xl font-black tracking-tight select-text text-center">{activeCard.character}</h1>
             </div>
 
             {/* Prompt Label (WaniKani style bar right below character) */}
-            <div className="w-full py-2.5 bg-slate-50 dark:bg-slate-950/60 border-y border-slate-200/50 dark:border-slate-850/60 text-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
+            <div className="w-full py-2.5 bg-slate-50 dark:bg-slate-955/60 border-y border-slate-200/50 dark:border-slate-850/60 flex items-center justify-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
               {renderWaniKaniPrompt()}
             </div>
 
             {/* Prompt & Inputs */}
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center items-center space-y-6">
 
-              <div className="w-full max-w-md relative select-none">
+              <div className="w-full max-w-md relative select-none mx-auto">
                 <input
                   ref={inputRef}
                   type="text"
@@ -552,7 +552,7 @@ export default function ReviewPage() {
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${
                     wrapUpActive
                       ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10'
-                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                   }`}
                 >
                   <Clock className="w-5 h-5" />
@@ -588,27 +588,6 @@ export default function ReviewPage() {
                   } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
-                </button>
-
-                {/* 4. Reading/Meaning Visual Cue Badge */}
-                <div 
-                  title={activeCard.cardType === 'meaning' ? 'Meminta Arti' : 'Meminta Bacaan'}
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-slate-50/50 dark:bg-slate-950/30 text-slate-500 dark:text-slate-400 select-none text-base font-black shadow-xxs"
-                >
-                  {activeCard.cardType === 'meaning' ? 'Aa' : 'あ'}
-                </div>
-
-                {/* 5. Help / Info Toggle Button */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    toggleItemInfo();
-                    setTimeout(() => inputRef.current?.focus(), 20);
-                  }}
-                  title="Bantuan Mnemonic / Deskripsi"
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-white dark:bg-slate-950 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
-                >
-                  <HelpCircle className="w-5 h-5" />
                 </button>
               </div>
 
