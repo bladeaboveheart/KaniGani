@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -12,8 +12,23 @@ export default function Navbar() {
   const [level, setLevel] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [devMode, setDevMode] = useState<boolean>(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = () => {
@@ -167,58 +182,75 @@ export default function Navbar() {
                   <span className="text-xxs text-slate-400">Pengguna KaniGani</span>
                 </div>
                 
-                <div className="relative group">
-                  <button className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 focus:outline-none transition-all duration-200">
+                <div className="relative" ref={dropdownRef}>
+                  <button 
+                    onClick={() => setIsDropdownOpen((prev) => !prev)}
+                    className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 focus:outline-none transition-all duration-200"
+                  >
                     <User className="w-5 h-5" />
                   </button>
-                  {/* Dropdown Menu Wrapper (touching top-full to bridge hover gap) */}
-                  <div className="absolute right-0 top-full pt-2 w-48 hidden group-hover:block hover:block animate-fade-in">
-                    <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-1 text-slate-300 text-sm">
-                      <div className="px-4 py-2 border-b border-slate-800 text-slate-400 text-xs">
-                        Menu Akun
-                      </div>
-                      <Link href="/dashboard" className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors">
-                        <BookOpen className="w-4 h-4 text-indigo-400" />
-                        <span>Belajar</span>
-                      </Link>
-                       <Link href="/settings" className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer">
-                        <Settings className="w-4 h-4 text-slate-400" />
-                        <span>Pengaturan</span>
-                      </Link>
-                      <button 
-                        onClick={toggleDevMode} 
-                        className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors text-left"
-                      >
-                        <span className="flex items-center space-x-2">
-                          <Shield className={`w-4 h-4 ${devMode ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
-                          <span>Dev Mode</span>
-                        </span>
-                        <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
-                          devMode 
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                            : 'bg-slate-800 text-slate-500 border border-slate-700'
-                        }`}>
-                          {devMode ? 'ON' : 'OFF'}
-                        </span>
-                      </button>
-                      {devMode && (
+                  {/* Dropdown Menu Wrapper */}
+                  {isDropdownOpen && (
+                    <div className="absolute right-0 top-full pt-2 w-48 animate-fade-in z-50">
+                      <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-1 text-slate-300 text-sm">
+                        <div className="px-4 py-2 border-b border-slate-800 text-slate-400 text-xs">
+                          Menu Akun
+                        </div>
                         <Link 
-                          href="/admin" 
-                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-emerald-400 transition-colors text-left border-t border-slate-800"
+                          href="/dashboard" 
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors"
                         >
-                          <Layers className="w-4 h-4 text-emerald-400" />
-                          <span className="font-bold">CRUD Database</span>
+                          <BookOpen className="w-4 h-4 text-indigo-400" />
+                          <span>Belajar</span>
                         </Link>
-                      )}
-                      <button 
-                        onClick={handleLogout} 
-                        className="w-full flex items-center space-x-2 px-4 py-2 hover:bg-red-900/30 hover:text-red-400 transition-colors text-left border-t border-slate-800"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span>Keluar</span>
-                      </button>
+                        <Link 
+                          href="/settings" 
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          <span>Pengaturan</span>
+                        </Link>
+                        <button 
+                          onClick={toggleDevMode} 
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors text-left font-medium"
+                        >
+                          <span className="flex items-center space-x-2">
+                            <Shield className={`w-4 h-4 ${devMode ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
+                            <span>Dev Mode</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
+                            devMode 
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                              : 'bg-slate-800 text-slate-500 border border-slate-700'
+                          }`}>
+                            {devMode ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+                        {devMode && (
+                          <Link 
+                            href="/admin" 
+                            onClick={() => setIsDropdownOpen(false)}
+                            className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-emerald-400 transition-colors text-left border-t border-slate-800"
+                          >
+                            <Layers className="w-4 h-4 text-emerald-400" />
+                            <span className="font-bold">CRUD Database</span>
+                          </Link>
+                        )}
+                        <button 
+                          onClick={() => {
+                            setIsDropdownOpen(false);
+                            handleLogout();
+                          }} 
+                          className="w-full flex items-center space-x-2 px-4 py-2 hover:bg-red-900/30 hover:text-red-400 transition-colors text-left border-t border-slate-800"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Keluar</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             ) : null}
