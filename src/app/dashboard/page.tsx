@@ -745,24 +745,28 @@ export default function Dashboard() {
                                     </div>
 
                                     {/* Characters List Grid */}
-                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                      {selectedBucket.items.map((item: any, idx: number) => (
-                                        <div
-                                          key={idx}
-                                          className={`p-2.5 rounded-xl border flex flex-col items-center justify-between text-center select-none shadow-xxs transition-all hover:scale-[1.03] hover:shadow-xs duration-150 ${
-                                            item.type === 'radical'
-                                              ? 'bg-radical/5 border-radical/15 text-radical dark:bg-radical/10/30'
-                                              : item.type === 'kanji'
-                                                ? 'bg-kanji/5 border-kanji/15 text-kanji dark:bg-kanji/10/30'
-                                                : 'bg-vocab/5 border-vocab/15 text-vocab dark:bg-vocab/10/30'
-                                          }`}
-                                        >
-                                          <span className="text-xl font-black">{item.character}</span>
-                                          <span className="text-3xs font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider truncate max-w-full">
-                                            {item.name}
-                                          </span>
-                                        </div>
-                                      ))}
+                                    <div className="flex flex-wrap gap-2.5">
+                                      {[...selectedBucket.items]
+                                        .sort((a: any, b: any) => {
+                                          const order = { radical: 1, kanji: 2, vocabulary: 3 };
+                                          const rankA = order[a.type as 'radical' | 'kanji' | 'vocabulary'] || 4;
+                                          const rankB = order[b.type as 'radical' | 'kanji' | 'vocabulary'] || 4;
+                                          return rankA - rankB;
+                                        })
+                                        .map((item: any, idx: number) => (
+                                          <div
+                                            key={idx}
+                                            className={`w-12 h-12 flex items-center justify-center rounded-xl border text-xl font-black select-none shadow-xxs transition-all hover:scale-110 hover:shadow-xs duration-150 ${
+                                              item.type === 'radical'
+                                                ? 'bg-radical/5 border-radical/15 text-radical dark:bg-radical/10/30'
+                                                : item.type === 'kanji'
+                                                  ? 'bg-kanji/5 border-kanji/15 text-kanji dark:bg-kanji/10/30'
+                                                  : 'bg-vocab/5 border-vocab/15 text-vocab dark:bg-vocab/10/30'
+                                            }`}
+                                          >
+                                            <span>{item.character}</span>
+                                          </div>
+                                        ))}
                                     </div>
                                   </div>
                                 ) : (
