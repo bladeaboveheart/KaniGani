@@ -136,8 +136,8 @@ BEGIN
   SELECT
     p_user_id,
     i.id,
-    CASE WHEN i.type = 'radical' THEN 1 ELSE 0 END,
-    CASE WHEN i.type = 'radical' THEN NOW() ELSE NULL END
+    CASE WHEN i.type = 'radical' AND i.level = 1 THEN 1 ELSE 0 END,
+    CASE WHEN i.type = 'radical' AND i.level = 1 THEN NOW() ELSE NULL END
   FROM public.items i
   ON CONFLICT (user_id, item_id) DO NOTHING;
 END;
