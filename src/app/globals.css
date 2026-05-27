@@ -3,13 +3,13 @@
 @variant dark (.dark &);
 
 @theme {
-  --color-radical: #00a0f0;
-  --color-kanji: #f000a0;
-  --color-vocab: #a000f0;
+  --color-radical: #10b981;
+  --color-kanji: #f97316;
+  --color-vocab: #3b82f6;
   
-  --color-radical-hover: #0088cc;
-  --color-kanji-hover: #cc0088;
-  --color-vocab-hover: #8800cc;
+  --color-radical-hover: #059669;
+  --color-kanji-hover: #ea580c;
+  --color-vocab-hover: #2563eb;
 
   --color-apprentice: #f03e3e;
   --color-guru: #a000f0;
@@ -26,9 +26,9 @@
   --card-border: #e2e8f0;
   --navbar-bg: #1e293b;
   
-  --radical-bg: linear-gradient(135deg, #00b4db, #0083b0);
-  --kanji-bg: linear-gradient(135deg, #ec008c, #fc6767);
-  --vocab-bg: linear-gradient(135deg, #8a2387, #e94057);
+  --radical-bg: linear-gradient(135deg, #34d399, #059669);
+  --kanji-bg: linear-gradient(135deg, #fb923c, #ea580c);
+  --vocab-bg: linear-gradient(135deg, #60a5fa, #2563eb);
 }
 
 .dark {
@@ -39,9 +39,9 @@
   --card-border: #1e293b;
   --navbar-bg: #090d16;
   
-  --radical-bg: linear-gradient(135deg, #0093e9, #80d0c7);
-  --kanji-bg: linear-gradient(135deg, #ff3cac, #784ba0, #2b86c5);
-  --vocab-bg: linear-gradient(135deg, #6b11b5, #4e0785);
+  --radical-bg: linear-gradient(135deg, #059669, #064e3b);
+  --kanji-bg: linear-gradient(135deg, #ea580c, #7c2d12);
+  --vocab-bg: linear-gradient(135deg, #2563eb, #1e3a8a);
 }
 
 body {
@@ -92,13 +92,13 @@ body {
 
 /* Glowing effects */
 .glow-radical {
-  box-shadow: 0 4px 20px rgba(0, 160, 240, 0.3);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
 }
 
 .glow-kanji {
-  box-shadow: 0 4px 20px rgba(240, 0, 160, 0.3);
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3);
 }
 
 .glow-vocab {
-  box-shadow: 0 4px 20px rgba(160, 0, 240, 0.3);
+  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
 }
