@@ -9,7 +9,8 @@ import * as wanakana from 'wanakana';
 import CrabBackground from '@/components/CrabBackground';
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle,
-  HelpCircle, Eye, RefreshCw, XCircle, Award, AlertCircle
+  HelpCircle, Eye, RefreshCw, XCircle, Award, AlertCircle,
+  Home, Check, Inbox, Clock, RotateCcw
 } from 'lucide-react';
 
 export default function LessonPage() {
@@ -399,6 +400,43 @@ export default function LessonPage() {
     );
   };
 
+  const renderWaniKaniPrompt = () => {
+    if (!activeCard) return null;
+    const isMeaning = activeCard.cardType === 'meaning';
+
+    if (activeCard.type === 'radical') {
+      return (
+        <span>Nama <span className="font-black text-slate-850 dark:text-slate-100">Radikal</span></span>
+      );
+    }
+
+    if (activeCard.type === 'kanji') {
+      if (isMeaning) {
+        return (
+          <span>Arti <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+        );
+      }
+      const readings = activeCard.item.readings || [];
+      const primaryReadingObj = readings.find(r => r.primary_reading);
+      const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
+      return expectedType === 'onyomi' ? (
+        <span>Bacaan Onyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+      ) : (
+        <span>Bacaan Kunyomi <span className="font-black text-slate-855 dark:text-slate-100">Kanji</span></span>
+      );
+    }
+
+    // Vocabulary
+    if (isMeaning) {
+      return (
+        <span>Arti <span className="font-black text-slate-855 dark:text-slate-100">Kosakata</span></span>
+      );
+    }
+    return (
+      <span>Cara Baca <span className="font-black text-slate-855 dark:text-slate-100">Kosakata</span></span>
+    );
+  };
+
   const getSrsStageName = (stage: number) => {
     if (stage === 1) return 'Apprentice 1';
     if (stage === 2) return 'Apprentice 2';
@@ -417,7 +455,15 @@ export default function LessonPage() {
       <CrabBackground />
 
       {/* Top Header */}
-      <div className="w-full bg-slate-900 border-b border-slate-800 text-white py-4 px-4 sm:px-6">
+      <div className={`w-full text-white py-3 px-4 sm:px-6 transition-colors duration-350 ${
+        activeCard && phase === 'quiz'
+          ? activeCard.type === 'radical'
+            ? 'bg-radical'
+            : activeCard.type === 'kanji'
+              ? 'bg-kanji'
+              : 'bg-vocab'
+          : 'bg-slate-900 border-b border-slate-850'
+      }`}>
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <button
             onClick={() => {
@@ -425,24 +471,38 @@ export default function LessonPage() {
                 router.push('/dashboard');
               }
             }}
-            className="flex items-center space-x-1 text-slate-400 hover:text-white transition-colors text-sm font-semibold"
+            className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg"
           >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Keluar Sesi</span>
+            <Home className="w-5 h-5" />
           </button>
-
+     
           <div className="text-center">
-            <span className="text-xs font-bold text-teal-400 tracking-widest uppercase">Sesi Lesson</span>
-            <h2 className="text-sm font-black">
-              {phase === 'learn'
-                ? `Mempelajari batch (${itemIndex + 1}/${currentBatch.length})`
-                : phase === 'quiz'
-                  ? `Kuis Batch (${queue.length} kartu tersisa)`
-                  : 'Sesi Selesai'}
-            </h2>
+            {activeCard && phase === 'quiz' ? (
+              <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
+                {/* Completed count */}
+                <div className="flex items-center space-x-1" title="Item Selesai">
+                  <Check className="w-4 h-4 text-white/85" />
+                  <span>{10 - queue.length}</span>
+                </div>
+                {/* Remaining count */}
+                <div className="flex items-center space-x-1" title="Kartu Tersisa">
+                  <Inbox className="w-4 h-4 text-white/85" />
+                  <span>{queue.length}</span>
+                </div>
+              </div>
+            ) : (
+              <>
+                <span className="text-xs font-bold text-teal-400 tracking-widest uppercase">Sesi Lesson</span>
+                <h2 className="text-sm font-black">
+                  {phase === 'learn'
+                    ? `Mempelajari batch (${itemIndex + 1}/${currentBatch.length})`
+                    : 'Sesi Selesai'}
+                </h2>
+              </>
+            )}
           </div>
-
-          <div className="w-16"></div>
+     
+          <div className="w-8"></div>
         </div>
       </div>
 
@@ -673,101 +733,134 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-between">
 
             {/* Header quiz card with colors */}
-            <div className={`py-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
-              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4">
-                {getItemBadgeName(activeCard.type)}
-              </span>
+            <div className={`py-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
               <h1 className="text-7xl font-black tracking-tight">{activeCard.character}</h1>
             </div>
-
+     
+            {/* Prompt Label (WaniKani style bar right below character) */}
+            <div className="w-full py-2.5 bg-slate-55 dark:bg-slate-950/60 border-y border-slate-200/50 dark:border-slate-850/60 text-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
+              {renderWaniKaniPrompt()}
+            </div>
+     
             {/* Prompt & Input Section */}
             <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center items-center space-y-6">
-
-              {/* Question Label */}
-              <div className="text-center">
-                <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">Pertanyaan</span>
-                <h3 className="text-lg font-extrabold text-slate-700 dark:text-slate-350 mt-1">
-                  {renderPrompt()}
-                </h3>
-              </div>
-
+     
               {/* Input Field with focus and submit events */}
-              <div className="w-full max-w-sm relative">
+              <div className="w-full max-w-md relative select-none">
                 <input
                   ref={inputRef}
                   type="text"
                   placeholder={
                     activeCard.cardType === 'meaning'
-                      ? 'Ketik arti di sini...'
+                      ? 'Ketik arti (bahasa Inggris)...'
                       : 'Ketik bacaan (Romaji/Kana)...'
                   }
                   value={userInput}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   readOnly={isAnswerSubmitted && !incorrectActive}
-                  className={`w-full py-3.5 px-5 rounded-2xl text-center text-lg font-bold border transition-all ${warningMsg
-                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake focus:ring-amber-500'
+                  className={`w-full py-3.5 pl-5 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${warningMsg
+                    ? 'bg-amber-55 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'
                     : isAnswerSubmitted
                       ? isCorrect
                         ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
                         : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100'
                     }`}
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
                   spellCheck="false"
                 />
-
-                {activeCard.cardType === 'reading' && (
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-4xs font-bold px-2 py-0.5 bg-indigo-500 text-white rounded-md tracking-wider">
-                    Kana
-                  </span>
-                )}
+     
+                {/* Integrated Chevron-Right/Submit Action Button inside the input box */}
+                <button
+                  type="button"
+                  disabled={!isAnswerSubmitted && userInput.trim() === ''}
+                  onClick={() => {
+                    if (!isAnswerSubmitted) {
+                      submitAnswer();
+                    } else {
+                      proceedNext();
+                    }
+                    setTimeout(() => {
+                      inputRef.current?.focus();
+                    }, 20);
+                  }}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed ${
+                    isAnswerSubmitted
+                      ? isCorrect
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                        : 'bg-rose-500 hover:bg-rose-600 text-white'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10'
+                  }`}
+                >
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </div>
-
+     
               {warningMsg && (
-                <div className="w-full max-w-sm p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-250 dark:border-amber-900/50 text-xs font-bold text-amber-700 dark:text-amber-400 rounded-2xl animate-fade-in flex items-center space-x-2">
+                <div className="w-full max-w-md p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-250 dark:border-amber-900/50 text-xs font-bold text-amber-700 dark:text-amber-400 rounded-2xl animate-fade-in flex items-center space-x-2">
                   <AlertCircle className="w-4 h-4 shrink-0 animate-bounce text-amber-500" />
                   <span>{warningMsg}</span>
                 </div>
               )}
-
-              {/* Submisi buttons */}
-              <div className="flex space-x-3 w-full max-w-sm">
-                {!isAnswerSubmitted ? (
-                  <button
-                    disabled={userInput.trim() === ''}
-                    onClick={submitAnswer}
-                    className="w-full py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
-                  >
-                    Kirim Jawaban (Enter)
-                  </button>
-                ) : (
-                  <button
-                    onClick={proceedNext}
-                    className={`w-full py-3.5 font-bold rounded-2xl text-sm shadow-md transition-opacity flex items-center justify-center space-x-2 ${isCorrect
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      : 'bg-rose-500 hover:bg-rose-600 text-white'
-                      }`}
-                  >
-                    <span>
-                      {incorrectActive ? 'Ketik ulang sampai betul baru lanjut!' : 'Kartu Berikutnya (Enter)'}
-                    </span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {isAnswerSubmitted && (
+     
+              {/* WaniKani Mobile Style Action Buttons Bar for Lessons */}
+              <div className="flex justify-center items-center gap-3.5 w-full max-w-md pt-2 select-none">
+                {/* 1. Skip / Exit Session (Home) */}
                 <button
-                  onClick={() => toggleItemInfo()}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-300 font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors border border-slate-200 dark:border-slate-700 shadow-sm"
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Keluar dari sesi kuis pembelajaran?')) {
+                      router.push('/dashboard');
+                    }
+                  }}
+                  title="Keluar dari Kuis"
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-855 bg-white dark:bg-slate-955 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
                 >
-                  <Eye className="w-4 h-4" />
-                  <span>{showItemInfo ? 'Sembunyikan Info (F)' : 'Tampilkan Info Detail (F)'}</span>
+                  <Home className="w-5 h-5" />
                 </button>
-              )}
+     
+                {/* 2. Eye Button (Toggle Info Drawer) */}
+                <button
+                  type="button"
+                  disabled={!isAnswerSubmitted}
+                  onClick={() => {
+                    toggleItemInfo();
+                    setTimeout(() => inputRef.current?.focus(), 20);
+                  }}
+                  title="Tampilkan Info Detail (F)"
+                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${
+                    showItemInfo
+                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
+                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                  } disabled:opacity-30 disabled:cursor-not-allowed`}
+                >
+                  <Eye className="w-5 h-5" />
+                </button>
+     
+                {/* 3. Reading/Meaning Visual Cue Badge */}
+                <div 
+                  title={activeCard.cardType === 'meaning' ? 'Meminta Arti' : 'Meminta Bacaan'}
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-slate-50/50 dark:bg-slate-950/30 text-slate-500 dark:text-slate-400 select-none text-base font-black shadow-xxs"
+                >
+                  {activeCard.cardType === 'meaning' ? 'Aa' : 'あ'}
+                </div>
+     
+                {/* 4. Help / Info Toggle Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    toggleItemInfo();
+                    setTimeout(() => inputRef.current?.focus(), 20);
+                  }}
+                  title="Bantuan Mnemonic / Deskripsi"
+                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-250 dark:border-slate-855 bg-white dark:bg-slate-950 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </div>
 
             </div>
 
