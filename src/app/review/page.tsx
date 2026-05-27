@@ -148,9 +148,15 @@ export default function ReviewPage() {
       if (!isAnswerSubmitted) {
         if (userInput.trim() !== '') {
           submitAnswer();
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 20);
         }
       } else {
         handleProceedNext();
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 20);
       }
     }
   };
@@ -164,6 +170,11 @@ export default function ReviewPage() {
 
     // Panggil store proceedNext
     proceedNext();
+
+    // Refocus input to ensure virtual keyboard stays open on mobile
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 20);
 
     // Cek di store setelah state berubah apakah item sudah selesai (Meaning & Reading terjawab benar)
     setTimeout(async () => {
@@ -487,14 +498,24 @@ export default function ReviewPage() {
                 {!isAnswerSubmitted ? (
                   <button
                     disabled={userInput.trim() === ''}
-                    onClick={submitAnswer}
+                    onClick={() => {
+                      submitAnswer();
+                      setTimeout(() => {
+                        inputRef.current?.focus();
+                      }, 20);
+                    }}
                     className="w-full py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold rounded-2xl text-sm shadow-md hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed"
                   >
                     Kirim Jawaban (Enter)
                   </button>
                 ) : (
                   <button
-                    onClick={handleProceedNext}
+                    onClick={() => {
+                      handleProceedNext();
+                      setTimeout(() => {
+                        inputRef.current?.focus();
+                      }, 20);
+                    }}
                     className={`w-full py-3.5 font-bold rounded-2xl text-sm shadow-md transition-opacity flex items-center justify-center space-x-2 ${isCorrect
                       ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                       : 'bg-rose-500 hover:bg-rose-600 text-white'
