@@ -454,68 +454,37 @@ export default function LessonPage() {
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
 
-      {/* Top Header */}
-      <div className={`w-full text-white py-3 px-4 sm:px-6 transition-colors duration-350 ${
-        activeCard && phase === 'quiz'
-          ? activeCard.type === 'radical'
-            ? 'bg-radical'
-            : activeCard.type === 'kanji'
-              ? 'bg-kanji'
-              : 'bg-vocab'
-          : 'bg-slate-900 border-b border-slate-850'
-      }`}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => {
-              if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.')) {
-                router.push('/dashboard');
-              }
-            }}
-            className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg"
-          >
-            <Home className="w-5 h-5" />
-          </button>
-     
-          <div className="text-center">
-            {activeCard && phase === 'quiz' ? (
-              <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
-                {/* Completed count */}
-                <div className="flex items-center space-x-1" title="Item Selesai">
-                  <Check className="w-4 h-4 text-white/85" />
-                  <span>{10 - queue.length}</span>
-                </div>
-                {/* Remaining count */}
-                <div className="flex items-center space-x-1" title="Kartu Tersisa">
-                  <Inbox className="w-4 h-4 text-white/85" />
-                  <span>{queue.length}</span>
-                </div>
-              </div>
-            ) : (
-              <>
-                <span className="text-xs font-bold text-teal-400 tracking-widest uppercase">Sesi Lesson</span>
-                <h2 className="text-sm font-black">
-                  {phase === 'learn'
-                    ? `Mempelajari batch (${itemIndex + 1}/${currentBatch.length})`
-                    : 'Sesi Selesai'}
-                </h2>
-              </>
-            )}
-          </div>
-     
-          <div className="w-8"></div>
-        </div>
-      </div>
-
       {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-8 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-center py-6 sm:py-12 transition-all duration-300">
 
         {/* PHASE 1: LEARN (PENGENALAN ITEM SLIDES) */}
         {phase === 'learn' && currentItem && (
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
 
             {/* Header Colorful Character Card */}
-            <div className={`py-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
-              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4">
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(currentItem.type)}`}>
+              
+              {/* Integrated Header Bar Inside the Card (Learn phase) */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.')) {
+                      router.push('/dashboard');
+                    }
+                  }}
+                  title="Keluar Sesi"
+                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
+                >
+                  <Home className="w-5 h-5" />
+                </button>
+                
+                <div className="text-xs sm:text-sm font-bold text-white/90">
+                  Mempelajari batch ({itemIndex + 1}/{currentBatch.length})
+                </div>
+              </div>
+
+              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4 mt-2">
                 {getItemBadgeName(currentItem.type)}
               </span>
               <h1 className="text-7xl font-black tracking-tight">{currentItem.character}</h1>
@@ -733,7 +702,37 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-between">
 
             {/* Header quiz card with colors */}
-            <div className={`py-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+              
+              {/* Integrated Header Bar Inside the Card (Quiz phase) */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Keluar dari sesi kuis pembelajaran?')) {
+                      router.push('/dashboard');
+                    }
+                  }}
+                  title="Keluar dari Kuis"
+                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
+                >
+                  <Home className="w-5 h-5" />
+                </button>
+                
+                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
+                  {/* Completed count */}
+                  <div className="flex items-center space-x-1" title="Item Selesai">
+                    <Check className="w-4 h-4 text-white/85" />
+                    <span>{10 - queue.length}</span>
+                  </div>
+                  {/* Remaining count */}
+                  <div className="flex items-center space-x-1" title="Kartu Tersisa">
+                    <Inbox className="w-4 h-4 text-white/85" />
+                    <span>{queue.length}</span>
+                  </div>
+                </div>
+              </div>
+
               <h1 className="text-7xl font-black tracking-tight">{activeCard.character}</h1>
             </div>
      

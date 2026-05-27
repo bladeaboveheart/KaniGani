@@ -421,69 +421,53 @@ export default function ReviewPage() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
-
-      {/* Header bar */}
-      <div className={`w-full text-white py-3 px-4 sm:px-6 transition-colors duration-300 ${
-        activeCard && phase === 'quiz'
-          ? activeCard.type === 'radical'
-            ? 'bg-radical'
-            : activeCard.type === 'kanji'
-              ? 'bg-kanji'
-              : 'bg-vocab'
-          : 'bg-slate-900 border-b border-slate-850'
-      }`}>
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <button
-            onClick={() => {
-              if (confirm('Apakah Anda yakin ingin keluar? Semua item yang telah selesai dijawab BENAR KEDUA KARTUNYA sudah otomatis tersimpan progresnya secara aman di server.')) {
-                router.push('/dashboard');
-              }
-            }}
-            className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg"
-          >
-            <Home className="w-5 h-5" />
-          </button>
-
-          {activeCard && phase === 'quiz' ? (
-            <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
-              {/* Accuracy stats */}
-              <div className="flex items-center space-x-1" title="Akurasi Sesi">
-                <ThumbsUp className="w-4 h-4 text-white/80" />
-                <span>
-                  {accuracyStats.correct + accuracyStats.wrong > 0
-                    ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
-                    : 100}%
-                </span>
-              </div>
-              {/* Completed count */}
-              <div className="flex items-center space-x-1" title="Item Selesai">
-                <Check className="w-4 h-4 text-white/85" />
-                <span>{submittedItemIds.length}</span>
-              </div>
-              {/* Remaining count */}
-              <div className="flex items-center space-x-1" title="Kartu Tersisa">
-                <Inbox className="w-4 h-4 text-white/85" />
-                <span>{remainingCards}</span>
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <span className="text-xs font-bold text-pink-400 tracking-widest uppercase">Sesi Review</span>
-              <h2 className="text-sm font-black">Review Selesai</h2>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Main Core Review */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-8 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-center py-6 sm:py-12 transition-all duration-300">
 
         {/* PHASE 1: QUIZ REVIEW SESSION */}
         {phase === 'quiz' && activeCard && (
-          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
+          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-850 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
 
-            {/* Header Colorful Character */}
-            <div className={`py-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+            {/* Header Colorful Character with Integrated Navbar */}
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white select-none ${getItemColorClass(activeCard.type)}`}>
+              
+              {/* Integrated Header Bar Inside the Card */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Apakah Anda yakin ingin keluar? Semua item yang telah selesai dijawab BENAR KEDUA KARTUNYA sudah otomatis tersimpan progresnya secara aman di server.')) {
+                      router.push('/dashboard');
+                    }
+                  }}
+                  title="Kembali ke Dashboard"
+                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
+                >
+                  <Home className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
+                  {/* Accuracy stats */}
+                  <div className="flex items-center space-x-1" title="Akurasi Sesi">
+                    <ThumbsUp className="w-4 h-4 text-white/80" />
+                    <span>
+                      {accuracyStats.correct + accuracyStats.wrong > 0
+                        ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
+                        : 100}%
+                    </span>
+                  </div>
+                  {/* Completed count */}
+                  <div className="flex items-center space-x-1" title="Item Selesai">
+                    <Check className="w-4 h-4 text-white/85" />
+                    <span>{submittedItemIds.length}</span>
+                  </div>
+                  {/* Remaining count */}
+                  <div className="flex items-center space-x-1" title="Kartu Tersisa">
+                    <Inbox className="w-4 h-4 text-white/85" />
+                    <span>{remainingCards}</span>
+                  </div>
+                </div>
+              </div>
+
               <h1 className="text-7xl font-black tracking-tight">{activeCard.character}</h1>
             </div>
 
