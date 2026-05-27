@@ -251,7 +251,7 @@ export default function ReviewPage() {
 
       if (e.key === 'Backspace') {
         const isInputFocused = document.activeElement?.tagName === 'INPUT';
-        
+
         // Trigger undo if input is not focused, OR if the answer was correct (read-only), OR if incorrect but input is cleared/empty
         if (!isInputFocused || isCorrect || userInput.trim() === '') {
           e.preventDefault();
@@ -340,7 +340,7 @@ export default function ReviewPage() {
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
-      
+
       if (expectedType === 'onyomi') {
         return (
           <span>
@@ -421,7 +421,7 @@ export default function ReviewPage() {
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start py-6 sm:py-12 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
 
         {/* PHASE 1: QUIZ REVIEW SESSION */}
         {phase === 'quiz' && activeCard && (
@@ -429,7 +429,7 @@ export default function ReviewPage() {
 
             {/* Header Colorful Character with Integrated Navbar */}
             <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
-              
+
               {/* Integrated Header Bar Inside the Card */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
@@ -485,7 +485,7 @@ export default function ReviewPage() {
                   type="text"
                   placeholder={
                     activeCard.cardType === 'meaning'
-                      ? 'Ketik arti (bahasa Inggris)...'
+                      ? 'Ketik arti (bahasa Indonesia)...'
                       : 'Ketik bacaan (Romaji/Kana)...'
                   }
                   value={userInput}
@@ -520,13 +520,12 @@ export default function ReviewPage() {
                       inputRef.current?.focus();
                     }, 20);
                   }}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed ${
-                    isAnswerSubmitted
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed ${isAnswerSubmitted
                       ? isCorrect
                         ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
                         : 'bg-rose-500 hover:bg-rose-600 text-white'
                       : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10'
-                  }`}
+                    }`}
                 >
                   <ArrowRight className="w-5 h-5" />
                 </button>
@@ -549,11 +548,10 @@ export default function ReviewPage() {
                     setTimeout(() => inputRef.current?.focus(), 20);
                   }}
                   title="Wrap Up (Selesaikan 10 item terakhir)"
-                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${
-                    wrapUpActive
+                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${wrapUpActive
                       ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10'
                       : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
-                  }`}
+                    }`}
                 >
                   <Clock className="w-5 h-5" />
                 </button>
@@ -581,11 +579,10 @@ export default function ReviewPage() {
                     setTimeout(() => inputRef.current?.focus(), 20);
                   }}
                   title="Tampilkan Info Detail (F)"
-                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${
-                    showItemInfo
+                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${showItemInfo
                       ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
                       : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-855 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
-                  } disabled:opacity-30 disabled:cursor-not-allowed`}
+                    } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
                 </button>

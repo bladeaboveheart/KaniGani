@@ -455,7 +455,7 @@ export default function LessonPage() {
       <CrabBackground />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start py-6 sm:py-12 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
 
         {/* PHASE 1: LEARN (PENGENALAN ITEM SLIDES) */}
         {phase === 'learn' && currentItem && (
