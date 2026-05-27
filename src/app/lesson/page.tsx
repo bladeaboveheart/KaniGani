@@ -406,34 +406,34 @@ export default function LessonPage() {
 
     if (activeCard.type === 'radical') {
       return (
-        <span>Nama <span className="font-black text-slate-850 dark:text-slate-100">Radikal</span></span>
+        <span className="select-text">Nama <span className="font-black text-slate-800 dark:text-slate-100">Radikal</span></span>
       );
     }
 
     if (activeCard.type === 'kanji') {
       if (isMeaning) {
         return (
-          <span>Arti <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+          <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
         );
       }
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
       return expectedType === 'onyomi' ? (
-        <span>Bacaan Onyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Onyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
       ) : (
-        <span>Bacaan Kunyomi <span className="font-black text-slate-855 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Kunyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
       );
     }
 
     // Vocabulary
     if (isMeaning) {
       return (
-        <span>Arti <span className="font-black text-slate-855 dark:text-slate-100">Kosakata</span></span>
+        <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
       );
     }
     return (
-      <span>Cara Baca <span className="font-black text-slate-855 dark:text-slate-100">Kosakata</span></span>
+      <span className="select-text">Cara Baca <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
     );
   };
 
@@ -455,7 +455,7 @@ export default function LessonPage() {
       <CrabBackground />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-center py-6 sm:py-12 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start py-6 sm:py-12 transition-all duration-300">
 
         {/* PHASE 1: LEARN (PENGENALAN ITEM SLIDES) */}
         {phase === 'learn' && currentItem && (
@@ -737,7 +737,7 @@ export default function LessonPage() {
             </div>
      
             {/* Prompt Label (WaniKani style bar right below character) */}
-            <div className="w-full py-2.5 bg-slate-55 dark:bg-slate-950/60 border-y border-slate-200/50 dark:border-slate-850/60 flex items-center justify-center text-xs font-semibold text-slate-550 dark:text-slate-400 tracking-wider uppercase select-none">
+            <div className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-300 tracking-wider uppercase select-text">
               {renderWaniKaniPrompt()}
             </div>
      
@@ -758,7 +758,7 @@ export default function LessonPage() {
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   readOnly={isAnswerSubmitted && !incorrectActive}
-                  className={`w-full py-3.5 pl-5 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${warningMsg
+                  className={`w-full py-3.5 px-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${warningMsg
                     ? 'bg-amber-55 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'
                     : isAnswerSubmitted
                       ? isCorrect
