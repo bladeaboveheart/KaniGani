@@ -81,6 +81,7 @@ interface QuizStore {
   toggleItemInfo: (force?: boolean) => void;
   toggleWrapUp: () => void;
   resetStore: () => void;
+  undoActiveCard: () => void;
 }
 
 export const useQuizStore = create<QuizStore>((set, get) => ({
@@ -122,6 +123,44 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       warningMsg: '',
       showItemInfo: false,
       wrapUpActive: false,
+    });
+  },
+
+  undoActiveCard: () => {
+    const { queue, activeCard, wrongCounts } = get();
+    if (!activeCard) return;
+
+    const itemId = activeCard.itemId;
+    const updatedWrongCounts = { ...wrongCounts };
+
+    // Revert wrong penalty for this item if it was added
+    if (updatedWrongCounts[itemId] && updatedWrongCounts[itemId] > 0) {
+      updatedWrongCounts[itemId]--;
+      if (updatedWrongCounts[itemId] === 0) {
+        delete updatedWrongCounts[itemId];
+      }
+    }
+
+    // Push activeCard to the end of the queue
+    const updatedQueue = [...queue];
+    const current = updatedQueue.shift();
+    if (current) {
+      updatedQueue.push(current);
+    }
+
+    set({
+      queue: updatedQueue,
+      activeCard: updatedQueue[0] || null,
+      userInput: '',
+      isAnswerSubmitted: false,
+      isCorrect: false,
+      showFeedback: false,
+      incorrectActive: false,
+      isAlmostCorrect: false,
+      closestAcceptedMeaning: '',
+      warningMsg: '',
+      showItemInfo: false,
+      wrongCounts: updatedWrongCounts,
     });
   },
 

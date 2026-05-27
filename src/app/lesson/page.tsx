@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuizStore } from '@/store/useQuizStore';
@@ -45,6 +45,14 @@ export default function LessonPage() {
   const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'sentences'>('info');
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const currentItem = currentBatch[itemIndex];
+
+  const startQuiz = useCallback(() => {
+    if (currentBatch.length === 0) return;
+    initializeSession(currentBatch, 'lesson');
+    setPhase('quiz');
+  }, [currentBatch, initializeSession]);
 
   // Fetch lessons available
   useEffect(() => {
@@ -186,11 +194,59 @@ export default function LessonPage() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isAnswerSubmitted, toggleItemInfo, phase]);
 
-  const startQuiz = () => {
-    if (currentBatch.length === 0) return;
-    initializeSession(currentBatch, 'lesson');
-    setPhase('quiz');
-  };
+  // Keyboard controls for learning phase (ArrowLeft and ArrowRight)
+  useEffect(() => {
+    const handleLearnKeyDown = (e: KeyboardEvent) => {
+      if (phase !== 'learn') return;
+
+      // Skip keydown actions if user is typing in an input/textarea element
+      const isInputActive = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
+      if (isInputActive) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        const hasMnemonic = currentItem && currentItem.type !== 'radical';
+        
+        if (hasMnemonic && activeTab !== 'info') {
+          // Switch back to 'info' tab first if not already there
+          setActiveTab('info');
+        } else {
+          // Go to previous card if already on 'info' tab
+          if (itemIndex > 0) {
+            const prevIdx = itemIndex - 1;
+            setItemIndex(prevIdx);
+            const prevItem = currentBatch[prevIdx];
+            if (prevItem && prevItem.type !== 'radical') {
+              setActiveTab('mnemonic');
+            } else {
+              setActiveTab('info');
+            }
+          }
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        const hasMnemonic = currentItem && currentItem.type !== 'radical';
+        
+        if (hasMnemonic && activeTab === 'info') {
+          // 1st press opens 'Cara Baca' tab
+          setActiveTab('mnemonic');
+        } else {
+          // 2nd press (or if radical / already on cara baca) goes to next card or starts quiz
+          if (itemIndex < currentBatch.length - 1) {
+            setItemIndex((prev) => prev + 1);
+            setActiveTab('info');
+          } else {
+            startQuiz();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleLearnKeyDown);
+    return () => window.removeEventListener('keydown', handleLearnKeyDown);
+  }, [phase, itemIndex, currentItem, activeTab, currentBatch, startQuiz]);
+
+
 
   // Selesaikan kuis batch lesson
   const completeBatch = async () => {
@@ -249,7 +305,7 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-100">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
@@ -281,7 +337,7 @@ export default function LessonPage() {
     );
   }
 
-  const currentItem = currentBatch[itemIndex];
+
 
   // Helper styles berdasarkan kategori item
   const getItemColorClass = (type: string) => {
@@ -296,23 +352,51 @@ export default function LessonPage() {
     return 'Kosakata';
   };
 
-  const getReadingPrompt = () => {
-    if (!activeCard) return '';
-    if (activeCard.type === 'vocabulary') {
-      return 'Apa bacaan karakter ini?';
+  const renderPrompt = () => {
+    if (!activeCard) return null;
+
+    if (activeCard.cardType === 'meaning') {
+      return (
+        <span>
+          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-teal-100 text-teal-855 dark:bg-teal-950/60 dark:text-teal-350 font-black border border-teal-200/50 dark:border-teal-900/50 shadow-xxs">arti</span> karakter ini?
+        </span>
+      );
     }
+
+    if (activeCard.type === 'vocabulary') {
+      return (
+        <span>
+          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-855 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter ini?
+        </span>
+      );
+    }
+
     if (activeCard.type === 'kanji') {
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
+      
       if (expectedType === 'onyomi') {
-        return 'Apa bacaan Onyomi karakter ini?';
+        return (
+          <span>
+            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-indigo-100 text-indigo-855 dark:bg-indigo-950/60 dark:text-indigo-350 font-black border border-indigo-200/50 dark:border-indigo-900/50 shadow-xxs">bacaan Onyomi</span> karakter ini?
+          </span>
+        );
       }
       if (expectedType === 'kunyomi') {
-        return 'Apa bacaan Kunyomi karakter ini?';
+        return (
+          <span>
+            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-purple-100 text-purple-855 dark:bg-purple-950/60 dark:text-purple-350 font-black border border-purple-200/50 dark:border-purple-900/50 shadow-xxs">bacaan Kunyomi</span> karakter ini?
+          </span>
+        );
       }
     }
-    return 'Apa bacaan karakter Jepang ini?';
+
+    return (
+      <span>
+        Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-855 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter Jepang ini?
+      </span>
+    );
   };
 
   const getSrsStageName = (stage: number) => {
@@ -383,8 +467,8 @@ export default function LessonPage() {
               <button
                 onClick={() => setActiveTab('info')}
                 className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'info'
-                    ? 'border-teal-500 text-teal-500'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                  ? 'border-teal-500 text-teal-500'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
               >
                 Arti & Deskripsi
@@ -394,8 +478,8 @@ export default function LessonPage() {
                 <button
                   onClick={() => setActiveTab('mnemonic')}
                   className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'mnemonic'
-                      ? 'border-teal-500 text-teal-500'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'border-teal-500 text-teal-500'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                 >
                   Cara Baca
@@ -406,8 +490,8 @@ export default function LessonPage() {
                 <button
                   onClick={() => setActiveTab('sentences')}
                   className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'sentences'
-                      ? 'border-teal-500 text-teal-500'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'border-teal-500 text-teal-500'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                 >
                   Contoh Kalimat
@@ -507,17 +591,17 @@ export default function LessonPage() {
 
             {/* Slide Navigation Buttons */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0">
-              
+
               {/* Progress dots - Mobile Only */}
               <div className="flex space-x-1.5 sm:hidden">
                 {currentBatch.map((_, idx) => (
                   <div
                     key={idx}
                     className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === itemIndex
-                        ? 'bg-teal-500 scale-125'
-                        : idx < itemIndex
-                          ? 'bg-teal-300 dark:bg-teal-800'
-                          : 'bg-slate-200 dark:bg-slate-850'
+                      ? 'bg-teal-500 scale-125'
+                      : idx < itemIndex
+                        ? 'bg-teal-300 dark:bg-teal-800'
+                        : 'bg-slate-200 dark:bg-slate-850'
                       }`}
                   ></div>
                 ))}
@@ -528,8 +612,14 @@ export default function LessonPage() {
                 <button
                   disabled={itemIndex === 0}
                   onClick={() => {
-                    setItemIndex(itemIndex - 1);
-                    setActiveTab('info');
+                    const prevIdx = itemIndex - 1;
+                    setItemIndex(prevIdx);
+                    const prevItem = currentBatch[prevIdx];
+                    if (prevItem && prevItem.type !== 'radical') {
+                      setActiveTab('mnemonic');
+                    } else {
+                      setActiveTab('info');
+                    }
                   }}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-350 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0"
                 >
@@ -543,10 +633,10 @@ export default function LessonPage() {
                     <div
                       key={idx}
                       className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === itemIndex
-                          ? 'bg-teal-500 scale-125'
-                          : idx < itemIndex
-                            ? 'bg-teal-300 dark:bg-teal-800'
-                            : 'bg-slate-200 dark:bg-slate-850'
+                        ? 'bg-teal-500 scale-125'
+                        : idx < itemIndex
+                          ? 'bg-teal-300 dark:bg-teal-800'
+                          : 'bg-slate-200 dark:bg-slate-850'
                         }`}
                     ></div>
                   ))}
@@ -566,7 +656,7 @@ export default function LessonPage() {
                 ) : (
                   <button
                     onClick={startQuiz}
-                    className="px-6 py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-95 text-white font-black rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all duration-200 animate-pulse shrink-0 whitespace-nowrap"
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0"
                   >
                     <span>Mulai Kuis Batch</span>
                     <Award className="w-4 h-4" />
@@ -597,9 +687,7 @@ export default function LessonPage() {
               <div className="text-center">
                 <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">Pertanyaan</span>
                 <h3 className="text-lg font-extrabold text-slate-700 dark:text-slate-350 mt-1">
-                  {activeCard.cardType === 'meaning'
-                    ? 'Apa arti karakter ini?'
-                    : getReadingPrompt()}
+                  {renderPrompt()}
                 </h3>
               </div>
 
@@ -618,12 +706,12 @@ export default function LessonPage() {
                   onKeyDown={handleKeyDown}
                   readOnly={isAnswerSubmitted && !incorrectActive}
                   className={`w-full py-3.5 px-5 rounded-2xl text-center text-lg font-bold border transition-all ${warningMsg
-                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake focus:ring-amber-500'
-                      : isAnswerSubmitted
-                        ? isCorrect
-                          ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none'
+                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake focus:ring-amber-500'
+                    : isAnswerSubmitted
+                      ? isCorrect
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none'
                     }`}
                   autoComplete="off"
                   autoCorrect="off"
@@ -659,8 +747,8 @@ export default function LessonPage() {
                   <button
                     onClick={proceedNext}
                     className={`w-full py-3.5 font-bold rounded-2xl text-sm shadow-md transition-opacity flex items-center justify-center space-x-2 ${isCorrect
-                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white'
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : 'bg-rose-500 hover:bg-rose-600 text-white'
                       }`}
                   >
                     <span>
@@ -686,10 +774,10 @@ export default function LessonPage() {
             {/* Answer Feedbacks Panel */}
             {showFeedback && (
               <div className={`p-5 text-center text-sm border-t font-semibold ${isCorrect
-                  ? isAlmostCorrect
-                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
-                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                ? isAlmostCorrect
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
+                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                 }`}>
                 <div className="max-w-md mx-auto flex items-center justify-center space-x-2">
                   {isCorrect ? (
@@ -782,8 +870,8 @@ export default function LessonPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -802,8 +890,8 @@ export default function LessonPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -822,8 +910,8 @@ export default function LessonPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -887,7 +975,7 @@ export default function LessonPage() {
             {/* SRS Stage changes Info */}
             <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl text-xs text-teal-700 dark:text-teal-350">
               <CheckCircle className="w-5 h-5 text-teal-500 mx-auto mb-2" />
-              <span>Semua item ini telah terdaftar ke antrean SRS dan akan dijadwalkan untuk review pertama dalam **4 jam** dari sekarang.</span>
+              <span>Semua item ini telah terdaftar ke antrean SRS dan akan dijadwalkan untuk review pertama dalam 4 jam dari sekarang.</span>
             </div>
 
             {/* Decision options: Continue or Quit */}

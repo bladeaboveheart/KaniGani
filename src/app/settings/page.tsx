@@ -57,13 +57,23 @@ export default function SettingsPage() {
       });
       setNewUsername(currentUsername);
 
-      // 2. Fetch user progress statistics
-      const { data: progresses, error: progErr } = await supabase
-        .from('user_progress')
-        .select('srs_stage, items(*)')
-        .eq('user_id', user.id);
+      // 2. Fetch user progress statistics & all Kanji to calculate dynamic user level
+      const [progressRes, kanjiRes] = await Promise.all([
+        supabase
+          .from('user_progress')
+          .select('item_id, srs_stage')
+          .eq('user_id', user.id),
+        supabase
+          .from('items')
+          .select('id, level')
+          .eq('type', 'kanji')
+      ]);
 
-      if (progErr) throw progErr;
+      if (progressRes.error) throw progressRes.error;
+      if (kanjiRes.error) throw kanjiRes.error;
+
+      const progresses = progressRes.data || [];
+      const allKanji = kanjiRes.data || [];
 
       let apprentice = 0;
       let guru = 0;
@@ -72,18 +82,36 @@ export default function SettingsPage() {
       let burned = 0;
       let totalStudied = 0;
 
-      if (progresses) {
-        progresses.forEach((row: any) => {
-          const stage = row.srs_stage;
-          if (stage > 0) {
-            totalStudied++;
-            if (stage >= 1 && stage <= 4) apprentice++;
-            else if (stage === 5 || stage === 6) guru++;
-            else if (stage === 7) master++;
-            else if (stage === 8) enlightened++;
-            else if (stage === 9) burned++;
-          }
-        });
+      progresses.forEach((row: any) => {
+        const stage = row.srs_stage;
+        if (stage > 0) {
+          totalStudied++;
+          if (stage >= 1 && stage <= 4) apprentice++;
+          else if (stage === 5 || stage === 6) guru++;
+          else if (stage === 7) master++;
+          else if (stage === 8) enlightened++;
+          else if (stage === 9) burned++;
+        }
+      });
+
+      const progressGuruSet = new Set(
+        progresses
+          .filter((p: any) => p.srs_stage >= 5)
+          .map((p: any) => p.item_id)
+      );
+
+      let userLevel = 1;
+      while (userLevel <= 10) {
+        const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
+        if (levelKanjiItems.length === 0) break;
+
+        const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
+        const ratio = passed / levelKanjiItems.length;
+        if (ratio >= 0.9) {
+          userLevel++;
+        } else {
+          break;
+        }
       }
 
       // Format Joined Date
@@ -101,7 +129,7 @@ export default function SettingsPage() {
         master,
         enlightened,
         burned,
-        level: 1,
+        level: userLevel,
         joinedDate: joinedString
       });
 

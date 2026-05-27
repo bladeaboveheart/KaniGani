@@ -24,7 +24,7 @@ export default function Footer() {
             <span className="font-bold text-slate-700 dark:text-slate-300">KaniGani</span>
             <span className="text-slate-300 dark:text-slate-700">|</span>
             <span className="text-xs flex items-center">
-              Dibuat oleh KaniGani untuk para senpai-senpai yang belajar kanji.
+              Dibuat oleh Pencinta Kanji untuk para senpai-senpai yang belajar Kanji.
             </span>
           </div>
 

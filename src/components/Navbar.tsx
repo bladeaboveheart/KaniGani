@@ -69,15 +69,41 @@ export default function Navbar() {
             setUsername(user.user_metadata?.username || user.email?.split('@')[0] || 'User');
           }
 
-          // 2. Dapatkan level saat ini (dari user progress maksimal level, default level 1)
-          const { data: progress } = await supabase
-            .from('user_progress')
-            .select('items(level)')
-            .eq('user_id', user.id)
-            .limit(1);
-          
-          // default ke 1
-          setLevel(1);
+          // 2. Dapatkan level saat ini secara dinamis (dari progres kanji lulus >= 90%)
+          const [progressRes, kanjiRes] = await Promise.all([
+            supabase
+              .from('user_progress')
+              .select('item_id, srs_stage')
+              .eq('user_id', user.id),
+            supabase
+              .from('items')
+              .select('id, level')
+              .eq('type', 'kanji')
+          ]);
+
+          const progresses = progressRes.data || [];
+          const allKanji = kanjiRes.data || [];
+
+          const progressGuruSet = new Set(
+            progresses
+              .filter((p: any) => p.srs_stage >= 5)
+              .map((p: any) => p.item_id)
+          );
+
+          let userLevel = 1;
+          while (userLevel <= 10) {
+            const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
+            if (levelKanjiItems.length === 0) break;
+
+            const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
+            const ratio = passed / levelKanjiItems.length;
+            if (ratio >= 0.9) {
+              userLevel++;
+            } else {
+              break;
+            }
+          }
+          setLevel(userLevel);
         }
       } catch (err) {
         console.error('Error fetching navbar user data:', err);

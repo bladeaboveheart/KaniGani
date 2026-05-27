@@ -38,7 +38,8 @@ export default function ReviewPage() {
     toggleItemInfo,
     toggleWrapUp,
     initializeSession,
-    resetStore
+    resetStore,
+    undoActiveCard
   } = useQuizStore();
 
   const [loading, setLoading] = useState(true);
@@ -231,6 +232,26 @@ export default function ReviewPage() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isAnswerSubmitted, toggleItemInfo]);
 
+  // Backspace to undo submitted answer and push back to review queue
+  useEffect(() => {
+    const handleUndoKeyDown = (e: KeyboardEvent) => {
+      if (phase !== 'quiz' || !isAnswerSubmitted) return;
+
+      if (e.key === 'Backspace') {
+        const isInputFocused = document.activeElement?.tagName === 'INPUT';
+        
+        // Trigger undo if input is not focused, OR if the answer was correct (read-only), OR if incorrect but input is cleared/empty
+        if (!isInputFocused || isCorrect || userInput.trim() === '') {
+          e.preventDefault();
+          undoActiveCard();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleUndoKeyDown);
+    return () => window.removeEventListener('keydown', handleUndoKeyDown);
+  }, [phase, isAnswerSubmitted, isCorrect, userInput, undoActiveCard]);
+
   // Selesai sesi review jika queue kosong
   useEffect(() => {
     if (!loading && phase === 'quiz' && queue.length === 0 && totalItemsCount > 0) {
@@ -240,7 +261,7 @@ export default function ReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-100">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
@@ -284,23 +305,51 @@ export default function ReviewPage() {
     return 'Kosakata';
   };
 
-  const getReadingPrompt = () => {
-    if (!activeCard) return '';
-    if (activeCard.type === 'vocabulary') {
-      return 'Apa bacaan karakter ini?';
+  const renderPrompt = () => {
+    if (!activeCard) return null;
+
+    if (activeCard.cardType === 'meaning') {
+      return (
+        <span>
+          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-teal-100 text-teal-850 dark:bg-teal-950/60 dark:text-teal-350 font-black border border-teal-200/50 dark:border-teal-900/50 shadow-xxs">arti</span> karakter ini?
+        </span>
+      );
     }
+
+    if (activeCard.type === 'vocabulary') {
+      return (
+        <span>
+          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-850 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter ini?
+        </span>
+      );
+    }
+
     if (activeCard.type === 'kanji') {
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
+      
       if (expectedType === 'onyomi') {
-        return 'Apa bacaan Onyomi karakter ini?';
+        return (
+          <span>
+            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-indigo-100 text-indigo-850 dark:bg-indigo-950/60 dark:text-indigo-350 font-black border border-indigo-200/50 dark:border-indigo-900/50 shadow-xxs">bacaan Onyomi</span> karakter ini?
+          </span>
+        );
       }
       if (expectedType === 'kunyomi') {
-        return 'Apa bacaan Kunyomi karakter ini?';
+        return (
+          <span>
+            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-purple-100 text-purple-850 dark:bg-purple-950/60 dark:text-purple-350 font-black border border-purple-200/50 dark:border-purple-900/50 shadow-xxs">bacaan Kunyomi</span> karakter ini?
+          </span>
+        );
       }
     }
-    return 'Apa bacaan karakter Jepang ini?';
+
+    return (
+      <span>
+        Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-850 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter Jepang ini?
+      </span>
+    );
   };
 
   const getSrsStageName = (stage: number) => {
@@ -355,8 +404,8 @@ export default function ReviewPage() {
                 toggleWrapUp();
               }}
               className={`flex items-center space-x-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all ${wrapUpActive
-                  ? 'bg-amber-500 hover:bg-amber-600 border-amber-500 text-white shadow-sm'
-                  : 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500 text-indigo-50 shadow-sm animate-pulse'
+                ? 'bg-amber-500 hover:bg-amber-600 border-amber-500 text-white shadow-sm'
+                : 'bg-indigo-600 hover:bg-indigo-500 border-indigo-500 text-indigo-50 shadow-sm animate-pulse'
                 }`}
             >
               <Hourglass className="w-3.5 h-3.5" />
@@ -389,9 +438,7 @@ export default function ReviewPage() {
               <div className="text-center">
                 <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">Kuis Review</span>
                 <h3 className="text-lg font-extrabold text-slate-700 dark:text-slate-350 mt-1">
-                  {activeCard.cardType === 'meaning'
-                    ? 'Apa arti karakter ini?'
-                    : getReadingPrompt()}
+                  {renderPrompt()}
                 </h3>
               </div>
 
@@ -409,12 +456,12 @@ export default function ReviewPage() {
                   onKeyDown={handleKeyDown}
                   readOnly={isAnswerSubmitted && !incorrectActive}
                   className={`w-full py-3.5 px-5 rounded-2xl text-center text-lg font-bold border transition-all ${warningMsg
-                      ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake focus:ring-amber-500'
-                      : isAnswerSubmitted
-                        ? isCorrect
-                          ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                          : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                        : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none'
+                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake focus:ring-amber-500'
+                    : isAnswerSubmitted
+                      ? isCorrect
+                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:outline-none'
                     }`}
                   autoComplete="off"
                   autoCorrect="off"
@@ -449,8 +496,8 @@ export default function ReviewPage() {
                   <button
                     onClick={handleProceedNext}
                     className={`w-full py-3.5 font-bold rounded-2xl text-sm shadow-md transition-opacity flex items-center justify-center space-x-2 ${isCorrect
-                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white'
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : 'bg-rose-500 hover:bg-rose-600 text-white'
                       }`}
                   >
                     <span>
@@ -476,10 +523,10 @@ export default function ReviewPage() {
             {/* Answer Feedbacks */}
             {showFeedback && (
               <div className={`p-5 text-center text-sm border-t font-semibold ${isCorrect
-                  ? isAlmostCorrect
-                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
-                    : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                ? isAlmostCorrect
+                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
+                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                 }`}>
                 <div className="max-w-md mx-auto flex items-center justify-center space-x-2">
                   {isCorrect ? (
@@ -572,8 +619,8 @@ export default function ReviewPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -592,8 +639,8 @@ export default function ReviewPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -612,8 +659,8 @@ export default function ReviewPage() {
                                   <span
                                     key={idx}
                                     className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                        ? 'bg-indigo-600 text-white shadow-sm'
-                                        : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                                      ? 'bg-indigo-600 text-white shadow-sm'
+                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
                                       }`}
                                   >
                                     {r.reading}
@@ -702,7 +749,7 @@ export default function ReviewPage() {
 
             <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl text-xs text-emerald-600 dark:text-emerald-400">
               <CheckCircle className="w-5 h-5 text-emerald-500 mx-auto mb-2" />
-              <span>Semua progres kuis Anda telah disinkronkan dan disimpan dengan aman secara server-side di database Supabase!</span>
+              <span>Semua progres kuis Anda telah disinkronkan dan disimpan dengan aman di database kami!</span>
             </div>
 
             <button
