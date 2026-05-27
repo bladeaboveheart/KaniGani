@@ -500,21 +500,10 @@ export default function LessonPage() {
             </div>
 
             {/* Slide Navigation Buttons */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex items-center justify-between">
-              <button
-                disabled={itemIndex === 0}
-                onClick={() => {
-                  setItemIndex(itemIndex - 1);
-                  setActiveTab('info');
-                }}
-                className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-350 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Sebelumnya</span>
-              </button>
-
-              {/* Progress dots inside batch */}
-              <div className="flex space-x-1.5">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0">
+              
+              {/* Progress dots - Mobile Only */}
+              <div className="flex space-x-1.5 sm:hidden">
                 {currentBatch.map((_, idx) => (
                   <div
                     key={idx}
@@ -528,26 +517,56 @@ export default function LessonPage() {
                 ))}
               </div>
 
-              {itemIndex < currentBatch.length - 1 ? (
+              {/* Navigation Controls Row */}
+              <div className="flex items-center justify-between w-full">
                 <button
+                  disabled={itemIndex === 0}
                   onClick={() => {
-                    setItemIndex(itemIndex + 1);
+                    setItemIndex(itemIndex - 1);
                     setActiveTab('info');
                   }}
-                  className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-350 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0"
                 >
-                  <span>Berikutnya</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Sebelumnya</span>
                 </button>
-              ) : (
-                <button
-                  onClick={startQuiz}
-                  className="px-6 py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-95 text-white font-black rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all duration-200 animate-pulse"
-                >
-                  <span>Mulai Kuis Batch</span>
-                  <Award className="w-4 h-4" />
-                </button>
-              )}
+
+                {/* Progress dots - Desktop Only */}
+                <div className="hidden sm:flex space-x-1.5">
+                  {currentBatch.map((_, idx) => (
+                    <div
+                      key={idx}
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === itemIndex
+                          ? 'bg-teal-500 scale-125'
+                          : idx < itemIndex
+                            ? 'bg-teal-300 dark:bg-teal-800'
+                            : 'bg-slate-200 dark:bg-slate-850'
+                        }`}
+                    ></div>
+                  ))}
+                </div>
+
+                {itemIndex < currentBatch.length - 1 ? (
+                  <button
+                    onClick={() => {
+                      setItemIndex(itemIndex + 1);
+                      setActiveTab('info');
+                    }}
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0"
+                  >
+                    <span>Berikutnya</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={startQuiz}
+                    className="px-6 py-2.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:opacity-95 text-white font-black rounded-xl text-xs flex items-center space-x-1.5 shadow-md transition-all duration-200 animate-pulse shrink-0 whitespace-nowrap"
+                  >
+                    <span>Mulai Kuis Batch</span>
+                    <Award className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
 
           </div>
