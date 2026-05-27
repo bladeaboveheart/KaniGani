@@ -605,8 +605,8 @@ export default function Dashboard() {
                                 </div>
 
                                 {/* Bars Horizontal Scroll Wrapper */}
-                                <div className="absolute inset-0 overflow-x-auto select-none scrollbar-none flex items-end justify-between gap-1.5 px-1 pb-0.5">
-                                  <div className="flex items-end justify-between w-full min-w-[560px] h-full gap-2">
+                                <div className="absolute inset-0 overflow-x-hidden sm:overflow-x-auto select-none scrollbar-none flex items-end justify-between gap-1.5 px-1 pb-0.5">
+                                  <div className="flex items-end justify-between w-full sm:min-w-[560px] h-full gap-1 sm:gap-2">
                                     {schedule.map((item, idx) => {
                                       const isSelected = selectedHourIdx === idx;
                                       const hasReviews = item.count > 0;
@@ -616,7 +616,9 @@ export default function Dashboard() {
                                         <div
                                           key={idx}
                                           onClick={() => setSelectedHourIdx(idx)}
-                                          className="flex-1 flex flex-col items-center justify-end h-full cursor-pointer group relative"
+                                          className={`flex-1 flex-col items-center justify-end h-full cursor-pointer group relative ${
+                                            idx >= 12 ? 'hidden sm:flex' : 'flex'
+                                          }`}
                                         >
                                           {/* Hover Count Bubble */}
                                           <div className="absolute -top-8 bg-slate-900 text-white dark:bg-white dark:text-slate-950 text-3xs font-black px-1.5 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-20">
@@ -658,7 +660,7 @@ export default function Dashboard() {
 
                             {/* X-Axis Time Labels Wrapper */}
                             <div className="flex border-t border-slate-200/30 dark:border-slate-850/40 pt-2 ml-8 pr-1">
-                              <div className="flex justify-between w-full min-w-[560px] text-3xs font-extrabold text-slate-400 dark:text-slate-500">
+                              <div className="flex justify-between w-full sm:min-w-[560px] text-3xs font-extrabold text-slate-400 dark:text-slate-500">
                                 {schedule.map((item, idx) => {
                                   const isSelected = selectedHourIdx === idx;
                                   return (
@@ -669,7 +671,7 @@ export default function Dashboard() {
                                         isSelected 
                                           ? 'text-indigo-500 font-black' 
                                           : 'hover:text-slate-700 dark:hover:text-slate-350'
-                                      }`}
+                                      } ${idx >= 12 ? 'hidden sm:block' : 'block'}`}
                                     >
                                       {idx === 0 ? 'Skrg' : item.label.split(':')[0]}
                                     </div>
