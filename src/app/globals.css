@@ -3,13 +3,13 @@
 @variant dark (.dark &);
 
 @theme {
-  --color-radical: #10b981;
-  --color-kanji: #f97316;
-  --color-vocab: #3b82f6;
+  --color-radical: #48c9b0;
+  --color-kanji: #ff8f5a;
+  --color-vocab: #5dade2;
   
-  --color-radical-hover: #059669;
-  --color-kanji-hover: #ea580c;
-  --color-vocab-hover: #2563eb;
+  --color-radical-hover: #3bb39b;
+  --color-kanji-hover: #e67e45;
+  --color-vocab-hover: #4fa0d6;
 
   --color-apprentice: #f03e3e;
   --color-guru: #a000f0;
@@ -26,9 +26,9 @@
   --card-border: #e2e8f0;
   --navbar-bg: #1e293b;
   
-  --radical-bg: linear-gradient(135deg, #34d399, #059669);
-  --kanji-bg: linear-gradient(135deg, #fb923c, #ea580c);
-  --vocab-bg: linear-gradient(135deg, #60a5fa, #2563eb);
+  --radical-bg: #48c9b0;
+  --kanji-bg: #ff8f5a;
+  --vocab-bg: #5dade2;
 }
 
 .dark {
@@ -39,9 +39,9 @@
   --card-border: #1e293b;
   --navbar-bg: #090d16;
   
-  --radical-bg: linear-gradient(135deg, #059669, #064e3b);
-  --kanji-bg: linear-gradient(135deg, #ea580c, #7c2d12);
-  --vocab-bg: linear-gradient(135deg, #2563eb, #1e3a8a);
+  --radical-bg: #48c9b0;
+  --kanji-bg: #ff8f5a;
+  --vocab-bg: #5dade2;
 }
 
 body {
@@ -92,46 +92,46 @@ body {
 
 /* Glowing effects */
 .glow-radical {
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 20px rgba(72, 201, 176, 0.3);
 }
 
 .glow-kanji {
-  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 143, 90, 0.3);
 }
 
 .glow-vocab {
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 20px rgba(93, 173, 226, 0.3);
 }
 
 /* Explicit custom brand overrides to bypass JIT compilation and stylesheet cache */
 .bg-radical {
-  background-color: #10b981 !important;
+  background-color: #48c9b0 !important;
 }
 .bg-kanji {
-  background-color: #f97316 !important;
+  background-color: #ff8f5a !important;
 }
 .bg-vocab {
-  background-color: #3b82f6 !important;
+  background-color: #5dade2 !important;
 }
 
 .text-radical {
-  color: #10b981 !important;
+  color: #48c9b0 !important;
 }
 .text-kanji {
-  color: #f97316 !important;
+  color: #ff8f5a !important;
 }
 .text-vocab {
-  color: #3b82f6 !important;
+  color: #5dade2 !important;
 }
 
 .bg-radical-gradient {
-  background: linear-gradient(135deg, #34d399, #059669) !important;
+  background: #48c9b0 !important;
 }
 .bg-kanji-gradient {
-  background: linear-gradient(135deg, #fb923c, #ea580c) !important;
+  background: #ff8f5a !important;
 }
 .bg-vocab-gradient {
-  background: linear-gradient(135deg, #60a5fa, #2563eb) !important;
+  background: #5dade2 !important;
 }
 
 /* Custom premium floating rising feedback animation */

@@ -14,7 +14,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [loginInput, setLoginInput] = useState(''); // Bisa email atau username
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // States
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -116,7 +116,7 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
-      
+
       {/* Decorative Crab-Themed Background Elements (Kepiting & Gelembung) */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-10">
         {/* Giant Floating Crab Left */}
@@ -175,15 +175,15 @@ export default function AuthPage() {
       {/* Main Core Auth Card */}
       <main className="flex-1 flex items-center justify-center px-4 py-8 z-10">
         <div className="w-full max-w-md bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-8 sm:p-10 animate-fade-in">
-          
+
           {/* Title Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold tracking-tight mb-2">
               {isSignUp ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {isSignUp 
-                ? 'Mulai perjalanan Anda menguasai Kanji Jepang hari ini' 
+              {isSignUp
+                ? 'Mulai perjalanan Anda menguasai Kanji Jepang hari ini'
                 : 'Masuk untuk melanjutkan latihan SRS kuis Anda'}
             </p>
           </div>
@@ -310,7 +310,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 hover:from-pink-600 hover:via-purple-600 hover:to-indigo-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
             >
               {loading ? (
                 <span>Memproses...</span>

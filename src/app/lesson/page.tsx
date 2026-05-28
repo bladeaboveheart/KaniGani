@@ -342,9 +342,9 @@ export default function LessonPage() {
 
   // Helper styles berdasarkan kategori item
   const getItemColorClass = (type: string) => {
-    if (type === 'radical') return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-450 border-b border-emerald-100 dark:border-emerald-900/30';
-    if (type === 'kanji') return 'bg-orange-50 dark:bg-orange-950/20 text-orange-605 dark:text-orange-405 border-b border-orange-100 dark:border-orange-900/30';
-    return 'bg-blue-50 dark:bg-blue-950/20 text-blue-650 dark:text-blue-450 border-b border-blue-100 dark:border-blue-900/30';
+    if (type === 'radical') return 'bg-radical border-radical/20 glow-radical';
+    if (type === 'kanji') return 'bg-kanji border-kanji/20 glow-kanji';
+    return 'bg-vocab border-vocab/20 glow-vocab';
   };
 
   const getItemBadgeName = (type: string) => {
@@ -462,10 +462,10 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
 
             {/* Header Colorful Character Card */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center ${getItemColorClass(currentItem.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
 
               {/* Integrated Header Bar Inside the Card (Learn phase) */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-inherit select-none w-[calc(100%-2rem)]">
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
                   onClick={() => {
@@ -474,12 +474,12 @@ export default function LessonPage() {
                     }
                   }}
                   title="Keluar Sesi"
-                  className="flex items-center justify-center opacity-85 hover:opacity-100 hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-slate-500/10"
+                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
                 >
                   <Home className="w-5 h-5" />
                 </button>
 
-                <div className="text-xs sm:text-sm font-bold opacity-90">
+                <div className="text-xs sm:text-sm font-bold text-white/90">
                   Mempelajari batch ({itemIndex + 1}/{currentBatch.length})
                 </div>
               </div>
@@ -702,10 +702,10 @@ export default function LessonPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-between">
 
             {/* Header quiz card with colors */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center ${getItemColorClass(activeCard.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
 
               {/* Integrated Header Bar Inside the Card (Quiz phase) */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-inherit select-none w-[calc(100%-2rem)]">
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
                   onClick={() => {
@@ -714,20 +714,20 @@ export default function LessonPage() {
                     }
                   }}
                   title="Keluar dari Kuis"
-                  className="flex items-center justify-center opacity-85 hover:opacity-100 hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-slate-500/10"
+                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
                 >
                   <Home className="w-5 h-5" />
                 </button>
 
-                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold opacity-90 select-none">
+                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
                   {/* Completed count */}
                   <div className="flex items-center space-x-1" title="Item Selesai">
-                    <Check className="w-4 h-4" />
+                    <Check className="w-4 h-4 text-white/85" />
                     <span>{10 - queue.length}</span>
                   </div>
                   {/* Remaining count */}
                   <div className="flex items-center space-x-1" title="Kartu Tersisa">
-                    <Inbox className="w-4 h-4" />
+                    <Inbox className="w-4 h-4 text-white/85" />
                     <span>{queue.length}</span>
                   </div>
                 </div>
