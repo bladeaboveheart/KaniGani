@@ -61,7 +61,7 @@ export default function SettingsPage() {
       const [progressRes, kanjiRes] = await Promise.all([
         supabase
           .from('user_progress')
-          .select('item_id, srs_stage')
+          .select('item_id, srs_stage, next_review')
           .eq('user_id', user.id),
         supabase
           .from('items')
@@ -84,7 +84,8 @@ export default function SettingsPage() {
 
       progresses.forEach((row: any) => {
         const stage = row.srs_stage;
-        if (stage > 0) {
+        const isStudied = stage > 1 || (stage === 1 && row.next_review);
+        if (isStudied) {
           totalStudied++;
           if (stage >= 1 && stage <= 4) apprentice++;
           else if (stage === 5 || stage === 6) guru++;

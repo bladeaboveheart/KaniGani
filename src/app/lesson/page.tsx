@@ -10,7 +10,7 @@ import CrabBackground from '@/components/CrabBackground';
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle,
   HelpCircle, Eye, RefreshCw, XCircle, Award, AlertCircle,
-  Home, Check, Inbox, Clock, RotateCcw, ArrowUp, ArrowDown
+  Home, Check, Inbox, Clock, RotateCcw, ArrowUp, ArrowDown, Zap
 } from 'lucide-react';
 
 export default function LessonPage() {
@@ -44,6 +44,23 @@ export default function LessonPage() {
   const [currentBatch, setCurrentBatch] = useState<Item[]>([]);
   const [itemIndex, setItemIndex] = useState(0); // Index item di batch aktif
   const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'sentences'>('info');
+
+  const [devMode, setDevMode] = useState(false);
+  const [globalDevMode, setGlobalDevMode] = useState(false);
+
+  // Read global dev mode setting from localStorage
+  useEffect(() => {
+    setGlobalDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+  }, []);
+
+  // Dev mode: get the first accepted answer for the active card
+  const getDevModeAnswer = () => {
+    if (!activeCard) return '';
+    if (activeCard.cardType === 'meaning') {
+      return activeCard.item.accepted_meanings?.[0] || activeCard.item.primary_meaning || '';
+    }
+    return activeCard.item.accepted_readings?.[0] || activeCard.item.primary_reading || '';
+  };
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -155,13 +172,24 @@ export default function LessonPage() {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!isAnswerSubmitted) {
-        // Enter 1: Submit jawaban
-        if (userInput.trim() !== '') {
+        if (devMode && userInput.trim() === '') {
+          // Dev mode autofill: inject correct answer then submit
+          setUserInput(getDevModeAnswer());
+          setTimeout(() => {
+            submitAnswer();
+            inputRef.current?.focus();
+          }, 20);
+        } else if (userInput.trim() !== '') {
           submitAnswer();
+          setTimeout(() => {
+            inputRef.current?.focus();
+          }, 20);
         }
       } else {
-        // Enter 2: Lanjut ke kartu berikutnya
         proceedNext();
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 20);
       }
     }
   };
@@ -730,6 +758,22 @@ export default function LessonPage() {
                     <Inbox className="w-4 h-4 text-white/85" />
                     <span>{queue.length}</span>
                   </div>
+                  {/* Dev Mode Toggle — hanya tampil jika dev mode diaktifkan di Settings */}
+                  {globalDevMode && (
+                    <button
+                      type="button"
+                      onClick={() => setDevMode(v => !v)}
+                      title={devMode ? 'Dev Mode: ON (klik untuk matikan)' : 'Dev Mode: OFF (klik untuk aktifkan autofill)'}
+                      className={`flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        devMode
+                          ? 'bg-amber-400/90 text-amber-900 shadow-sm'
+                          : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
+                      }`}
+                    >
+                      <Zap className="w-3.5 h-3.5" />
+                      {devMode && <span>DEV</span>}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -775,10 +819,18 @@ export default function LessonPage() {
                 {/* Integrated Chevron-Right/Submit Action Button inside the input box */}
                 <button
                   type="button"
-                  disabled={!isAnswerSubmitted && userInput.trim() === ''}
+                  disabled={!isAnswerSubmitted && userInput.trim() === '' && !devMode}
                   onClick={() => {
                     if (!isAnswerSubmitted) {
-                      submitAnswer();
+                      if (devMode && userInput.trim() === '') {
+                        setUserInput(getDevModeAnswer());
+                        setTimeout(() => {
+                          submitAnswer();
+                          inputRef.current?.focus();
+                        }, 20);
+                      } else {
+                        submitAnswer();
+                      }
                     } else {
                       proceedNext();
                     }

@@ -322,8 +322,11 @@ export default function Dashboard() {
               name: item.slug || 'item',
             });
 
-            // Count distribution
-            distribution[stage] = (distribution[stage] || 0) + 1;
+            // Count distribution (only if the item has actually been studied, i.e., stage > 1 or next_review is set)
+            const isStudied = stage > 1 || (stage === 1 && row.next_review);
+            if (isStudied) {
+              distribution[stage] = (distribution[stage] || 0) + 1;
+            }
 
             if (item.type === 'radical') {
               byType.radical.total++;

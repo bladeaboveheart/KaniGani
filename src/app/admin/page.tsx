@@ -872,7 +872,7 @@ export default function AdminPage() {
                               >
                                 <option value="dynamic">Otomatis (Dinamis)</option>
                                 {Array.from({ length: 10 }, (_, idx) => (
-                                  <option key={idx + 1} value={idx + 1}>Lock Lvl {idx + 1}</option>
+                                  <option key={idx + 1} value={idx + 1}>Set Level {idx + 1}</option>
                                 ))}
                               </select>
                             </div>
