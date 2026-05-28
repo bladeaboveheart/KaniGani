@@ -337,8 +337,8 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
                   { label: 'Item Dipelajari', count: stats.totalStudied, color: 'text-indigo-650 bg-indigo-50 dark:bg-indigo-950/20' },
-                  { label: 'Progres Guru/Burned', count: stats.guru + stats.master + stats.enlightened + stats.burned, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' },
-                  { label: 'Apprentice Items', count: stats.apprentice, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
+                  { label: 'Progres Guru/Rebus', count: stats.guru + stats.master + stats.enlightened + stats.burned, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' },
+                  { label: 'Item Kepiting Cilik', count: stats.apprentice, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
                 ].map((stat, idx) => (
                   <div key={idx} className={`p-4.5 rounded-2xl border border-transparent shadow-3xs text-center space-y-1 ${stat.color}`}>
                     <span className="text-3xs font-extrabold uppercase tracking-widest text-slate-450 block">{stat.label}</span>
@@ -353,11 +353,11 @@ export default function SettingsPage() {
                 
                 <div className="space-y-3.5">
                   {[
-                    { label: 'Apprentice (Tahap 1 - 4)', count: stats.apprentice, total: stats.totalStudied, color: 'bg-rose-500' },
-                    { label: 'Guru (Tahap 5 - 6)', count: stats.guru, total: stats.totalStudied, color: 'bg-purple-600' },
-                    { label: 'Master (Tahap 7)', count: stats.master, total: stats.totalStudied, color: 'bg-blue-600' },
-                    { label: 'Enlightened (Tahap 8)', count: stats.enlightened, total: stats.totalStudied, color: 'bg-teal-600' },
-                    { label: 'Burned 🔥 (Tahap 9)', count: stats.burned, total: stats.totalStudied, color: 'bg-slate-700' }
+                    { label: 'Kepiting Cilik (Tahap 1 - 4)', count: stats.apprentice, total: stats.totalStudied, color: 'bg-rose-500' },
+                    { label: 'Kepiting Guru (Tahap 5 - 6)', count: stats.guru, total: stats.totalStudied, color: 'bg-purple-600' },
+                    { label: 'Kepiting Suhu (Tahap 7)', count: stats.master, total: stats.totalStudied, color: 'bg-blue-600' },
+                    { label: 'Kepiting Sakti (Tahap 8)', count: stats.enlightened, total: stats.totalStudied, color: 'bg-teal-600' },
+                    { label: 'Kepiting Rebus 🦀🔥 (Tahap 9)', count: stats.burned, total: stats.totalStudied, color: 'bg-slate-700' }
                   ].map((stage, idx) => {
                     const pct = stage.total > 0 ? Math.round((stage.count / stage.total) * 100) : 0;
                     return (
@@ -384,7 +384,7 @@ export default function SettingsPage() {
               <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xxs text-slate-500 dark:text-slate-400 flex items-center space-x-3 leading-relaxed">
                 <Award className="w-8 h-8 text-indigo-500 shrink-0" />
                 <p>
-                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan **SRS Review** tepat waktu untuk menaikkan stage item kamus Anda menuju status **Burned 🔥**!
+                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan **SRS Review** tepat waktu untuk menaikkan stage item kamus Anda menuju status **Kepiting Rebus 🦀🔥**!
                 </p>
               </div>
 

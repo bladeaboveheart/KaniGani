@@ -438,16 +438,16 @@ export default function LessonPage() {
   };
 
   const getSrsStageName = (stage: number) => {
-    if (stage === 1) return 'Apprentice 1';
-    if (stage === 2) return 'Apprentice 2';
-    if (stage === 3) return 'Apprentice 3';
-    if (stage === 4) return 'Apprentice 4';
-    if (stage === 5) return 'Guru 1';
-    if (stage === 6) return 'Guru 2';
-    if (stage === 7) return 'Master';
-    if (stage === 8) return 'Enlightened';
-    if (stage === 9) return 'Burned';
-    return 'Apprentice 1';
+    if (stage === 1) return 'Kepiting Cilik 1';
+    if (stage === 2) return 'Kepiting Cilik 2';
+    if (stage === 3) return 'Kepiting Cilik 3';
+    if (stage === 4) return 'Kepiting Cilik 4';
+    if (stage === 5) return 'Kepiting Guru 1';
+    if (stage === 6) return 'Kepiting Guru 2';
+    if (stage === 7) return 'Kepiting Suhu';
+    if (stage === 8) return 'Kepiting Sakti';
+    if (stage === 9) return 'Kepiting Rebus 🦀🔥';
+    return 'Kepiting Cilik 1';
   };
 
   return (

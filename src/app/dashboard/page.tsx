@@ -266,11 +266,11 @@ export default function Dashboard() {
 
   const getSrsLabel = (stage: number) => {
     if (stage === 0) return 'Terkunci';
-    if (stage >= 1 && stage <= 4) return 'Apprentice';
-    if (stage === 5 || stage === 6) return 'Guru';
-    if (stage === 7) return 'Master';
-    if (stage === 8) return 'Enlightened';
-    return 'Burned 🔥';
+    if (stage >= 1 && stage <= 4) return 'Kepiting Cilik';
+    if (stage === 5 || stage === 6) return 'Kepiting Guru';
+    if (stage === 7) return 'Kepiting Suhu';
+    if (stage === 8) return 'Kepiting Sakti';
+    return 'Kepiting Rebus 🦀🔥';
   };
 
   const getSrsColorClass = (stage: number) => {
@@ -340,7 +340,7 @@ export default function Dashboard() {
               <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">1</span>
             </div>
             <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50 text-center">
-              <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Guru Item</span>
+              <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Kepiting Guru</span>
               <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
                 {itemDetails.filter(i => i.srs_stage >= 5).length}
               </span>
@@ -362,7 +362,7 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-xs text-indigo-200 max-w-xl leading-relaxed">
-                Anda dapat mempercepat timer SRS untuk semua item yang telah Anda pelajari (Apprentice s/d Enlightened) menjadi saat ini. Hal ini akan memicu semua item tersebut langsung masuk ke antrean <strong>SRS Review Kuis</strong> untuk diuji segera.
+                Anda dapat mempercepat timer SRS untuk semua item yang telah Anda pelajari (Kepiting Cilik s/d Kepiting Sakti) menjadi saat ini. Hal ini akan memicu semua item tersebut langsung masuk ke antrean <strong>SRS Review Kuis</strong> untuk diuji segera.
               </p>
               <button
                 onClick={handleResetTimers}
@@ -483,7 +483,7 @@ export default function Dashboard() {
                 <h3 className="font-extrabold text-lg tracking-tight">Kapan Saya Naik Level {stats ? stats.level + 1 : 2}?</h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                KaniGani mensyaratkan kelulusan minimal 90% Kanji Level {stats ? stats.level : 1} ke status Guru (Stage 5) untuk naik level.
+                KaniGani mensyaratkan kelulusan minimal 90% Kanji Level {stats ? stats.level : 1} ke status Kepiting Guru (Tahap 5) untuk naik level.
               </p>
             </div>
             {stats && (
@@ -836,11 +836,11 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                 {[
-                  { label: 'Apprentice', count: (stats?.distribution[1] || 0) + (stats?.distribution[2] || 0) + (stats?.distribution[3] || 0) + (stats?.distribution[4] || 0), color: 'bg-rose-500' },
-                  { label: 'Guru', count: (stats?.distribution[5] || 0) + (stats?.distribution[6] || 0), color: 'bg-purple-600' },
-                  { label: 'Master', count: stats?.distribution[7] || 0, color: 'bg-blue-600' },
-                  { label: 'Enlightened', count: stats?.distribution[8] || 0, color: 'bg-teal-600' },
-                  { label: 'Burned 🔥', count: stats?.distribution[9] || 0, color: 'bg-slate-700 text-amber-400 border border-amber-500/20' },
+                  { label: 'Kepiting Cilik', count: (stats?.distribution[1] || 0) + (stats?.distribution[2] || 0) + (stats?.distribution[3] || 0) + (stats?.distribution[4] || 0), color: 'bg-rose-500' },
+                  { label: 'Kepiting Guru', count: (stats?.distribution[5] || 0) + (stats?.distribution[6] || 0), color: 'bg-purple-600' },
+                  { label: 'Kepiting Suhu', count: stats?.distribution[7] || 0, color: 'bg-blue-600' },
+                  { label: 'Kepiting Sakti', count: stats?.distribution[8] || 0, color: 'bg-teal-600' },
+                  { label: 'Kepiting Rebus 🦀🔥', count: stats?.distribution[9] || 0, color: 'bg-slate-700 text-amber-400 border border-amber-500/20' },
                 ].map((stage, idx) => (
                   <div key={idx} className="flex flex-col items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 text-center">
                     <span className="text-xxs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">{stage.label}</span>

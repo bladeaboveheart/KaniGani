@@ -128,11 +128,11 @@ export default function RadicalPage() {
 
   const getSrsLabel = (stage: number) => {
     if (stage === 0) return 'Terkunci';
-    if (stage >= 1 && stage <= 4) return 'Apprentice';
-    if (stage === 5 || stage === 6) return 'Guru';
-    if (stage === 7) return 'Master';
-    if (stage === 8) return 'Enlightened';
-    return 'Burned 🔥';
+    if (stage >= 1 && stage <= 4) return 'Kepiting Cilik';
+    if (stage === 5 || stage === 6) return 'Kepiting Guru';
+    if (stage === 7) return 'Kepiting Suhu';
+    if (stage === 8) return 'Kepiting Sakti';
+    return 'Kepiting Rebus 🦀🔥';
   };
 
   const getSrsColorClass = (stage: number) => {
