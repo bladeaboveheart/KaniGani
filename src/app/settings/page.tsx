@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { 
+import {
   User, Mail, Settings, Save, Shield, Award, BarChart2,
   Calendar, CheckCircle, Loader2, Sparkles, AlertCircle, RefreshCw
 } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [userProfile, setUserProfile] = useState<{ id: string; username: string; email: string } | null>(null);
-  
+
   // Username form states
   const [newUsername, setNewUsername] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
@@ -180,15 +180,15 @@ export default function SettingsPage() {
 
       setUserProfile(prev => prev ? { ...prev, username: cleanUsername } : null);
       setMessage({ type: 'success', text: 'Username Anda berhasil diperbarui!' });
-      
+
       // Dispatch storage event to force Navbar update in real time
       localStorage.setItem('kanigani-username-update', cleanUsername);
       window.dispatchEvent(new Event('storage'));
 
     } catch (err) {
       console.error('Error saving username:', err);
-      setMessage({ 
-        type: 'error', 
+      setMessage({
+        type: 'error',
         text: err instanceof Error ? err.message : 'Terjadi kesalahan sistem saat memperbarui profil.'
       });
     } finally {
@@ -212,7 +212,7 @@ export default function SettingsPage() {
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
-        
+
         {/* Banner Title */}
         <section className="flex items-center space-x-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm shrink-0">
           <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
@@ -231,11 +231,11 @@ export default function SettingsPage() {
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* LEFT COLUMN: PROFILE FORM AND ACCOUNT DATA */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              
+
               <div className="text-center pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white font-black text-3xl shadow-md">
                   {userProfile?.username.slice(0, 2).toUpperCase()}
@@ -248,7 +248,7 @@ export default function SettingsPage() {
 
               {/* Form edit username */}
               <form onSubmit={handleSaveUsername} className="space-y-4">
-                
+
                 {/* Username Input */}
                 <div>
                   <label className="text-3xs font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Username Akun</label>
@@ -286,11 +286,10 @@ export default function SettingsPage() {
 
                 {/* Success/Error message banner */}
                 {message && (
-                  <div className={`p-3 text-xxs font-bold rounded-xl border flex items-center space-x-2 animate-fade-in ${
-                    message.type === 'success'
+                  <div className={`p-3 text-xxs font-bold rounded-xl border flex items-center space-x-2 animate-fade-in ${message.type === 'success'
                       ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
                       : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-450'
-                  }`}>
+                    }`}>
                     {message.type === 'success' ? (
                       <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
                     ) : (
@@ -327,7 +326,7 @@ export default function SettingsPage() {
           {/* RIGHT COLUMN: STATS AND LEARNING PROGRESS CARDS */}
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-              
+
               <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3">
                 <BarChart2 className="w-5 h-5 text-indigo-500" />
                 <h3 className="font-extrabold text-base">Statistik Kemajuan SRS Pembelajaran</h3>
@@ -350,7 +349,7 @@ export default function SettingsPage() {
               {/* SRS Stage Detail Grid */}
               <div className="space-y-4">
                 <h4 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Distribusi Tahapan SRS</h4>
-                
+
                 <div className="space-y-3.5">
                   {[
                     { label: 'Kepiting Cilik (Tahap 1 - 4)', count: stats.apprentice, total: stats.totalStudied, color: 'bg-rose-500' },
@@ -369,7 +368,7 @@ export default function SettingsPage() {
                           </span>
                         </div>
                         <div className="w-full bg-slate-100 dark:bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-850">
-                          <div 
+                          <div
                             className={`h-full rounded-full transition-all duration-500 ${stage.color}`}
                             style={{ width: `${pct}%` }}
                           ></div>
@@ -384,7 +383,7 @@ export default function SettingsPage() {
               <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xxs text-slate-500 dark:text-slate-400 flex items-center space-x-3 leading-relaxed">
                 <Award className="w-8 h-8 text-indigo-500 shrink-0" />
                 <p>
-                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan **SRS Review** tepat waktu untuk menaikkan stage item kamus Anda menuju status **Kepiting Rebus 🦀🔥**!
+                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan **SRS Review** tepat waktu untuk menaikkan stage item kamus Anda menuju status **Kepiting Rebus 🦀**!
                 </p>
               </div>
 

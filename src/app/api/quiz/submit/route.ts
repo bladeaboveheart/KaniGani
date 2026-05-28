@@ -272,6 +272,9 @@ export async function POST(request: Request) {
     // Default ke stage 1 jika belum ada progresnya (atau error)
     const currentStage = progress ? progress.srs_stage : 1;
 
+    // Fetch level before update (to prevent race condition during level up checks)
+    const levelBefore = await getUserLevel(userClient, user.id);
+
     // 2. Hitung stage baru berdasarkan jumlah kesalahan
     const newStage = calculatePenalty(currentStage, wrongCount);
     const nextReview = getNextReviewDate(newStage);
@@ -297,9 +300,6 @@ export async function POST(request: Request) {
     let newLevel = 1;
 
     if (newStage >= 5 && currentStage < 5) {
-      // Dapatkan level sebelum progres diupdate di dependency
-      const levelBefore = await getUserLevel(userClient, user.id);
-
       // Cek unlock dependen biasa (yang levelnya <= levelBefore)
       unlockedDependents = await checkAndUnlockItems(userClient, user.id, itemId);
 
