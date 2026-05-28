@@ -587,7 +587,7 @@ export default function Dashboard() {
           <div className="space-y-2">
             <div className="w-full bg-slate-100 dark:bg-slate-800 h-4 rounded-full overflow-hidden flex">
               <div
-                className="bg-gradient-to-r from-pink-500 to-indigo-500 h-full rounded-full transition-all duration-500"
+                className="bg-gradient-to-r from-kanji to-indigo-500 h-full rounded-full transition-all duration-500"
                 style={{ width: `${Math.min(100, kanjiPct)}%` }}
               ></div>
             </div>
@@ -647,7 +647,7 @@ export default function Dashboard() {
                           tooltipText = "belum belajar radikalnya";
                         }
                       } else if (isReadyForLesson) {
-                        cardClass = "bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/30 animate-pulse-subtle font-extrabold";
+                        cardClass = "bg-kanji/10 text-kanji border border-kanji/30 animate-pulse-subtle font-extrabold";
                         statusLabel = "Tersedia Lesson";
                         tooltipText = "Tersedia untuk Pelajaran (Lesson)";
                       } else if (isPassed) {
@@ -655,7 +655,7 @@ export default function Dashboard() {
                         statusLabel = `Kepiting Guru+ (${kanji.srs_stage})`;
                         tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Lulus";
                       } else {
-                        cardClass = "bg-pink-500 text-white font-extrabold border border-pink-600 shadow-3xs";
+                        cardClass = "bg-kanji text-white font-extrabold border border-kanji/80 shadow-3xs";
                         statusLabel = `Kepiting Cilik (${kanji.srs_stage})`;
                         tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Terkunci";
                       }
