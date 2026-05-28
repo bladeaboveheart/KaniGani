@@ -3,13 +3,13 @@
 @variant dark (.dark &);
 
 @theme {
-  --color-radical: #48c9b0;
+  --color-radical: #5dade2;
   --color-kanji: #ff8f5a;
-  --color-vocab: #5dade2;
+  --color-vocab: #48c9b0;
   
-  --color-radical-hover: #3bb39b;
+  --color-radical-hover: #4fa0d6;
   --color-kanji-hover: #e67e45;
-  --color-vocab-hover: #4fa0d6;
+  --color-vocab-hover: #3bb39b;
 
   --color-apprentice: #f03e3e;
   --color-guru: #a000f0;
@@ -26,9 +26,9 @@
   --card-border: #e2e8f0;
   --navbar-bg: #1e293b;
   
-  --radical-bg: #48c9b0;
+  --radical-bg: #5dade2;
   --kanji-bg: #ff8f5a;
-  --vocab-bg: #5dade2;
+  --vocab-bg: #48c9b0;
 }
 
 .dark {
@@ -39,9 +39,9 @@
   --card-border: #1e293b;
   --navbar-bg: #090d16;
   
-  --radical-bg: #48c9b0;
+  --radical-bg: #5dade2;
   --kanji-bg: #ff8f5a;
-  --vocab-bg: #5dade2;
+  --vocab-bg: #48c9b0;
 }
 
 body {
@@ -92,7 +92,7 @@ body {
 
 /* Glowing effects */
 .glow-radical {
-  box-shadow: 0 4px 20px rgba(72, 201, 176, 0.3);
+  box-shadow: 0 4px 20px rgba(93, 173, 226, 0.3);
 }
 
 .glow-kanji {
@@ -100,38 +100,38 @@ body {
 }
 
 .glow-vocab {
-  box-shadow: 0 4px 20px rgba(93, 173, 226, 0.3);
+  box-shadow: 0 4px 20px rgba(72, 201, 176, 0.3);
 }
 
 /* Explicit custom brand overrides to bypass JIT compilation and stylesheet cache */
 .bg-radical {
-  background-color: #48c9b0 !important;
+  background-color: #5dade2 !important;
 }
 .bg-kanji {
   background-color: #ff8f5a !important;
 }
 .bg-vocab {
-  background-color: #5dade2 !important;
+  background-color: #48c9b0 !important;
 }
 
 .text-radical {
-  color: #48c9b0 !important;
+  color: #5dade2 !important;
 }
 .text-kanji {
   color: #ff8f5a !important;
 }
 .text-vocab {
-  color: #5dade2 !important;
+  color: #48c9b0 !important;
 }
 
 .bg-radical-gradient {
-  background: #48c9b0 !important;
+  background: #5dade2 !important;
 }
 .bg-kanji-gradient {
   background: #ff8f5a !important;
 }
 .bg-vocab-gradient {
-  background: #5dade2 !important;
+  background: #48c9b0 !important;
 }
 
 /* Custom premium floating rising feedback animation */
