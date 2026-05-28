@@ -254,6 +254,30 @@ export default function Dashboard() {
           }
         }
 
+        // Self-healing check: unlock level <= userLevel radicals that are accidentally locked (srs_stage = 0)
+        const lockedRadicalsToUnlock = progresses ? progresses.filter((row: any) => {
+          const item = row.items;
+          return item && item.type === 'radical' && item.level <= userLevel && row.srs_stage === 0;
+        }) : [];
+
+        if (lockedRadicalsToUnlock.length > 0) {
+          const idsToUnlock = lockedRadicalsToUnlock.map((row: any) => row.item_id);
+          const { error: healError } = await supabase
+            .from('user_progress')
+            .update({
+              srs_stage: 1,
+              unlocked_at: new Date().toISOString()
+            })
+            .eq('user_id', user.id)
+            .in('item_id', idsToUnlock);
+
+          if (!healError) {
+            console.log('Successfully self-healed and unlocked missing radicals:', idsToUnlock);
+            window.location.reload();
+            return;
+          }
+        }
+
         // Calculate stats for current active level
         const currentLevelKanji = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
         const totalKanji = currentLevelKanji.length;
@@ -781,9 +805,8 @@ export default function Dashboard() {
                       let cardClass = "";
                       let statusLabel = "";
                       let tooltipText = "";
-                      
-                      if (isLocked) {
-                        cardClass = "bg-slate-100 text-slate-450 dark:bg-slate-800/40 dark:text-slate-550 border border-slate-200 dark:border-slate-800/80";
+                             if (isLocked) {
+                        cardClass = "bg-hatched-kanji text-kanji/55 dark:text-kanji/45 border border-dashed border-kanji/35 dark:border-kanji/25";
                         statusLabel = "Terkunci";
                         if (kanji.unlearnedPrereqs.length > 0) {
                           tooltipText = "belum belajar radikalnya: " + kanji.unlearnedPrereqs.map((r: any) => r.character).join(", ");
@@ -791,7 +814,7 @@ export default function Dashboard() {
                           tooltipText = "belum belajar radikalnya";
                         }
                       } else if (isReadyForLesson) {
-                        cardClass = "bg-kanji/10 text-kanji border border-kanji/30 animate-pulse-subtle font-extrabold";
+                        cardClass = "bg-kanji/5 text-kanji border border-solid border-kanji/20 font-extrabold";
                         statusLabel = "Tersedia Lesson";
                         tooltipText = "Tersedia untuk Pelajaran (Lesson)";
                       } else if (isPassed) {

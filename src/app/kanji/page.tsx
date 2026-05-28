@@ -20,6 +20,7 @@ interface KanjiItem {
   description?: string;
   srs_stage?: number;
   unlocked_at?: string | null;
+  next_review?: string | null;
   meanings: any[];
   readings: any[];
   primary_meaning: string;
@@ -86,7 +87,7 @@ export default function KanjiPage() {
         const [readingsRes, meaningsRes, progRes] = await Promise.all([
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('user_progress').select('item_id, srs_stage, unlocked_at').eq('user_id', user.id)
+          supabase.from('user_progress').select('item_id, srs_stage, unlocked_at, next_review').eq('user_id', user.id)
         ]);
 
         if (readingsRes.error) throw readingsRes.error;
@@ -118,6 +119,7 @@ export default function KanjiPage() {
             description: item.description || '',
             srs_stage: progress ? progress.srs_stage : 0,
             unlocked_at: progress ? progress.unlocked_at : null,
+            next_review: progress ? progress.next_review : null,
             meanings: itemMeanings,
             readings: itemReadings,
             primary_meaning: primaryMeaning,
@@ -240,49 +242,130 @@ export default function KanjiPage() {
           </div>
         </section>
 
-        {/* Kanji Grid Layout */}
-        {filtered.length > 0 ? (
-          <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filtered.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedItem(item)}
-                className={`p-5 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-kanji/30 relative overflow-hidden group ${item.srs_stage === 0
-                    ? 'bg-slate-100/50 border-slate-200/50 dark:bg-slate-900/30 dark:border-slate-850 opacity-60'
-                    : 'bg-kanji/5 border-kanji/15 dark:bg-kanji/10 hover:shadow-kanji/10'
-                  }`}
-              >
-                {/* Character */}
-                <span className={`text-5xl font-black block group-hover:scale-105 transition-transform duration-300 ${item.srs_stage === 0 ? 'text-slate-400 dark:text-slate-600' : 'text-kanji'
-                  }`}>
-                  {item.character}
-                </span>
-
-                {/* Sub info */}
-                <div className="mt-3 space-y-0.5 max-w-full">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-350 truncate block capitalize">
-                    {item.primary_meaning}
-                  </span>
-                  {item.srs_stage !== 0 && item.primary_reading && (
-                    <span className="text-xxs font-black text-indigo-500 dark:text-indigo-400 block tracking-wider">
-                      {item.primary_reading}
-                    </span>
-                  )}
-                </div>
-
-                {/* Badge SRS/Locked */}
-                <span className={`text-4xs font-extrabold px-2.5 py-0.5 rounded-full mt-3.5 flex items-center justify-center space-x-1 ${getSrsColorClass(item.srs_stage || 0)}`}>
-                  {item.srs_stage === 0 && <Lock className="w-2.5 h-2.5 mr-0.5 shrink-0" />}
-                  <span>{getSrsLabel(item.srs_stage || 0)}</span>
-                </span>
-
-                {/* Level indicator */}
-                <div className="absolute top-2 left-2 px-1.5 py-0.5 text-4xs font-black bg-slate-200/50 dark:bg-slate-800/60 rounded text-slate-500">
-                  Lvl {item.level}
-                </div>
+        {/* Legend Panel */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:px-6 sm:py-3.5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Legenda Status Belajar
+          </span>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xxs font-bold text-slate-555 dark:text-slate-400">
+            {/* Locked */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-dashed border-kanji/30 bg-hatched-kanji flex items-center justify-center font-japanese font-black text-xxs text-kanji/60">
+                本
               </div>
-            ))}
-          </section>
+              <span>Locked</span>
+            </div>
+            {/* In Lessons */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid border-kanji/20 bg-kanji/5 dark:bg-kanji/10 flex items-center justify-center font-japanese font-black text-xxs text-kanji">
+                本
+              </div>
+              <span>In Lessons</span>
+            </div>
+            {/* In Reviews */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid border-kanji/80 bg-kanji flex items-center justify-center font-japanese font-black text-xxs text-white">
+                本
+              </div>
+              <span>In Reviews</span>
+            </div>
+            {/* Burned */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid bg-burned-card flex items-center justify-center font-japanese font-black text-xxs text-white">
+                本
+              </div>
+              <span>Burned</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Kanji Grouped Layout */}
+        {filtered.length > 0 ? (
+          <div className="space-y-8">
+            {Array.from(new Set(filtered.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
+              const levelItems = filtered.filter(item => item.level === lvl);
+              const levelTotalItems = kanjis.filter(item => item.level === lvl);
+              const unlockedCount = levelTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
+              const totalCount = levelTotalItems.length;
+
+              return (
+                <div key={lvl} className="space-y-4">
+                  {/* Level Header Panel */}
+                  <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
+                    <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">Level {lvl}</span>
+                    <span className="text-xxs font-bold text-slate-400 dark:text-slate-550">({unlockedCount}/{totalCount} unlocked)</span>
+                  </div>
+
+                  {/* Grid of level items */}
+                  <div className="flex flex-wrap gap-3 justify-start">
+                    {levelItems.map((item) => {
+                      const isLocked = item.srs_stage === 0;
+                      const isInLessons = item.srs_stage === 1 && !item.next_review;
+                      const isBurned = item.srs_stage === 9;
+                      const isInReviews = item.srs_stage !== undefined && item.srs_stage >= 1 && item.srs_stage <= 8 && item.next_review !== null;
+
+                      let cardStyles = "";
+                      let charBorderStyles = "";
+                      let primaryReadingStyles = "";
+                      let primaryMeaningStyles = "";
+
+                      if (isLocked) {
+                        cardStyles = "bg-hatched-kanji border-dashed border-kanji/30 dark:border-kanji/20 hover:border-kanji/45";
+                        charBorderStyles = "border-solid border-kanji/30 text-kanji/55";
+                        primaryReadingStyles = "text-slate-455 dark:text-slate-500 font-bold block text-[10px]";
+                        primaryMeaningStyles = "text-slate-500 dark:text-slate-400 font-bold block text-xs capitalize";
+                      } else if (isInLessons) {
+                        cardStyles = "bg-kanji/5 border-solid border-kanji/20 dark:bg-kanji/10 hover:border-kanji/40 hover:shadow-kanji/5";
+                        charBorderStyles = "border-solid border-kanji text-kanji";
+                        primaryReadingStyles = "text-kanji/70 dark:text-kanji/80 font-bold block text-[10px]";
+                        primaryMeaningStyles = "text-slate-750 dark:text-slate-200 font-black block text-xs capitalize";
+                      } else if (isInReviews) {
+                        cardStyles = "bg-kanji border-solid border-kanji/80 text-white shadow-3xs hover:shadow-2xs hover:bg-kanji-hover";
+                        charBorderStyles = "border-solid border-white/60 text-white";
+                        primaryReadingStyles = "text-white/80 font-bold block text-[10px]";
+                        primaryMeaningStyles = "text-white font-black block text-xs capitalize";
+                      } else { // Burned
+                        cardStyles = "bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs";
+                        charBorderStyles = "border-solid border-white/60 text-white";
+                        primaryReadingStyles = "text-white/80 font-bold block text-[10px]";
+                        primaryMeaningStyles = "text-white font-black block text-xs capitalize";
+                      }
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItem(item)}
+                          className={`pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group h-28 select-none whitespace-nowrap ${cardStyles}`}
+                        >
+                          {/* Character with Solid Border */}
+                          <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                            {item.character}
+                          </div>
+
+                          {/* Readings & Meanings stack */}
+                          <div className="flex flex-col items-center leading-none mt-1 space-y-0.5">
+                            <span className={primaryReadingStyles}>
+                              {isLocked ? "Locked" : item.primary_reading}
+                            </span>
+                            <span className={primaryMeaningStyles}>
+                              {item.primary_meaning}
+                            </span>
+                          </div>
+
+                          {/* Mini Lock Icon for Locked */}
+                          {isLocked && (
+                            <div className="absolute top-1 right-1.5 text-kanji/50 dark:text-kanji/40">
+                              <Lock className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
             <HelpCircle className="w-12 h-12 mx-auto opacity-30" />
@@ -352,8 +435,8 @@ export default function KanjiPage() {
                             <span
                               key={i}
                               className={`px-1.5 py-0.5 text-xxs font-bold rounded ${r.primary_reading
-                                  ? 'bg-indigo-600 text-white font-black'
-                                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'
+                                ? 'bg-indigo-600 text-white font-black'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-350'
                                 }`}
                             >
                               {r.reading}

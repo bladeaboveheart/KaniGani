@@ -19,6 +19,7 @@ interface RadicalItem {
   description?: string;
   srs_stage?: number;
   unlocked_at?: string | null;
+  next_review?: string | null;
   kanjis?: any[];
 }
 
@@ -63,7 +64,7 @@ export default function RadicalPage() {
         // 2. Fetch user progress
         const { data: progData, error: progErr } = await supabase
           .from('user_progress')
-          .select('item_id, srs_stage, unlocked_at')
+          .select('item_id, srs_stage, unlocked_at, next_review')
           .eq('user_id', user.id);
 
         if (progErr) throw progErr;
@@ -111,6 +112,7 @@ export default function RadicalPage() {
             description: item.description || '',
             srs_stage: progress ? progress.srs_stage : 0,
             unlocked_at: progress ? progress.unlocked_at : null,
+            next_review: progress ? progress.next_review : null,
             kanjis: foundKanjis
           };
         });
@@ -226,42 +228,120 @@ export default function RadicalPage() {
           </div>
         </section>
 
-        {/* Radicals Grid Layout */}
-        {filtered.length > 0 ? (
-          <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filtered.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => setSelectedItem(item)}
-                className={`p-5 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-radical/30 relative overflow-hidden group ${item.srs_stage === 0
-                    ? 'bg-slate-100/50 border-slate-200/50 dark:bg-slate-900/30 dark:border-slate-850 opacity-60'
-                    : 'bg-radical/5 border-radical/15 dark:bg-radical/10 hover:shadow-radical/10'
-                  }`}
-              >
-                {/* Character */}
-                <span className={`text-5xl font-black block group-hover:scale-105 transition-transform duration-300 ${item.srs_stage === 0 ? 'text-slate-400 dark:text-slate-650' : 'text-radical'
-                  }`}>
-                  {item.character}
-                </span>
-
-                {/* Meanings */}
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 mt-3 truncate max-w-full block capitalize">
-                  {item.slug}
-                </span>
-
-                {/* Badge SRS/Locked */}
-                <span className={`text-4xs font-extrabold px-2.5 py-0.5 rounded-full mt-3 flex items-center justify-center space-x-1 ${getSrsColorClass(item.srs_stage || 0)}`}>
-                  {item.srs_stage === 0 && <Lock className="w-2.5 h-2.5 mr-0.5 shrink-0" />}
-                  <span>{getSrsLabel(item.srs_stage || 0)}</span>
-                </span>
-
-                {/* Level indicator */}
-                <div className="absolute top-2 left-2 px-1.5 py-0.5 text-4xs font-black bg-slate-200/50 dark:bg-slate-800/60 rounded text-slate-500">
-                  Lvl {item.level}
-                </div>
+        {/* Legend Panel */}
+        <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:px-6 sm:py-3.5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+            Legenda Status Belajar
+          </span>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xxs font-bold text-slate-550 dark:text-slate-400">
+            {/* Locked */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-dashed border-radical/30 bg-hatched-radical flex items-center justify-center font-japanese font-black text-xxs text-radical/60">
+                本
               </div>
-            ))}
-          </section>
+              <span>Locked</span>
+            </div>
+            {/* In Lessons */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid border-radical/20 bg-radical/5 dark:bg-radical/10 flex items-center justify-center font-japanese font-black text-xxs text-radical">
+                本
+              </div>
+              <span>In Lessons</span>
+            </div>
+            {/* In Reviews */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid border-radical/80 bg-radical flex items-center justify-center font-japanese font-black text-xxs text-white">
+                本
+              </div>
+              <span>In Reviews</span>
+            </div>
+            {/* Burned */}
+            <div className="flex items-center space-x-2">
+              <div className="w-6 h-6 rounded-md border border-solid bg-burned-card flex items-center justify-center font-japanese font-black text-xxs text-white">
+                本
+              </div>
+              <span>Burned</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Radicals Grouped Layout */}
+        {filtered.length > 0 ? (
+          <div className="space-y-8">
+            {Array.from(new Set(filtered.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
+              const levelItems = filtered.filter(item => item.level === lvl);
+              const levelTotalItems = radicals.filter(item => item.level === lvl);
+              const unlockedCount = levelTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
+              const totalCount = levelTotalItems.length;
+
+              return (
+                <div key={lvl} className="space-y-4">
+                  {/* Level Header Panel */}
+                  <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
+                    <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">Level {lvl}</span>
+                    <span className="text-xxs font-bold text-slate-400 dark:text-slate-550">({unlockedCount}/{totalCount} unlocked)</span>
+                  </div>
+
+                  {/* Grid of level items */}
+                  <div className="flex flex-wrap gap-3 justify-start">
+                    {levelItems.map((item) => {
+                      const isLocked = item.srs_stage === 0;
+                      const isInLessons = item.srs_stage === 1 && !item.next_review;
+                      const isBurned = item.srs_stage === 9;
+                      const isInReviews = item.srs_stage !== undefined && item.srs_stage >= 1 && item.srs_stage <= 8 && item.next_review !== null;
+
+                      let cardStyles = "";
+                      let charBorderStyles = "";
+                      let textStyles = "";
+
+                      if (isLocked) {
+                        cardStyles = "bg-hatched-radical border-dashed border-radical/30 dark:border-radical/20 hover:border-radical/45";
+                        charBorderStyles = "border-solid border-radical/30 text-radical/55";
+                        textStyles = "text-slate-500 dark:text-slate-400 capitalize font-bold";
+                      } else if (isInLessons) {
+                        cardStyles = "bg-radical/5 border-solid border-radical/20 dark:bg-radical/10 hover:border-radical/40 hover:shadow-radical/5";
+                        charBorderStyles = "border-solid border-radical text-radical";
+                        textStyles = "text-slate-750 dark:text-slate-200 capitalize font-black";
+                      } else if (isInReviews) {
+                        cardStyles = "bg-radical border-solid border-radical/80 text-white shadow-3xs hover:shadow-2xs hover:bg-radical-hover";
+                        charBorderStyles = "border-solid border-white/60 text-white";
+                        textStyles = "text-white capitalize font-black";
+                      } else { // Burned
+                        cardStyles = "bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs";
+                        charBorderStyles = "border-solid border-white/60 text-white";
+                        textStyles = "text-white capitalize font-black";
+                      }
+
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => setSelectedItem(item)}
+                          className={`pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group h-28 select-none whitespace-nowrap ${cardStyles}`}
+                        >
+                          {/* Character with Solid Border */}
+                          <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                            {item.character}
+                          </div>
+
+                          {/* Meanings */}
+                          <span className={`text-xs leading-none mt-1 block ${textStyles}`}>
+                            {item.slug}
+                          </span>
+
+                          {/* Mini Lock Icon for Locked */}
+                          {isLocked && (
+                            <div className="absolute top-1 right-1.5 text-radical/50 dark:text-radical/40">
+                              <Lock className="w-2.5 h-2.5" />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
             <HelpCircle className="w-12 h-12 mx-auto opacity-30" />

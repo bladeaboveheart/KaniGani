@@ -81,35 +81,7 @@ export default function LessonPage() {
         }
 
         const rawItems = data.map((row: any) => row.items).filter(Boolean);
-
-        // Check if there is a custom lesson queue in localStorage
-        const customQueueStr = typeof window !== 'undefined' ? localStorage.getItem('custom-lesson-queue') : null;
-        const customInterleaveStr = typeof window !== 'undefined' ? localStorage.getItem('custom-lesson-interleave') : null;
-        
-        let customItemIds: string[] = [];
-        let isCustom = false;
-        if (customQueueStr) {
-          try {
-            customItemIds = JSON.parse(customQueueStr);
-            if (Array.isArray(customItemIds) && customItemIds.length > 0) {
-              isCustom = true;
-            }
-          } catch (e) {
-            console.error('Failed to parse custom-lesson-queue:', e);
-          }
-        }
-
-        const filteredRawItems = isCustom
-          ? rawItems.filter((item: any) => customItemIds.includes(item.id))
-          : rawItems;
-
-        const itemIds = filteredRawItems.map((i: any) => i.id);
-
-        if (itemIds.length === 0) {
-          setLessons([]);
-          setLoading(false);
-          return;
-        }
+        const itemIds = rawItems.map((i: any) => i.id);
 
         // Fetch detail meanings, readings, sentences
         const [meaningsRes, readingsRes, sentencesRes] = await Promise.all([
@@ -123,7 +95,7 @@ export default function LessonPage() {
         const sentences = sentencesRes.data || [];
 
         // Gabungkan detail
-        const itemsWithDetails: Item[] = filteredRawItems.map((item: any) => {
+        const itemsWithDetails: Item[] = rawItems.map((item: any) => {
           const mList = meanings.filter((m) => m.item_id === item.id);
           const rList = readings.filter((r) => r.item_id === item.id);
           const sList = sentences.filter((s) => s.item_id === item.id);
@@ -149,14 +121,6 @@ export default function LessonPage() {
 
         // Urutkan berdasarkan level & lesson_position
         itemsWithDetails.sort((a, b) => a.lesson_position - b.lesson_position);
-
-        // Interleave (shuffle) if selected in custom lessons picker
-        if (isCustom && customInterleaveStr === 'true') {
-          for (let i = itemsWithDetails.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [itemsWithDetails[i], itemsWithDetails[j]] = [itemsWithDetails[j], itemsWithDetails[i]];
-          }
-        }
 
         setLessons(itemsWithDetails);
 
@@ -308,12 +272,6 @@ export default function LessonPage() {
       }
 
       setPhase('summary');
-      
-      const remainingCount = lessons.length - currentBatch.length;
-      if (remainingCount <= 0) {
-        localStorage.removeItem('custom-lesson-queue');
-        localStorage.removeItem('custom-lesson-interleave');
-      }
     } catch (err) {
       console.error(err);
       alert('Terjadi kesalahan saat menyimpan data kuis.');
@@ -342,8 +300,6 @@ export default function LessonPage() {
       setActiveTab('info');
       resetStore();
     } else {
-      localStorage.removeItem('custom-lesson-queue');
-      localStorage.removeItem('custom-lesson-interleave');
       router.push('/dashboard');
     }
   };
@@ -514,8 +470,6 @@ export default function LessonPage() {
                   type="button"
                   onClick={() => {
                     if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.')) {
-                      localStorage.removeItem('custom-lesson-queue');
-                      localStorage.removeItem('custom-lesson-interleave');
                       router.push('/dashboard');
                     }
                   }}
@@ -657,7 +611,7 @@ export default function LessonPage() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-slate-400">Tidak ada contoh kalimat untuk kosakata ini.</p>
+                    <p className="text-slate-400">Belum ada contoh kalimat untuk kosakata ini.</p>
                   )}
                 </div>
               )}
@@ -756,8 +710,6 @@ export default function LessonPage() {
                   type="button"
                   onClick={() => {
                     if (confirm('Keluar dari sesi kuis pembelajaran?')) {
-                      localStorage.removeItem('custom-lesson-queue');
-                      localStorage.removeItem('custom-lesson-interleave');
                       router.push('/dashboard');
                     }
                   }}
@@ -799,7 +751,7 @@ export default function LessonPage() {
                   type="text"
                   placeholder={
                     activeCard.cardType === 'meaning'
-                      ? 'Ketik arti (bahasa Inggris)...'
+                      ? 'Ketik arti...'
                       : 'Ketik bacaan (Romaji/Kana)...'
                   }
                   value={userInput}
