@@ -734,22 +734,6 @@ export default function LessonPage() {
               </div>
 
               <h1 className="text-7xl font-black tracking-tight select-text text-center">{activeCard.character}</h1>
-
-              {/* Floating Arrow Animation Effect */}
-              {isAnswerSubmitted && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 overflow-hidden">
-                  <div className={`flex items-center justify-center p-4 rounded-full border border-white/20 shadow-2xl animate-float-up ${isCorrect 
-                    ? 'bg-emerald-500 text-white shadow-emerald-500/40' 
-                    : 'bg-rose-500 text-white shadow-rose-500/40'
-                  }`}>
-                    {isCorrect ? (
-                      <ArrowUp className="w-10 h-10 stroke-[3]" />
-                    ) : (
-                      <ArrowDown className="w-10 h-10 stroke-[3]" />
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
      
             {/* Prompt Label (WaniKani style bar right below character) */}
@@ -881,14 +865,36 @@ export default function LessonPage() {
                     ) : (
                       <>
                         <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span>Sangat Bagus! Jawaban Anda Benar. <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
+                        <span className="flex items-center flex-wrap justify-center gap-y-1">
+                          <span>Sangat Bagus! Jawaban Anda Benar.</span>
+                          <span className="relative inline-flex items-center ml-2">
+                            <span className={`px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1`}>
+                              <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
+                              <ArrowUp className="w-3 h-3 stroke-[3]" />
+                            </span>
+                            <span className={`absolute left-full ml-1.5 pointer-events-none flex items-center justify-center p-0.5 rounded-full text-white text-3xs font-black animate-float-up-small bg-emerald-500`}>
+                              <ArrowUp className="w-2.5 h-2.5 stroke-[3.5]" />
+                            </span>
+                          </span>
+                        </span>
                       </>
                     )
                   ) : (
                     <>
                       <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
                       <div>
-                        <span>Jawaban Salah! <span className={`ml-2 px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs`}>{getSrsStageName(activeCard.item.srs_stage || 1)}</span></span>
+                        <div className="flex items-center flex-wrap justify-center gap-y-1">
+                          <span>Jawaban Salah!</span>
+                          <span className="relative inline-flex items-center ml-2">
+                            <span className={`px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1`}>
+                              <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
+                              <ArrowDown className="w-3 h-3 stroke-[3]" />
+                            </span>
+                            <span className={`absolute left-full ml-1.5 pointer-events-none flex items-center justify-center p-0.5 rounded-full text-white text-3xs font-black animate-float-up-small bg-rose-500`}>
+                              <ArrowDown className="w-2.5 h-2.5 stroke-[3.5]" />
+                            </span>
+                          </span>
+                        </div>
                         <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
                           Jawaban benar: {
                             activeCard.cardType === 'meaning'
