@@ -306,9 +306,9 @@ export default function ReviewPage() {
   }
 
   const getItemColorClass = (type: string) => {
-    if (type === 'radical') return 'bg-radical border-radical/20 glow-radical';
-    if (type === 'kanji') return 'bg-kanji border-kanji/20 glow-kanji';
-    return 'bg-vocab border-vocab/20 glow-vocab';
+    if (type === 'radical') return 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-650 dark:text-emerald-450 border-b border-emerald-100 dark:border-emerald-900/30';
+    if (type === 'kanji') return 'bg-orange-50 dark:bg-orange-950/20 text-orange-605 dark:text-orange-405 border-b border-orange-100 dark:border-orange-900/30';
+    return 'bg-blue-50 dark:bg-blue-950/20 text-blue-650 dark:text-blue-450 border-b border-blue-100 dark:border-blue-900/30';
   };
 
   const getItemBadgeName = (type: string) => {
@@ -428,10 +428,10 @@ export default function ReviewPage() {
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-between">
 
             {/* Header Colorful Character with Integrated Navbar */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center ${getItemColorClass(activeCard.type)}`}>
 
               {/* Integrated Header Bar Inside the Card */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-inherit select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
                   onClick={() => {
@@ -440,15 +440,15 @@ export default function ReviewPage() {
                     }
                   }}
                   title="Kembali ke Dashboard"
-                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
+                  className="flex items-center justify-center opacity-85 hover:opacity-100 hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-slate-500/10"
                 >
                   <Home className="w-5 h-5" />
                 </button>
 
-                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
+                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold opacity-90 select-none">
                   {/* Accuracy stats */}
                   <div className="flex items-center space-x-1" title="Akurasi Sesi">
-                    <ThumbsUp className="w-4 h-4 text-white/80" />
+                    <ThumbsUp className="w-4 h-4" />
                     <span>
                       {accuracyStats.correct + accuracyStats.wrong > 0
                         ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
@@ -457,12 +457,12 @@ export default function ReviewPage() {
                   </div>
                   {/* Completed count */}
                   <div className="flex items-center space-x-1" title="Item Selesai">
-                    <Check className="w-4 h-4 text-white/85" />
+                    <Check className="w-4 h-4" />
                     <span>{submittedItemIds.length}</span>
                   </div>
                   {/* Remaining count */}
                   <div className="flex items-center space-x-1" title="Kartu Tersisa">
-                    <Inbox className="w-4 h-4 text-white/85" />
+                    <Inbox className="w-4 h-4" />
                     <span>{remainingCards}</span>
                   </div>
                 </div>
@@ -521,10 +521,10 @@ export default function ReviewPage() {
                     }, 20);
                   }}
                   className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed ${isAnswerSubmitted
-                      ? isCorrect
-                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                        : 'bg-rose-500 hover:bg-rose-600 text-white'
-                      : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10'
+                    ? isCorrect
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : 'bg-rose-500 hover:bg-rose-600 text-white'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10'
                     }`}
                 >
                   <ArrowRight className="w-5 h-5" />
@@ -549,8 +549,8 @@ export default function ReviewPage() {
                   }}
                   title="Wrap Up (Selesaikan 10 item terakhir)"
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${wrapUpActive
-                      ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10'
-                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                    ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-500/10'
+                    : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                     }`}
                 >
                   <Clock className="w-5 h-5" />
@@ -580,8 +580,8 @@ export default function ReviewPage() {
                   }}
                   title="Tampilkan Info Detail (F)"
                   className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${showItemInfo
-                      ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
-                      : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
+                    : 'bg-white dark:bg-slate-955 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
                     } disabled:opacity-30 disabled:cursor-not-allowed`}
                 >
                   <Eye className="w-5 h-5" />
@@ -620,9 +620,7 @@ export default function ReviewPage() {
                               <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
                               <ArrowUp className="w-3 h-3 stroke-[3]" />
                             </span>
-                            <span className={`absolute left-full ml-1.5 pointer-events-none flex items-center justify-center p-0.5 rounded-full text-white text-3xs font-black animate-float-up-small bg-emerald-500`}>
-                              <ArrowUp className="w-2.5 h-2.5 stroke-[3.5]" />
-                            </span>
+
                           </span>
                         </span>
                       </>
@@ -638,9 +636,7 @@ export default function ReviewPage() {
                               <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
                               <ArrowDown className="w-3 h-3 stroke-[3]" />
                             </span>
-                            <span className={`absolute left-full ml-1.5 pointer-events-none flex items-center justify-center p-0.5 rounded-full text-white text-3xs font-black animate-float-up-small bg-rose-500`}>
-                              <ArrowDown className="w-2.5 h-2.5 stroke-[3.5]" />
-                            </span>
+
                           </span>
                         </div>
                         <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
