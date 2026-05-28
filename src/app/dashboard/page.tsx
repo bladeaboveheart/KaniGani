@@ -9,7 +9,7 @@ import CrabBackground from '@/components/CrabBackground';
 import {
   BookOpen, Sparkles, AlertCircle, Clock, Calendar, CheckCircle2,
   Flame, Award, ArrowUpRight, TrendingUp, BarChart2, Star, UserCheck,
-  Shield
+  Shield, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { DashboardStats, Item } from '@/lib/types';
 
@@ -23,6 +23,36 @@ export default function Dashboard() {
   const [resetting, setResetting] = useState(false);
   const router = useRouter();
   const [selectedHourIdx, setSelectedHourIdx] = useState<number>(0);
+  const [kanjiDropdownOpen, setKanjiDropdownOpen] = useState(false);
+  const [currentLevelKanjiList, setCurrentLevelKanjiList] = useState<any[]>([]);
+
+  const formatDueTime = (nextReviewStr: string) => {
+    const nextReview = new Date(nextReviewStr);
+    const now = new Date();
+    
+    const options: Intl.DateTimeFormatOptions = {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    
+    const formattedDate = nextReview.toLocaleDateString('id-ID', options);
+    
+    if (nextReview <= now) {
+      return `Review Sekarang (Due: ${formattedDate})`;
+    } else {
+      const diffMs = nextReview.getTime() - now.getTime();
+      const diffHours = Math.ceil(diffMs / (1000 * 60 * 60));
+      if (diffHours < 24) {
+        return `Due dalam ${diffHours} jam (${formattedDate})`;
+      } else {
+        const diffDays = Math.ceil(diffHours / 24);
+        return `Due dalam ${diffDays} hari (${formattedDate})`;
+      }
+    }
+  };
 
   useEffect(() => {
     const checkDevMode = () => {
@@ -104,10 +134,17 @@ export default function Dashboard() {
         // 2. Fetch all kanji to calculate dynamic user level
         const { data: allKanji, error: kanjiErr } = await supabase
           .from('items')
-          .select('id, level')
+          .select('id, level, character, slug, type')
           .eq('type', 'kanji');
 
         if (kanjiErr) throw kanjiErr;
+
+        // 2b. Fetch prerequisites for locked checks
+        const { data: prereqs, error: prereqErr } = await supabase
+          .from('item_prerequisites')
+          .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)');
+
+        if (prereqErr) throw prereqErr;
 
         const progressGuruSet = new Set(
           (progresses || [])
@@ -197,6 +234,56 @@ export default function Dashboard() {
             }
           });
         }
+
+        // Group prerequisites by dependent item_id
+        const prereqsMap = new Map<string, any[]>();
+        if (prereqs) {
+          prereqs.forEach((row: any) => {
+            const reqItem = row.items;
+            if (reqItem) {
+              const depId = row.item_id;
+              if (!prereqsMap.has(depId)) {
+                prereqsMap.set(depId, []);
+              }
+              prereqsMap.get(depId)!.push(reqItem);
+            }
+          });
+        }
+
+        const progressMap = new Map(
+          (progresses || []).map((p: any) => [p.item_id, p])
+        );
+
+        const kanjiList = currentLevelKanji.map((k: any) => {
+          const progress = progressMap.get(k.id);
+          const srs_stage = progress ? progress.srs_stage : 0;
+          const next_review = progress ? progress.next_review : null;
+          
+          // Get all prerequisites
+          const allPrereqs = prereqsMap.get(k.id) || [];
+          
+          // Filter those prerequisites that are NOT yet learned (srs_stage < 5)
+          const unlearnedPrereqs = allPrereqs.filter((req: any) => {
+            const reqProg = progressMap.get(req.id);
+            const reqStage = reqProg ? reqProg.srs_stage : 0;
+            return reqStage < 5;
+          });
+
+          return {
+            id: k.id,
+            character: k.character,
+            slug: k.slug || 'kanji',
+            srs_stage,
+            next_review,
+            unlearnedPrereqs: unlearnedPrereqs.map((u: any) => ({
+              id: u.id,
+              character: u.character,
+              slug: u.slug || 'radical'
+            }))
+          };
+        });
+
+        setCurrentLevelKanjiList(kanjiList);
 
         setItemDetails(loadedItems);
         setStats({
@@ -517,11 +604,90 @@ export default function Dashboard() {
               <span>Luar biasa! Anda telah memenuhi syarat kelulusan Kanji level 1. Tinggal menunggu pembukaan level berikutnya!</span>
             </div>
           ) : stats ? (
-            <div className="p-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xs text-indigo-600 dark:text-indigo-400 flex items-center space-x-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              <span>
-                Butuh {Math.max(0, Math.ceil(stats.kanjiTotalInLevel * 0.9) - stats.kanjiPassedInLevel)} kanji lagi untuk naik Level 2! Semangat belajar!
-              </span>
+            <div className="space-y-3">
+              <button
+                onClick={() => setKanjiDropdownOpen(!kanjiDropdownOpen)}
+                className="w-full text-left p-4.5 bg-indigo-50 dark:bg-indigo-950/25 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-sm text-indigo-750 dark:text-indigo-300 flex items-center justify-between transition-all duration-200 hover:bg-indigo-100/70 dark:hover:bg-indigo-950/40 focus:outline-none"
+              >
+                <div className="flex items-center space-x-2.5 font-bold">
+                  <AlertCircle className="w-5 h-5 text-indigo-500 shrink-0" />
+                  <span>
+                    Butuh {Math.max(0, Math.ceil(stats.kanjiTotalInLevel * 0.9) - stats.kanjiPassedInLevel)} kanji lagi untuk naik Level {stats.level + 1}! Semangat belajar! (Klik untuk lihat daftar progres)
+                  </span>
+                </div>
+                {kanjiDropdownOpen ? (
+                  <ChevronUp className="w-5 h-5 text-indigo-500 shrink-0 transition-transform" />
+                ) : (
+                  <ChevronDown className="w-5 h-5 text-indigo-500 shrink-0 transition-transform" />
+                )}
+              </button>
+
+              {kanjiDropdownOpen && (
+                <div className="p-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-150 dark:border-slate-800 rounded-2xl animate-fade-in space-y-3">
+                  <div className="text-xxs font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500">
+                    Progres Kanji Level {stats.level}
+                  </div>
+                  
+                  <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-3">
+                    {currentLevelKanjiList.map((kanji) => {
+                      const isLocked = kanji.srs_stage === 0;
+                      const isReadyForLesson = kanji.srs_stage === 1 && !kanji.next_review;
+                      const isPassed = kanji.srs_stage >= 5;
+                      
+                      let cardClass = "";
+                      let statusLabel = "";
+                      let tooltipText = "";
+                      
+                      if (isLocked) {
+                        cardClass = "bg-slate-100 text-slate-450 dark:bg-slate-800/40 dark:text-slate-550 border border-slate-200 dark:border-slate-800/80";
+                        statusLabel = "Terkunci";
+                        if (kanji.unlearnedPrereqs.length > 0) {
+                          tooltipText = "belum belajar radikalnya: " + kanji.unlearnedPrereqs.map((r: any) => r.character).join(", ");
+                        } else {
+                          tooltipText = "belum belajar radikalnya";
+                        }
+                      } else if (isReadyForLesson) {
+                        cardClass = "bg-pink-500/10 text-pink-600 dark:text-pink-400 border border-pink-500/30 animate-pulse-subtle font-extrabold";
+                        statusLabel = "Tersedia Lesson";
+                        tooltipText = "Tersedia untuk Pelajaran (Lesson)";
+                      } else if (isPassed) {
+                        cardClass = "bg-emerald-500 text-white font-extrabold border border-emerald-600 shadow-3xs";
+                        statusLabel = `Kepiting Guru+ (${kanji.srs_stage})`;
+                        tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Lulus";
+                      } else {
+                        cardClass = "bg-pink-500 text-white font-extrabold border border-pink-600 shadow-3xs";
+                        statusLabel = `Kepiting Cilik (${kanji.srs_stage})`;
+                        tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Terkunci";
+                      }
+                      
+                      return (
+                        <div
+                          key={kanji.id}
+                          className="group relative flex flex-col items-center justify-center transition-all duration-200 hover:scale-105 select-none cursor-help"
+                        >
+                          <div className={`w-full flex flex-col items-center justify-center py-2 px-1 rounded-lg ${cardClass}`}>
+                            <span className="text-xl font-black font-japanese tracking-normal leading-none mb-1">
+                              {kanji.character}
+                            </span>
+                            <span className="text-[9px] uppercase font-bold tracking-wider truncate max-w-full text-center opacity-85 px-0.5">
+                              {kanji.slug}
+                            </span>
+                          </div>
+                          
+                          <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-50 pointer-events-none transition-all duration-200">
+                            <div className="bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black tracking-wide py-1.5 px-3 rounded-xl shadow-lg border border-slate-800 dark:border-slate-800 whitespace-nowrap space-y-0.5 text-center">
+                              <div className="text-slate-400 font-extrabold uppercase text-[8px] tracking-widest">{kanji.slug}</div>
+                              <div className="text-white font-bold">{tooltipText}</div>
+                              <div className="text-indigo-400 text-[8px] font-black uppercase tracking-wider">{statusLabel}</div>
+                            </div>
+                            <div className="w-2.5 h-2.5 bg-slate-900 dark:bg-slate-950 rotate-45 -mt-1.5 border-r border-b border-slate-800 dark:border-slate-800"></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
         </section>
