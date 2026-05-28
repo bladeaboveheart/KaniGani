@@ -133,3 +133,27 @@ body {
 .bg-vocab-gradient {
   background: linear-gradient(135deg, #60a5fa, #2563eb) !important;
 }
+
+/* Custom premium floating rising feedback animation */
+@keyframes floatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(60px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(20px) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(0.8);
+  }
+}
+
+.animate-float-up {
+  animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

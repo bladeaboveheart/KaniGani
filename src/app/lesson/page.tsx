@@ -10,7 +10,7 @@ import CrabBackground from '@/components/CrabBackground';
 import {
   ArrowLeft, ArrowRight, BookOpen, CheckCircle,
   HelpCircle, Eye, RefreshCw, XCircle, Award, AlertCircle,
-  Home, Check, Inbox, Clock, RotateCcw
+  Home, Check, Inbox, Clock, RotateCcw, ArrowUp, ArrowDown
 } from 'lucide-react';
 
 export default function LessonPage() {
@@ -734,6 +734,22 @@ export default function LessonPage() {
               </div>
 
               <h1 className="text-7xl font-black tracking-tight select-text text-center">{activeCard.character}</h1>
+
+              {/* Floating Arrow Animation Effect */}
+              {isAnswerSubmitted && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30 overflow-hidden">
+                  <div className={`flex items-center justify-center p-4 rounded-full border border-white/20 shadow-2xl animate-float-up ${isCorrect 
+                    ? 'bg-emerald-500 text-white shadow-emerald-500/40' 
+                    : 'bg-rose-500 text-white shadow-rose-500/40'
+                  }`}>
+                    {isCorrect ? (
+                      <ArrowUp className="w-10 h-10 stroke-[3]" />
+                    ) : (
+                      <ArrowDown className="w-10 h-10 stroke-[3]" />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
      
             {/* Prompt Label (WaniKani style bar right below character) */}
