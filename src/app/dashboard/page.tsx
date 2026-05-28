@@ -9,7 +9,7 @@ import CrabBackground from '@/components/CrabBackground';
 import {
   BookOpen, Sparkles, AlertCircle, Clock, Calendar, CheckCircle2,
   Flame, Award, ArrowUpRight, TrendingUp, BarChart2, Star, UserCheck,
-  Shield, ChevronDown, ChevronUp, Zap, ChevronRight, X, Info
+  Shield, ChevronDown, ChevronUp, Zap, ChevronRight, X, Info, Activity
 } from 'lucide-react';
 import { DashboardStats, Item } from '@/lib/types';
 
@@ -32,6 +32,10 @@ export default function Dashboard() {
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [interleaveLessons, setInterleaveLessons] = useState(true);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [reviewHeatmap, setReviewHeatmap] = useState<Record<string, number>>({});
+  const [lessonHeatmap, setLessonHeatmap] = useState<Record<string, number>>({});
+  const [heatmapMode, setHeatmapMode] = useState<'review' | 'lesson'>('review');
+  const [heatmapYear, setHeatmapYear] = useState<number>(2026);
 
   // Group lessons by level & type
   const getGroupedLessons = () => {
@@ -417,6 +421,39 @@ export default function Dashboard() {
         setItemDetails(loadedItems);
         lessonsList.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position));
         setAvailableLessons(lessonsList);
+
+        // Build heatmap data from activity_logs table
+        const reviewMap: Record<string, number> = {};
+        const lessonMap: Record<string, number> = {};
+
+        const { data: activityLogs } = await supabase
+          .from('activity_logs')
+          .select('activity_type, item_count, created_at')
+          .eq('user_id', user.id);
+
+        if (activityLogs && activityLogs.length > 0) {
+          activityLogs.forEach((log: any) => {
+            const dateKey = new Date(log.created_at).toISOString().split('T')[0];
+            const count = log.item_count || 1;
+            if (log.activity_type === 'review') {
+              reviewMap[dateKey] = (reviewMap[dateKey] || 0) + count;
+            } else if (log.activity_type === 'lesson') {
+              lessonMap[dateKey] = (lessonMap[dateKey] || 0) + count;
+            }
+          });
+        }
+        
+        // Fallback: derive lesson data from unlocked_at if no activity_logs yet, or supplement it
+        if (progresses) {
+          progresses.forEach((row: any) => {
+            if (row.unlocked_at) {
+              const dateKey = new Date(row.unlocked_at).toISOString().split('T')[0];
+              lessonMap[dateKey] = (lessonMap[dateKey] || 0) + 1;
+            }
+          });
+        }
+        setReviewHeatmap(reviewMap);
+        setLessonHeatmap(lessonMap);
 
         // Calculate days since leveling up
         let daysSinceLevelUp = 0;
@@ -1292,6 +1329,231 @@ export default function Dashboard() {
           </div>
 
         </div>
+
+        {/* Activity Heatmap */}
+        <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          {(() => {
+            const activeData = heatmapMode === 'review' ? reviewHeatmap : lessonHeatmap;
+
+            // Generate continuous grid for navigated year
+            const jan1 = new Date(heatmapYear, 0, 1);
+            const dec31 = new Date(heatmapYear, 11, 31);
+
+            // Align start date to the Sunday before or on Jan 1st
+            const startDate = new Date(jan1);
+            startDate.setDate(jan1.getDate() - jan1.getDay());
+
+            // Align end date to the Saturday after or on Dec 31st
+            const endDate = new Date(dec31);
+            endDate.setDate(dec31.getDate() + (6 - dec31.getDay()));
+
+            const weeks: {
+              weekIdx: number;
+              monthLabel: string | null;
+              days: {
+                date: Date;
+                dateKey: string;
+                count: number;
+                isFuture: boolean;
+                inYear: boolean;
+              }[];
+            }[] = [];
+
+            let currentWeekDays: any[] = [];
+            let lastMonthRendered: number | null = null;
+            let tempDate = new Date(startDate);
+            let weekIdx = 0;
+
+            const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+            while (tempDate <= endDate) {
+              const dateKey = tempDate.toISOString().split('T')[0];
+              const isFuture = tempDate > new Date();
+              const inYear = tempDate.getFullYear() === heatmapYear;
+
+              currentWeekDays.push({
+                date: new Date(tempDate),
+                dateKey,
+                count: inYear ? (activeData[dateKey] || 0) : 0,
+                isFuture,
+                inYear,
+              });
+
+              if (currentWeekDays.length === 7) {
+                let monthLabel: string | null = null;
+                const firstInYearDay = currentWeekDays.find(d => d.inYear);
+                if (firstInYearDay) {
+                  const m = firstInYearDay.date.getMonth();
+                  if (m !== lastMonthRendered) {
+                    monthLabel = monthLabels[m];
+                    lastMonthRendered = m;
+                  }
+                }
+
+                weeks.push({
+                  weekIdx,
+                  monthLabel,
+                  days: currentWeekDays,
+                });
+
+                currentWeekDays = [];
+                weekIdx++;
+              }
+
+              tempDate.setDate(tempDate.getDate() + 1);
+            }
+
+            // Colors mapping matching the reference image's pink/coral theme for reviews
+            const getHeatColor = (count: number) => {
+              if (count === 0) return 'bg-[#f1f1f2] dark:bg-[#1e293b]/70';
+              if (heatmapMode === 'review') {
+                if (count <= 3) return 'bg-[#ffcbd1] hover:brightness-95 dark:bg-[#f43f5e]/20';
+                if (count <= 10) return 'bg-[#f08a9b] hover:brightness-95 dark:bg-[#f43f5e]/45';
+                if (count <= 25) return 'bg-[#d84b65] hover:brightness-95 dark:bg-[#e11d48]';
+                return 'bg-[#b8253f] hover:brightness-95 dark:bg-[#be123c]';
+              } else {
+                // Teal/Emerald for lessons
+                if (count <= 2) return 'bg-[#ccfbf1] hover:brightness-95 dark:bg-[#0d9488]/20';
+                if (count <= 5) return 'bg-[#99f6e4] hover:brightness-95 dark:bg-[#0d9488]/45';
+                if (count <= 12) return 'bg-[#2dd4bf] hover:brightness-95 dark:bg-[#0d9488]';
+                return 'bg-[#0f766e] hover:brightness-95 dark:bg-[#115e59]';
+              }
+            };
+
+            // Calculate yearly totals
+            const yearReviews = Object.entries(reviewHeatmap)
+              .filter(([dateKey]) => dateKey.startsWith(String(heatmapYear)))
+              .reduce((sum, [_, val]) => sum + val, 0);
+
+            const yearLessons = Object.entries(lessonHeatmap)
+              .filter(([dateKey]) => dateKey.startsWith(String(heatmapYear)))
+              .reduce((sum, [_, val]) => sum + val, 0);
+
+            return (
+              <>
+                {/* Header Row */}
+                <div className="flex items-center justify-between">
+                  <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-lg tracking-tight">Heat Map</h3>
+                  
+                  {/* Year navigation & view toggles */}
+                  <div className="flex items-center space-x-4">
+                    {/* Toggle Button */}
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl p-0.5 border border-slate-200 dark:border-slate-700">
+                      <button
+                        onClick={() => setHeatmapMode('review')}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all duration-200 ${
+                          heatmapMode === 'review'
+                            ? 'bg-[#d84b65] text-white shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Review
+                      </button>
+                      <button
+                        onClick={() => setHeatmapMode('lesson')}
+                        className={`px-3 py-1 text-xs font-bold rounded-lg transition-all duration-200 ${
+                          heatmapMode === 'lesson'
+                            ? 'bg-[#2dd4bf] text-slate-900 dark:text-slate-950 shadow-sm'
+                            : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                        }`}
+                      >
+                        Lesson
+                      </button>
+                    </div>
+
+                    {/* Year Navigation */}
+                    <div className="flex items-center space-x-2 text-sm font-extrabold text-slate-600 dark:text-slate-350">
+                      <button
+                        onClick={() => setHeatmapYear(prev => prev - 1)}
+                        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                      >
+                        &lt;
+                      </button>
+                      <span className="w-10 text-center select-none">{heatmapYear}</span>
+                      <button
+                        onClick={() => setHeatmapYear(prev => prev + 1)}
+                        className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                      >
+                        &gt;
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Continuous Heatmap Grid with labels */}
+                <div className="relative overflow-x-auto pb-4 scrollbar-thin flex">
+                  {/* Left Label column */}
+                  <div className="flex flex-col justify-between pr-3 select-none text-[11px] font-extrabold text-slate-400 dark:text-slate-500 pt-[24px] pb-[4px]">
+                    <div className="h-[12px] flex items-center">Mon</div>
+                    <div className="h-[12px] flex items-center">Wed</div>
+                    <div className="h-[12px] flex items-center">Fri</div>
+                  </div>
+
+                  {/* Horizontal continuous grid of weeks */}
+                  <div className="flex-1 flex gap-[3px] select-none">
+                    {weeks.map((week, wIdx) => (
+                      <div key={wIdx} className="flex flex-col gap-[3px] relative">
+                        {/* Month header label positioned over first column of month */}
+                        <div className="absolute bottom-full left-0 mb-1.5 h-[14px] text-[10px] font-extrabold text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                          {week.monthLabel}
+                        </div>
+
+                        {/* 7 Days (Sunday to Saturday) */}
+                        {week.days.map((day: any, dIdx: number) => {
+                          const isToday = day.dateKey === new Date().toISOString().split('T')[0];
+                          const displayCount = day.inYear ? day.count : 0;
+                          const cellTitle = day.inYear
+                            ? `${day.dateKey}: ${displayCount} ${heatmapMode === 'review' ? 'review' : 'lesson'}`
+                            : '';
+
+                          return (
+                            <div
+                              key={dIdx}
+                              title={cellTitle}
+                              className={`w-[11px] h-[11px] sm:w-[13px] sm:h-[13px] rounded-[3px] transition-colors duration-150 ${
+                                day.inYear ? getHeatColor(displayCount) : 'bg-transparent'
+                              } ${
+                                isToday && day.inYear
+                                  ? 'ring-1 ring-offset-1 ring-slate-400 dark:ring-slate-500 dark:ring-offset-slate-950'
+                                  : ''
+                              }`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Stats matching reference design */}
+                <div className="flex items-center space-x-2.5 text-sm pt-2 select-none border-t border-slate-100 dark:border-slate-800/80">
+                  <span className="font-extrabold text-slate-800 dark:text-slate-100">{heatmapYear}</span>
+                  <span className="text-slate-300 dark:text-slate-700">|</span>
+                  
+                  {/* Reviews Count */}
+                  <button 
+                    onClick={() => setHeatmapMode('review')}
+                    className="flex items-center space-x-1.5 focus:outline-none hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-slate-400 dark:text-slate-500 font-bold">Reviews</span>
+                    <span className="font-extrabold text-slate-750 dark:text-slate-200">{yearReviews}</span>
+                  </button>
+                  
+                  <span className="text-slate-200 dark:text-slate-800">•</span>
+                  
+                  {/* Lessons Count */}
+                  <button 
+                    onClick={() => setHeatmapMode('lesson')}
+                    className="flex items-center space-x-1.5 focus:outline-none hover:opacity-80 transition-opacity"
+                  >
+                    <span className="text-slate-400 dark:text-slate-500 font-bold">Lessons</span>
+                    <span className="font-extrabold text-slate-750 dark:text-slate-200">{yearLessons}</span>
+                  </button>
+                </div>
+              </>
+            );
+          })()}
+        </section>
 
       </main>
 

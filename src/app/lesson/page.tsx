@@ -136,8 +136,15 @@ export default function LessonPage() {
           };
         });
 
-        // Urutkan berdasarkan level & lesson_position
-        itemsWithDetails.sort((a, b) => a.lesson_position - b.lesson_position);
+        // Urutkan berdasarkan level (ASC), tipe (radical→kanji→vocab), lalu lesson_position
+        const typePriority: Record<string, number> = { radical: 0, kanji: 1, vocabulary: 2 };
+        itemsWithDetails.sort((a, b) => {
+          const levelDiff = a.level - b.level;
+          if (levelDiff !== 0) return levelDiff;
+          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[b.type] ?? 3);
+          if (typeDiff !== 0) return typeDiff;
+          return a.lesson_position - b.lesson_position;
+        });
 
         setLessons(itemsWithDetails);
 
@@ -678,7 +685,7 @@ export default function LessonPage() {
                       setActiveTab('info');
                     }
                   }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-350 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>Sebelumnya</span>
@@ -715,7 +722,7 @@ export default function LessonPage() {
                     onClick={startQuiz}
                     className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0"
                   >
-                    <span>Mulai Kuis Batch</span>
+                    <span>Mulai Kuis</span>
                     <Award className="w-4 h-4" />
                   </button>
                 )}
@@ -764,11 +771,10 @@ export default function LessonPage() {
                       type="button"
                       onClick={() => setDevMode(v => !v)}
                       title={devMode ? 'Dev Mode: ON (klik untuk matikan)' : 'Dev Mode: OFF (klik untuk aktifkan autofill)'}
-                      className={`flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${
-                        devMode
+                      className={`flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${devMode
                           ? 'bg-amber-400/90 text-amber-900 shadow-sm'
                           : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
-                      }`}
+                        }`}
                     >
                       <Zap className="w-3.5 h-3.5" />
                       {devMode && <span>DEV</span>}

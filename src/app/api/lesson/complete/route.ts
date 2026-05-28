@@ -71,6 +71,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Gagal memperbarui database: ' + error.message }, { status: 500 });
     }
 
+    // Log aktivitas lesson ke activity_logs
+    await userClient.from('activity_logs').insert({
+      user_id: user.id,
+      activity_type: 'lesson',
+      item_count: itemIds.length,
+    });
+
     return NextResponse.json({ success: true, count: itemIds.length });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

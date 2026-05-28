@@ -326,6 +326,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // 5. Log aktivitas review ke activity_logs
+    await userClient.from('activity_logs').insert({
+      user_id: user.id,
+      activity_type: 'review',
+      item_count: 1,
+    });
+
     return NextResponse.json({
       success: true,
       currentStage,
