@@ -4,11 +4,11 @@
 
 @theme {
   --color-radical: #5dade2;
-  --color-kanji: #ff8f5a;
+  --color-kanji: #FF6961;
   --color-vocab: #48c9b0;
   
   --color-radical-hover: #4fa0d6;
-  --color-kanji-hover: #e67e45;
+  --color-kanji-hover: #e85c54;
   --color-vocab-hover: #3bb39b;
 
   --color-apprentice: #f03e3e;
@@ -27,7 +27,7 @@
   --navbar-bg: #1e293b;
   
   --radical-bg: #5dade2;
-  --kanji-bg: #ff8f5a;
+  --kanji-bg: #FF6961;
   --vocab-bg: #48c9b0;
 }
 
@@ -40,7 +40,7 @@
   --navbar-bg: #090d16;
   
   --radical-bg: #5dade2;
-  --kanji-bg: #ff8f5a;
+  --kanji-bg: #FF6961;
   --vocab-bg: #48c9b0;
 }
 
@@ -96,7 +96,7 @@ body {
 }
 
 .glow-kanji {
-  box-shadow: 0 4px 20px rgba(255, 143, 90, 0.3);
+  box-shadow: 0 4px 20px rgba(255, 105, 97, 0.3);
 }
 
 .glow-vocab {
@@ -108,7 +108,7 @@ body {
   background-color: #5dade2 !important;
 }
 .bg-kanji {
-  background-color: #ff8f5a !important;
+  background-color: #FF6961 !important;
 }
 .bg-vocab {
   background-color: #48c9b0 !important;
@@ -118,7 +118,7 @@ body {
   color: #5dade2 !important;
 }
 .text-kanji {
-  color: #ff8f5a !important;
+  color: #FF6961 !important;
 }
 .text-vocab {
   color: #48c9b0 !important;
@@ -128,7 +128,7 @@ body {
   background: #5dade2 !important;
 }
 .bg-kanji-gradient {
-  background: #ff8f5a !important;
+  background: #FF6961 !important;
 }
 .bg-vocab-gradient {
   background: #48c9b0 !important;

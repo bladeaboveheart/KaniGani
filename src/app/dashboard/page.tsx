@@ -9,7 +9,7 @@ import CrabBackground from '@/components/CrabBackground';
 import {
   BookOpen, Sparkles, AlertCircle, Clock, Calendar, CheckCircle2,
   Flame, Award, ArrowUpRight, TrendingUp, BarChart2, Star, UserCheck,
-  Shield, ChevronDown, ChevronUp
+  Shield, ChevronDown, ChevronUp, Zap
 } from 'lucide-react';
 import { DashboardStats, Item } from '@/lib/types';
 
@@ -20,6 +20,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'schedule' | 'items'>('schedule');
   const [itemDetails, setItemDetails] = useState<any[]>([]);
   const [devMode, setDevMode] = useState<boolean>(false);
+  const [devModeToast, setDevModeToast] = useState<boolean | null>(null);
+  const [betaTester, setBetaTester] = useState<boolean>(false);
   const [resetting, setResetting] = useState(false);
   const router = useRouter();
   const [selectedHourIdx, setSelectedHourIdx] = useState<number>(0);
@@ -55,12 +57,24 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    const checkDevMode = () => {
-      setDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+    // Read initial dev mode state
+    setDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+    setBetaTester(localStorage.getItem('kanigani-beta-tester') === 'true');
+
+    // Toggle dev mode with 'G' key — only when not typing in an input/textarea
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'g' || e.key === 'G') {
+        const tag = (document.activeElement as HTMLElement)?.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+        const next = localStorage.getItem('kanigani-dev-mode') !== 'true';
+        localStorage.setItem('kanigani-dev-mode', String(next));
+        setDevMode(next);
+        setDevModeToast(next);
+        setTimeout(() => setDevModeToast(null), 2500);
+      }
     };
-    checkDevMode();
-    window.addEventListener('storage', checkDevMode);
-    return () => window.removeEventListener('storage', checkDevMode);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const handleResetTimers = async () => {
@@ -362,11 +376,15 @@ export default function Dashboard() {
 
   const getSrsColorClass = (stage: number) => {
     if (stage === 0) return 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500';
-    if (stage >= 1 && stage <= 4) return 'bg-rose-500 text-white';
-    if (stage === 5 || stage === 6) return 'bg-purple-600 text-white';
-    if (stage === 7) return 'bg-blue-600 text-white';
-    if (stage === 8) return 'bg-teal-600 text-white';
-    return 'bg-slate-700 text-amber-400 border border-amber-500/20';
+    if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
+    if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
+    if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
+    if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
+    if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
+    if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
+    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
+    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
+    return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
   };
 
   if (loading) {
@@ -402,6 +420,20 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <Navbar />
       <CrabBackground />
+
+      {/* Dev Mode Toast Notification */}
+      {devModeToast !== null && (
+        <div
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-2xl shadow-xl border text-sm font-bold animate-fade-in transition-all ${
+            devModeToast
+              ? 'bg-amber-400 border-amber-500 text-amber-900'
+              : 'bg-slate-800 border-slate-700 text-slate-200'
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          <span>{devModeToast ? 'Dev Mode ON ⚡' : 'Dev Mode OFF'}</span>
+        </div>
+      )}
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
 
@@ -541,20 +573,34 @@ export default function Dashboard() {
                   <span className="text-xs text-pink-100 ml-1.5 font-semibold">item jatuh tempo</span>
                 </div>
 
-                {stats && stats.reviewsDue > 0 ? (
-                  <button
-                    onClick={() => router.push('/review')}
-                    className="px-5 py-2.5 bg-white text-indigo-600 font-bold rounded-xl shadow-md hover:bg-pink-50 flex items-center space-x-1.5 transition-all duration-200"
-                  >
-                    <span>Mulai</span>
-                    <ArrowUpRight className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md text-pink-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed">
-                    <span>Semua Bersih</span>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  {betaTester && (
+                    <button
+                      onClick={handleResetTimers}
+                      disabled={resetting}
+                      title="Percepat Semua Review (Beta Tester)"
+                      className="px-3 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-bold rounded-xl flex items-center space-x-1.5 transition-all duration-200 disabled:opacity-50 border border-white/20"
+                    >
+                      <Zap className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
+                      <span className="text-xs hidden sm:inline">{resetting ? 'Memproses...' : 'Percepat'}</span>
+                    </button>
+                  )}
+
+                  {stats && stats.reviewsDue > 0 ? (
+                    <button
+                      onClick={() => router.push('/review')}
+                      className="px-5 py-2.5 bg-white text-indigo-600 font-bold rounded-xl shadow-md hover:bg-pink-50 flex items-center space-x-1.5 transition-all duration-200"
+                    >
+                      <span>Mulai</span>
+                      <ArrowUpRight className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md text-pink-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed">
+                      <span>Semua Bersih</span>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

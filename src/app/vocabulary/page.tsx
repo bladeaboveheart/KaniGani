@@ -151,11 +151,15 @@ export default function VocabularyPage() {
 
   const getSrsColorClass = (stage: number) => {
     if (stage === 0) return 'bg-slate-200/50 text-slate-400 dark:bg-slate-800/40 dark:text-slate-500 border border-slate-350/10';
-    if (stage >= 1 && stage <= 4) return 'bg-rose-500 text-white';
-    if (stage === 5 || stage === 6) return 'bg-purple-600 text-white';
-    if (stage === 7) return 'bg-blue-600 text-white';
-    if (stage === 8) return 'bg-teal-600 text-white';
-    return 'bg-slate-700 text-amber-400 border border-amber-500/20';
+    if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
+    if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
+    if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
+    if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
+    if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
+    if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
+    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
+    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
+    return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
   };
 
   // Filters

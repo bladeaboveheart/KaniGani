@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, Shield, Award } from 'lucide-react';
+import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, Shield, FlaskConical, Zap } from 'lucide-react';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
   const [level, setLevel] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [devMode, setDevMode] = useState<boolean>(false);
+  const [betaTester, setBetaTester] = useState<boolean>(false);
+  const [betaResetting, setBetaResetting] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
@@ -33,6 +35,7 @@ export default function Navbar() {
   useEffect(() => {
     const handleStorageChange = () => {
       setDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+      setBetaTester(localStorage.getItem('kanigani-beta-tester') === 'true');
       const updatedUsername = localStorage.getItem('kanigani-username-update');
       if (updatedUsername) {
         setUsername(updatedUsername);
@@ -48,6 +51,38 @@ export default function Navbar() {
     setDevMode(nextVal);
     localStorage.setItem('kanigani-dev-mode', String(nextVal));
     window.dispatchEvent(new Event('storage'));
+  };
+
+  const toggleBetaTester = () => {
+    const nextVal = !betaTester;
+    setBetaTester(nextVal);
+    localStorage.setItem('kanigani-beta-tester', String(nextVal));
+    window.dispatchEvent(new Event('storage'));
+  };
+
+  const handleAccelerateReviews = async () => {
+    if (!confirm('Percepat semua review menjadi SEKARANG? Kamu bisa langsung review semuanya!')) return;
+    setBetaResetting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const now = new Date().toISOString();
+      const { error } = await supabase
+        .from('user_progress')
+        .update({ next_review: now })
+        .eq('user_id', user.id)
+        .gte('srs_stage', 1)
+        .lte('srs_stage', 8)
+        .not('next_review', 'is', null);
+      if (error) throw error;
+      setIsDropdownOpen(false);
+      alert('Sukses! Semua review dipercepat. Selamat belajar!');
+      window.location.reload();
+    } catch (err: any) {
+      alert('Gagal: ' + (err?.message || 'Error tidak diketahui'));
+    } finally {
+      setBetaResetting(false);
+    }
   };
 
   useEffect(() => {
@@ -238,22 +273,6 @@ export default function Navbar() {
                           <Settings className="w-4 h-4 text-slate-400" />
                           <span>Pengaturan</span>
                         </Link>
-                        <button 
-                          onClick={toggleDevMode} 
-                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors text-left font-medium"
-                        >
-                          <span className="flex items-center space-x-2">
-                            <Shield className={`w-4 h-4 ${devMode ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
-                            <span>Dev Mode</span>
-                          </span>
-                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
-                            devMode 
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                              : 'bg-slate-800 text-slate-500 border border-slate-700'
-                          }`}>
-                            {devMode ? 'ON' : 'OFF'}
-                          </span>
-                        </button>
                         {devMode && (
                           <Link 
                             href="/admin" 
@@ -264,6 +283,24 @@ export default function Navbar() {
                             <span className="font-bold">CRUD Database</span>
                           </Link>
                         )}
+                        {/* Beta Tester Toggle */}
+                        <button
+                          onClick={toggleBetaTester}
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-800 transition-colors text-left border-t border-slate-800"
+                        >
+                          <span className="flex items-center space-x-2">
+                            <FlaskConical className={`w-4 h-4 ${betaTester ? 'text-violet-400' : 'text-slate-400'}`} />
+                            <span className={betaTester ? 'text-violet-300 font-semibold' : ''}>Beta Tester</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
+                            betaTester
+                              ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
+                              : 'bg-slate-800 text-slate-500 border border-slate-700'
+                          }`}>
+                            {betaTester ? 'ON' : 'OFF'}
+                          </span>
+                        </button>
+
                         <button 
                           onClick={() => {
                             setIsDropdownOpen(false);
