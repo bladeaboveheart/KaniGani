@@ -40,6 +40,17 @@ function calculatePenalty(currentStage: number, wrongCount: number): number {
 
 // Fungsi mendapatkan level dinamis pengguna berdasarkan progres Kanji (lulus minimal 90% Kanji level L-1 untuk mencapai level L)
 async function getUserLevel(userClient: any, userId: string): Promise<number> {
+  // 0. Cek apakah ada override level manual di profiles
+  const { data: profile } = await userClient
+    .from('profiles')
+    .select('level')
+    .eq('id', userId)
+    .maybeSingle();
+
+  if (profile && profile.level !== null && profile.level !== undefined) {
+    return profile.level;
+  }
+
   const { data: allKanji, error: kanjiError } = await userClient
     .from('items')
     .select('id, level')

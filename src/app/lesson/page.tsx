@@ -866,11 +866,6 @@ export default function LessonPage() {
                         <span className="flex items-center flex-wrap justify-center gap-y-1">
                           <span>Sangat Bagus! Jawaban Anda Benar.</span>
                           <span className="relative inline-flex items-center ml-2">
-                            <span className={`px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1`}>
-                              <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
-                              <ArrowUp className="w-3 h-3 stroke-[3]" />
-                            </span>
-
                           </span>
                         </span>
                       </>
@@ -882,11 +877,6 @@ export default function LessonPage() {
                         <div className="flex items-center flex-wrap justify-center gap-y-1">
                           <span>Jawaban Salah!</span>
                           <span className="relative inline-flex items-center ml-2">
-                            <span className={`px-2.5 py-0.5 ${isCorrect ? 'bg-emerald-500' : 'bg-rose-500'} text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1`}>
-                              <span>{getSrsStageName(activeCard.item.srs_stage || 1)}</span>
-                              <ArrowDown className="w-3 h-3 stroke-[3]" />
-                            </span>
-
                           </span>
                         </div>
                         <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">

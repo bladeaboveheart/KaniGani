@@ -74,4 +74,5 @@ export interface DashboardStats {
   level: number;
   kanjiPassedInLevel: number;
   kanjiTotalInLevel: number;
+  daysSinceLevelUp?: number;
 }

@@ -101,16 +101,20 @@ export default function SettingsPage() {
       );
 
       let userLevel = 1;
-      while (userLevel <= 10) {
-        const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
-        if (levelKanjiItems.length === 0) break;
+      if (profile && profile.level !== null && profile.level !== undefined) {
+        userLevel = profile.level;
+      } else {
+        while (userLevel <= 10) {
+          const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
+          if (levelKanjiItems.length === 0) break;
 
-        const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-        const ratio = passed / levelKanjiItems.length;
-        if (ratio >= 0.9) {
-          userLevel++;
-        } else {
-          break;
+          const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
+          const ratio = passed / levelKanjiItems.length;
+          if (ratio >= 0.9) {
+            userLevel++;
+          } else {
+            break;
+          }
         }
       }
 

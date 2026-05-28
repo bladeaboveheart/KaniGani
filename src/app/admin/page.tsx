@@ -6,11 +6,12 @@ import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import * as wanakana from 'wanakana';
-import { 
-  Plus, Edit2, Trash2, Search, Filter, ArrowLeft, BookOpen, 
+import {
+  Plus, Edit2, Trash2, Search, Filter, ArrowLeft, BookOpen,
   Sparkles, Save, X, ChevronRight, Layers, Database, ShieldAlert,
-  Loader2, AlertCircle, RefreshCw, CheckCircle2, FileText, Languages
+  Loader2, AlertCircle, RefreshCw, CheckCircle2, FileText, Languages, User
 } from 'lucide-react';
+
 
 interface MeaningInput {
   id?: string;
@@ -57,7 +58,7 @@ export default function AdminPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'radical' | 'kanji' | 'vocabulary'>('all');
   const [filterLevel, setFilterLevel] = useState<string>('all');
-  
+
   // Statistics
   const [stats, setStats] = useState({
     total: 0,
@@ -70,7 +71,7 @@ export default function AdminPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites'>('basic');
-  
+
   // Initial empty form state
   const initialFormState: ItemInput = {
     type: 'radical',
@@ -90,6 +91,12 @@ export default function AdminPage() {
   const [formItem, setFormItem] = useState<ItemInput>(initialFormState);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
+  // User Manager & Developer Settings States
+  const [adminTab, setAdminTab] = useState<'kamus' | 'users'>('kamus');
+  const [users, setUsers] = useState<any[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+
   // 1. Check Auth & Dev Mode
   useEffect(() => {
     const checkAccess = async () => {
@@ -99,7 +106,7 @@ export default function AdminPage() {
           router.push('/');
           return;
         }
-        
+
         const isDev = localStorage.getItem('kanigani-dev-mode') === 'true';
         setDevMode(isDev);
       } catch (err) {
@@ -115,12 +122,73 @@ export default function AdminPage() {
     });
   }, [router]);
 
+  // 1.5 Check accessing user's active level dynamically (matching dashboard logic)
+  const checkUserLevel = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return 1;
+
+      // Fetch user progress for Kanji items
+      const { data: progresses } = await supabase
+        .from('user_progress')
+        .select('item_id, srs_stage')
+        .eq('user_id', user.id);
+
+      // Fetch all kanji items level
+      const { data: allKanji } = await supabase
+        .from('items')
+        .select('id, level')
+        .eq('type', 'kanji');
+
+      if (!allKanji) return 1;
+
+      const progressGuruSet = new Set(
+        (progresses || [])
+          .filter((p: any) => p.srs_stage >= 5)
+          .map((p: any) => p.item_id)
+      );
+
+      let uLevel = 1;
+      while (uLevel <= 10) {
+        const levelKanjiItems = allKanji.filter((k: any) => k.level === uLevel);
+        if (levelKanjiItems.length === 0) break;
+
+        const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
+        const ratio = passed / levelKanjiItems.length;
+        if (ratio >= 0.9) {
+          uLevel++;
+        } else {
+          break;
+        }
+      }
+      return Math.min(10, uLevel);
+    } catch (e) {
+      console.error('Error checking user level:', e);
+      return 1;
+    }
+  };
+
   // 2. Fetch database items
-  const loadDatabase = async () => {
+  const loadDatabase = async (selectedLvl?: string) => {
     setLoading(true);
     try {
-      // Fetch items and all child relations
-      const { data, error } = await supabase
+      // 1. Fetch total statistics dynamically using lightweight head counts
+      const [totalCount, radicalCount, kanjiCount, vocabCount] = await Promise.all([
+        supabase.from('items').select('*', { count: 'exact', head: true }),
+        supabase.from('items').select('*', { count: 'exact', head: true }).eq('type', 'radical'),
+        supabase.from('items').select('*', { count: 'exact', head: true }).eq('type', 'kanji'),
+        supabase.from('items').select('*', { count: 'exact', head: true }).eq('type', 'vocabulary'),
+      ]);
+
+      setStats({
+        total: totalCount.count || 0,
+        radical: radicalCount.count || 0,
+        kanji: kanjiCount.count || 0,
+        vocabulary: vocabCount.count || 0,
+      });
+
+      // 2. Fetch actual items, filtered server-side to save loading time
+      let query = supabase
         .from('items')
         .select(`
           *,
@@ -132,22 +200,16 @@ export default function AdminPage() {
         .order('level', { ascending: true })
         .order('lesson_position', { ascending: true });
 
+      const currentLvl = (typeof selectedLvl === 'string') ? selectedLvl : filterLevel;
+      if (currentLvl !== 'all') {
+        query = query.eq('level', Number(currentLvl));
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
 
       if (data) {
         setItems(data);
-        
-        // Calculate statistics
-        const radicalCount = data.filter(i => i.type === 'radical').length;
-        const kanjiCount = data.filter(i => i.type === 'kanji').length;
-        const vocabCount = data.filter(i => i.type === 'vocabulary').length;
-
-        setStats({
-          total: data.length,
-          radical: radicalCount,
-          kanji: kanjiCount,
-          vocabulary: vocabCount,
-        });
       }
     } catch (err) {
       console.error('Error loading database items:', err);
@@ -157,9 +219,47 @@ export default function AdminPage() {
     }
   };
 
+  // 2.5 Load user profiles via get_leaderboard RPC
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_leaderboard');
+      if (error) throw error;
+      if (data) {
+        setUsers(data);
+      }
+    } catch (err) {
+      console.error('Error loading users:', err);
+    }
+  };
+
+  // 2.6 Set another user's level override via update_user_level RPC
+  const handleSetUserLevel = async (userId: string, newLevel: number | null) => {
+    setUpdatingUserId(userId);
+    try {
+      const { error } = await supabase.rpc('update_user_level', {
+        p_user_id: userId,
+        p_level: newLevel
+      });
+      if (error) throw error;
+      alert('Sukses! Level pengguna berhasil diperbarui.');
+      loadUsers(); // Refresh
+    } catch (err: any) {
+      console.error('Error updating user level:', err);
+      alert('Gagal memperbarui level: ' + err.message);
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
   useEffect(() => {
     if (devMode) {
-      loadDatabase();
+      const init = async () => {
+        const lvl = await checkUserLevel();
+        setFilterLevel(String(lvl));
+        loadDatabase(String(lvl));
+        loadUsers();
+      };
+      init();
     }
   }, [devMode]);
 
@@ -190,27 +290,27 @@ export default function AdminPage() {
       description: item.description || '',
       meanings: item.item_meanings && item.item_meanings.length > 0
         ? item.item_meanings.map((m: any) => ({
-            id: m.id,
-            meaning: m.meaning,
-            primary_meaning: m.primary_meaning,
-            accepted_answer: m.accepted_answer
-          }))
+          id: m.id,
+          meaning: m.meaning,
+          primary_meaning: m.primary_meaning,
+          accepted_answer: m.accepted_answer
+        }))
         : [{ meaning: '', primary_meaning: true, accepted_answer: true }],
       readings: item.item_readings && item.item_readings.length > 0
         ? item.item_readings.map((r: any) => ({
-            id: r.id,
-            reading: r.reading,
-            reading_type: r.reading_type,
-            primary_reading: r.primary_reading,
-            accepted_answer: r.accepted_answer
-          }))
+          id: r.id,
+          reading: r.reading,
+          reading_type: r.reading_type,
+          primary_reading: r.primary_reading,
+          accepted_answer: r.accepted_answer
+        }))
         : [],
       context_sentences: item.item_context_sentences && item.item_context_sentences.length > 0
         ? item.item_context_sentences.map((s: any) => ({
-            id: s.id,
-            japanese: s.japanese,
-            indonesian: s.indonesian
-          }))
+          id: s.id,
+          japanese: s.japanese,
+          indonesian: s.indonesian
+        }))
         : [],
       prerequisites: item.item_prerequisites && item.item_prerequisites.length > 0
         ? item.item_prerequisites.map((p: any) => p.requires_item_id)
@@ -292,11 +392,11 @@ export default function AdminPage() {
   const addReadingRow = () => {
     setFormItem(prev => ({
       ...prev,
-      readings: [...prev.readings, { 
-        reading: '', 
-        reading_type: prev.type === 'kanji' ? 'onyomi' : null, 
-        primary_reading: prev.readings.length === 0, 
-        accepted_answer: true 
+      readings: [...prev.readings, {
+        reading: '',
+        reading_type: prev.type === 'kanji' ? 'onyomi' : null,
+        primary_reading: prev.readings.length === 0,
+        accepted_answer: true
       }]
     }));
   };
@@ -373,7 +473,7 @@ export default function AdminPage() {
       setActiveFormTab('basic');
       return;
     }
-    
+
     // Meanings Validation
     const filledMeanings = formItem.meanings.filter(m => m.meaning.trim() !== '');
     if (filledMeanings.length === 0) {
@@ -486,7 +586,7 @@ export default function AdminPage() {
               primary_reading: r.primary_reading,
               accepted_answer: r.accepted_answer
             }));
-          
+
           if (readingsToInsert.length > 0) {
             const { error: rErr } = await supabase.from('item_readings').insert(readingsToInsert);
             if (rErr) throw rErr;
@@ -502,7 +602,7 @@ export default function AdminPage() {
               japanese: s.japanese.trim(),
               indonesian: s.indonesian.trim()
             }));
-          
+
           if (sentencesToInsert.length > 0) {
             const { error: sErr } = await supabase.from('item_context_sentences').insert(sentencesToInsert);
             if (sErr) throw sErr;
@@ -522,7 +622,7 @@ export default function AdminPage() {
 
       setIsModalOpen(false);
       loadDatabase();
-      
+
     } catch (err: any) {
       console.error('Error saving item:', err);
       let errMsg = 'Gagal menyimpan item.';
@@ -556,7 +656,7 @@ export default function AdminPage() {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       setDeleteConfirmId(null);
       loadDatabase();
     } catch (err: any) {
@@ -582,7 +682,7 @@ export default function AdminPage() {
   const filteredItems = items.filter(item => {
     // Filter Type
     if (filterType !== 'all' && item.type !== filterType) return false;
-    
+
     // Filter Level
     if (filterLevel !== 'all' && String(item.level) !== filterLevel) return false;
 
@@ -592,7 +692,7 @@ export default function AdminPage() {
       const matchChar = item.character.toLowerCase().includes(query);
       const matchSlug = (item.slug || '').toLowerCase().includes(query);
       const matchMeanings = item.item_meanings?.some((m: any) => m.meaning.toLowerCase().includes(query));
-      
+
       return matchChar || matchSlug || matchMeanings;
     }
 
@@ -618,7 +718,7 @@ export default function AdminPage() {
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
-        
+
         {/* DEV MODE CHECKER & WELCOME HEADER */}
         {!devMode ? (
           <section className="bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center space-y-6 max-w-2xl mx-auto my-12 shadow-xl">
@@ -628,14 +728,14 @@ export default function AdminPage() {
               Halaman manipulasi database ini dilindungi dan hanya tersedia untuk keperluan administrasi pembelajaran. Silakan aktifkan Developer Mode untuk melanjutkan.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button 
+              <button
                 onClick={() => router.push('/dashboard')}
                 className="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-2xl text-sm flex items-center justify-center space-x-2 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Kembali ke Dashboard</span>
               </button>
-              <button 
+              <button
                 onClick={handleEnableDevMode}
                 className="px-6 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-2xl text-sm flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 transition-all"
               >
@@ -663,13 +763,13 @@ export default function AdminPage() {
 
               <div className="flex items-center gap-3 shrink-0">
                 <button
-                  onClick={loadDatabase}
+                  onClick={() => loadDatabase()}
                   className="p-3 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-650 dark:text-slate-300 rounded-2xl transition-colors"
                   title="Refresh Database"
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
-                <button 
+                <button
                   onClick={openAddModal}
                   className="px-5 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/20 text-sm flex items-center justify-center space-x-2 transition-all"
                 >
@@ -679,173 +779,310 @@ export default function AdminPage() {
               </div>
             </section>
 
-            {/* STATISTICS OVERVIEW */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {[
-                { label: 'Total Item Kamus', count: stats.total, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/50' },
-                { label: 'Radikal (Cyan)', count: stats.radical, color: 'text-radical bg-radical/5 border-radical/10 dark:bg-radical/10' },
-                { label: 'Karakter Kanji (Pink)', count: stats.kanji, color: 'text-kanji bg-kanji/5 border-kanji/10 dark:bg-kanji/10' },
-                { label: 'Kosakata (Purple)', count: stats.vocabulary, color: 'text-vocab bg-vocab/5 border-vocab/10 dark:bg-vocab/10' },
-              ].map((stat, idx) => (
-                <div key={idx} className={`p-5 rounded-2xl border text-center space-y-1 ${stat.color} shadow-xxs transition-transform hover:scale-102 duration-200`}>
-                  <span className="text-xxs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block">{stat.label}</span>
-                  <span className="text-3xl font-black block">{stat.count}</span>
-                </div>
-              ))}
-            </section>
+            {/* TAB SELECTOR (KAMUS VS USERS) */}
+            <div className="flex space-x-3 p-1.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-fit shadow-xs">
+              <button
+                onClick={() => setAdminTab('kamus')}
+                className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${adminTab === 'kamus'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <Database className="w-4 h-4" />
+                <span>Pengelola Kamus</span>
+              </button>
+              <button
+                onClick={() => setAdminTab('users')}
+                className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all ${adminTab === 'users'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-450 hover:bg-slate-100 dark:hover:bg-slate-850 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span>Manajer Level Pengguna</span>
+              </button>
+            </div>
 
-            {/* SEARCH AND FILTERS */}
-            <section className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
-              {/* Search Bar */}
-              <div className="relative w-full md:max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Cari karakter, slug, atau arti..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-              </div>
+            {adminTab === 'users' ? (
+              <div className="space-y-6 animate-fade-in">
+                {/* USER SEARCH BAR */}
+                <section className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col sm:flex-row gap-4 items-center justify-between">
+                  <div className="relative w-full sm:max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari pembelajar berdasarkan username..."
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+                  <button
+                    onClick={loadUsers}
+                    className="px-5 py-3 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-655 dark:text-slate-350 font-bold rounded-2xl text-xs flex items-center justify-center space-x-2 transition-all cursor-pointer"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    <span>Muat Ulang Pengguna</span>
+                  </button>
+                </section>
 
-              {/* Filters select */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-                <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
-                  <Filter className="w-4 h-4 text-slate-400" />
-                  <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Filter</span>
-                </div>
-
-                {/* Type Filter */}
-                <select
-                  value={filterType}
-                  onChange={(e: any) => setFilterType(e.target.value)}
-                  className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="all">Semua Tipe</option>
-                  <option value="radical">Radikal</option>
-                  <option value="kanji">Kanji</option>
-                  <option value="vocabulary">Kosakata</option>
-                </select>
-
-                {/* Level Filter */}
-                <select
-                  value={filterLevel}
-                  onChange={(e) => setFilterLevel(e.target.value)}
-                  className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                >
-                  <option value="all">Semua Level</option>
-                  {levelList.map(lvl => (
-                    <option key={lvl} value={lvl}>Level {lvl}</option>
-                  ))}
-                </select>
-              </div>
-            </section>
-
-            {/* DYNAMIC DATABASE ITEMS GRID */}
-            {filteredItems.length > 0 ? (
-              <section className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 animate-fade-in">
-                {filteredItems.map((item) => {
-                  const meanings = item.item_meanings || [];
-                  const readings = item.item_readings || [];
-                  const primaryMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'item';
-                  const primaryReading = readings.find((r: any) => r.primary_reading)?.reading || null;
-
-                  return (
-                    <div 
-                      key={item.id} 
-                      className={`group relative p-4 rounded-2xl border flex flex-col justify-between items-center text-center shadow-xs transition-all duration-300 hover:-translate-y-1 hover:shadow-md ${
-                        item.type === 'radical' 
-                          ? 'bg-radical/5 border-radical/15 dark:bg-radical/10 hover:border-radical/30'
-                          : item.type === 'kanji'
-                          ? 'bg-kanji/5 border-kanji/15 dark:bg-kanji/10 hover:border-kanji/30'
-                          : 'bg-vocab/5 border-vocab/15 dark:bg-vocab/10 hover:border-vocab/30'
-                      }`}
-                    >
-                      {/* Character representation */}
-                      <span className={`text-4xl font-black block select-all ${
-                        item.type === 'radical' 
-                          ? 'text-radical'
-                          : item.type === 'kanji'
-                          ? 'text-kanji'
-                          : 'text-vocab'
-                      }`}>
-                        {item.character}
-                      </span>
-                      
-                      {/* Sub-label details */}
-                      <div className="mt-2 space-y-0.5 max-w-full">
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate capitalize" title={primaryMeaning}>
-                          {primaryMeaning}
-                        </span>
-                        
-                        {primaryReading && (
-                          <span className="text-xxs font-black text-indigo-500 dark:text-indigo-400 block tracking-wider select-all">
-                            {primaryReading}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Header indicators */}
-                      <div className="absolute top-2 left-2 flex items-center space-x-1">
-                        <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/10 dark:bg-white/10 rounded uppercase tracking-wider text-slate-500">
-                          Lvl {item.level}
-                        </span>
-                        <span className={`w-1.5 h-1.5 rounded-full ${
-                          item.type === 'radical' ? 'bg-radical' : item.type === 'kanji' ? 'bg-kanji' : 'bg-vocab'
-                        }`}></span>
-                      </div>
-
-                      {/* HOVER HOOD ACTION CONTROLS */}
-                      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center space-x-3 transition-opacity duration-200">
-                        {deleteConfirmId === item.id ? (
-                          <div className="flex flex-col items-center p-2 space-y-2">
-                            <span className="text-4xs font-black text-rose-400 uppercase tracking-widest">Yakin hapus?</span>
-                            <div className="flex space-x-1.5">
-                              <button
-                                onClick={() => setDeleteConfirmId(null)}
-                                className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-3xs font-extrabold rounded-md text-slate-350"
-                              >
-                                Batal
-                              </button>
-                              <button
-                                onClick={() => handleDeleteItem(item.id)}
-                                className="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-3xs font-extrabold rounded-md text-white"
-                              >
-                                Hapus
-                              </button>
+                {/* USER LIST CARDS */}
+                {users.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {users
+                      .filter(u => u.username.toLowerCase().includes(userSearchQuery.toLowerCase()))
+                      .map((userItem) => (
+                        <div
+                          key={userItem.id}
+                          className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4 hover:shadow-md transition-all duration-350 relative overflow-hidden group"
+                        >
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center text-white font-black text-lg shadow-sm">
+                              {userItem.username.slice(0, 2).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-extrabold text-slate-850 dark:text-slate-100 truncate text-sm select-all">
+                                {userItem.username}
+                              </h4>
+                              <p className="text-4xs font-bold text-slate-450 uppercase tracking-widest mt-0.5">
+                                Skor Belajar: <span className="text-indigo-500 dark:text-indigo-400 font-black">{userItem.points}</span>
+                              </p>
                             </div>
                           </div>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => openEditModal(item)}
-                              className="p-2.5 bg-slate-800 hover:bg-indigo-650 text-slate-200 hover:text-white rounded-xl transition-all"
-                              title="Sunting Item"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirmId(item.id)}
-                              className="p-2.5 bg-slate-800 hover:bg-rose-900/80 text-slate-250 hover:text-rose-450 rounded-xl transition-all"
-                              title="Hapus Item"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </section>
+
+                          {/* Dynamic Level Override Action */}
+                          <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-150 dark:border-slate-850 flex items-center justify-between gap-2">
+                            <div>
+                              <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Status Level</span>
+                              <span className="text-xs font-black text-slate-850 dark:text-slate-200">
+                                Lvl {userItem.level} {userItem.override_level !== null && userItem.override_level !== undefined ? "🔒 (Locked)" : "⚡ (Dinamis)"}
+                              </span>
+                            </div>
+
+                            {/* Set level controls */}
+                            <div className="flex items-center space-x-2 shrink-0">
+                              <select
+                                value={userItem.override_level !== null && userItem.override_level !== undefined ? userItem.override_level : "dynamic"}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  handleSetUserLevel(userItem.id, val === "dynamic" ? null : Number(val));
+                                }}
+                                disabled={updatingUserId === userItem.id}
+                                className="py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xxs font-extrabold rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                              >
+                                <option value="dynamic">Otomatis (Dinamis)</option>
+                                {Array.from({ length: 10 }, (_, idx) => (
+                                  <option key={idx + 1} value={idx + 1}>Lock Lvl {idx + 1}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          {updatingUserId === userItem.id && (
+                            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center rounded-3xl">
+                              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                ) : (
+                  <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
+                    <Loader2 className="w-10 h-10 mx-auto text-indigo-500 animate-spin" />
+                    <h3 className="font-bold text-sm">Sedang Memuat Pengguna...</h3>
+                  </section>
+                )}
+              </div>
             ) : (
-              <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
-                <Database className="w-12 h-12 mx-auto opacity-30 animate-pulse" />
-                <h3 className="font-bold text-sm">Tidak Ada Item Ditemukan</h3>
-                <p className="text-xs text-slate-450 max-w-sm mx-auto">
-                  Coba sesuaikan kata kunci pencarian Anda atau ubah filter penyaringan radikal/kanji/kosakata.
-                </p>
-              </section>
+              <>
+                {/* STATISTICS OVERVIEW */}
+                <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                  {[
+                    { label: 'Total Item Kamus', count: stats.total, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/20 border-indigo-100 dark:border-indigo-900/50' },
+                    { label: 'Radikal (Cyan)', count: stats.radical, color: 'text-radical bg-radical/5 border-radical/10 dark:bg-radical/10' },
+                    { label: 'Karakter Kanji (Pink)', count: stats.kanji, color: 'text-kanji bg-kanji/5 border-kanji/10 dark:bg-kanji/10' },
+                    { label: 'Kosakata (Purple)', count: stats.vocabulary, color: 'text-vocab bg-vocab/5 border-vocab/10 dark:bg-vocab/10' },
+                  ].map((stat, idx) => (
+                    <div key={idx} className={`p-5 rounded-2xl border text-center space-y-1 ${stat.color} shadow-xxs transition-transform hover:scale-102 duration-200`}>
+                      <span className="text-xxs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 block">{stat.label}</span>
+                      <span className="text-3xl font-black block">{stat.count}</span>
+                    </div>
+                  ))}
+                </section>
+
+                {/* SEARCH AND FILTERS */}
+                <section className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between">
+                  {/* Search Bar */}
+                  <div className="relative w-full md:max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari karakter, slug, atau arti..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    />
+                  </div>
+
+                  {/* Filters select */}
+                  <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                    <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+                      <Filter className="w-4 h-4 text-slate-400" />
+                      <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Filter</span>
+                    </div>
+
+                    {/* Type Filter */}
+                    <select
+                      value={filterType}
+                      onChange={(e: any) => setFilterType(e.target.value)}
+                      className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="all">Semua Tipe</option>
+                      <option value="radical">Radikal</option>
+                      <option value="kanji">Kanji</option>
+                      <option value="vocabulary">Kosakata</option>
+                    </select>
+
+                    {/* Level Filter */}
+                    <select
+                      value={filterLevel}
+                      onChange={(e) => {
+                        const newLvl = e.target.value;
+                        setFilterLevel(newLvl);
+                        loadDatabase(newLvl);
+                      }}
+                      className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    >
+                      <option value="all">Semua Level</option>
+                      {levelList.map(lvl => (
+                        <option key={lvl} value={lvl}>Level {lvl}</option>
+                      ))}
+                    </select>
+                  </div>
+                </section>
+
+                {/* DYNAMIC DATABASE ITEMS GRID */}
+                {filteredItems.length > 0 ? (
+                  <div className="space-y-8 animate-fade-in">
+                    {Array.from(new Set(filteredItems.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
+                      const levelItems = filteredItems.filter(item => item.level === lvl);
+
+                      return (
+                        <div key={lvl} className="space-y-4">
+                          {/* Level Header Panel */}
+                          <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
+                            <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">Level {lvl}</span>
+                            <span className="text-xxs font-bold text-slate-400 dark:text-slate-550">({levelItems.length} item)</span>
+                          </div>
+
+                          {/* Grid of level items */}
+                          <div className="flex flex-wrap gap-3 justify-start">
+                            {levelItems.map((item) => {
+                              const meanings = item.item_meanings || [];
+                              const readings = item.item_readings || [];
+                              const primaryMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'item';
+                              const primaryReading = readings.find((r: any) => r.primary_reading)?.reading || null;
+
+                              let cardStyles = "";
+                              let charBorderStyles = "";
+                              let primaryReadingStyles = "";
+                              let primaryMeaningStyles = "";
+
+                              if (item.type === 'radical') {
+                                cardStyles = "bg-radical/5 border-solid border-radical/20 dark:bg-radical/10 hover:border-radical/40 hover:shadow-radical/5";
+                                charBorderStyles = "border-solid border-radical text-radical";
+                                primaryMeaningStyles = "text-slate-750 dark:text-slate-200 font-black block text-xs capitalize";
+                              } else if (item.type === 'kanji') {
+                                cardStyles = "bg-kanji/5 border-solid border-kanji/20 dark:bg-kanji/10 hover:border-kanji/40 hover:shadow-kanji/5";
+                                charBorderStyles = "border-solid border-kanji text-kanji";
+                                primaryReadingStyles = "text-kanji/70 dark:text-kanji/80 font-bold block text-[10px]";
+                                primaryMeaningStyles = "text-slate-750 dark:text-slate-200 font-black block text-xs capitalize";
+                              } else { // vocabulary
+                                cardStyles = "bg-vocab/5 border-solid border-vocab/20 dark:bg-vocab/10 hover:border-vocab/40 hover:shadow-vocab/5";
+                                charBorderStyles = "border-solid border-vocab text-vocab";
+                                primaryReadingStyles = "text-vocab/70 dark:text-vocab/80 font-bold block text-[10px]";
+                                primaryMeaningStyles = "text-slate-750 dark:text-slate-200 font-black block text-xs capitalize";
+                              }
+
+                              return (
+                                <div
+                                  key={item.id}
+                                  className={`group relative pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center transition-all duration-300 hover:-translate-y-0.5 h-28 select-none whitespace-nowrap overflow-hidden ${cardStyles}`}
+                                >
+                                  {/* Character with Solid Border */}
+                                  <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                                    {item.character}
+                                  </div>
+
+                                  {/* Readings & Meanings stack */}
+                                  <div className="flex flex-col items-center leading-none mt-1 space-y-0.5 max-w-full">
+                                    {primaryReading && (
+                                      <span className={primaryReadingStyles}>
+                                        {primaryReading}
+                                      </span>
+                                    )}
+                                    <span className={`${primaryMeaningStyles} truncate max-w-full`} title={primaryMeaning}>
+                                      {primaryMeaning}
+                                    </span>
+                                  </div>
+
+                                  {/* HOVER HOOD ACTION CONTROLS */}
+                                  <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-xs rounded-2xl opacity-0 group-hover:opacity-100 flex items-center justify-center space-x-3 transition-opacity duration-200">
+                                    {deleteConfirmId === item.id ? (
+                                      <div className="flex flex-col items-center p-2 space-y-2">
+                                        <span className="text-4xs font-black text-rose-400 uppercase tracking-widest">Yakin hapus?</span>
+                                        <div className="flex space-x-1.5">
+                                          <button
+                                            onClick={() => setDeleteConfirmId(null)}
+                                            className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-3xs font-extrabold rounded-md text-slate-350"
+                                          >
+                                            Batal
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteItem(item.id)}
+                                            className="px-2 py-1 bg-rose-500 hover:bg-rose-600 text-3xs font-extrabold rounded-md text-white"
+                                          >
+                                            Hapus
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => openEditModal(item)}
+                                          className="p-2.5 bg-slate-800 hover:bg-indigo-650 text-slate-200 hover:text-white rounded-xl transition-all"
+                                          title="Sunting Item"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => setDeleteConfirmId(item.id)}
+                                          className="p-2.5 bg-slate-800 hover:bg-rose-900/80 text-slate-250 hover:text-rose-450 rounded-xl transition-all"
+                                          title="Hapus Item"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
+                    <Database className="w-12 h-12 mx-auto opacity-30 animate-pulse" />
+                    <h3 className="font-bold text-sm">Tidak Ada Item Ditemukan</h3>
+                    <p className="text-xs text-slate-450 max-w-sm mx-auto">
+                      Coba sesuaikan kata kunci pencarian Anda atau ubah filter penyaringan radikal/kanji/kosakata.
+                    </p>
+                  </section>
+                )}
+              </>
             )}
           </>
         )}
@@ -857,15 +1094,14 @@ export default function AdminPage() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
           <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
-            
+
             {/* Modal Colored Header Banner based on Item type */}
-            <div className={`p-6 text-white flex items-center justify-between shrink-0 transition-colors duration-300 ${
-              formItem.type === 'radical' 
-                ? 'bg-radical-gradient' 
-                : formItem.type === 'kanji' 
-                ? 'bg-kanji-gradient' 
+            <div className={`p-6 text-white flex items-center justify-between shrink-0 transition-colors duration-300 ${formItem.type === 'radical'
+              ? 'bg-radical-gradient'
+              : formItem.type === 'kanji'
+                ? 'bg-kanji-gradient'
                 : 'bg-vocab-gradient'
-            }`}>
+              }`}>
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center font-bold text-lg">
                   {formItem.character || '?'}
@@ -879,7 +1115,7 @@ export default function AdminPage() {
                   </h3>
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 className="p-1.5 hover:bg-white/20 rounded-lg transition-colors text-white"
               >
@@ -891,46 +1127,42 @@ export default function AdminPage() {
             <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 shrink-0 text-xs sm:text-sm font-semibold overflow-x-auto">
               <button
                 onClick={() => setActiveFormTab('basic')}
-                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors ${
-                  activeFormTab === 'basic' 
-                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
+                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors ${activeFormTab === 'basic'
+                  ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                  : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                  }`}
               >
                 Data Dasar
               </button>
               <button
                 onClick={() => setActiveFormTab('mnemonics')}
-                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors ${
-                  activeFormTab === 'mnemonics' 
-                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
+                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors ${activeFormTab === 'mnemonics'
+                  ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                  : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                  }`}
               >
                 Mnemonik
               </button>
               <button
                 onClick={() => setActiveFormTab('meanings')}
-                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${
-                  activeFormTab === 'meanings' 
-                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                }`}
+                className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${activeFormTab === 'meanings'
+                  ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                  : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                  }`}
               >
                 <span>Daftar Arti</span>
                 <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
                   {formItem.meanings.filter(m => m.meaning.trim() !== '').length}
                 </span>
               </button>
-              
+
               {formItem.type !== 'radical' && (
                 <button
                   onClick={() => setActiveFormTab('readings')}
-                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${
-                    activeFormTab === 'readings' 
-                      ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                      : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                  }`}
+                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${activeFormTab === 'readings'
+                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                    }`}
                 >
                   <span>Cara Baca</span>
                   <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
@@ -942,11 +1174,10 @@ export default function AdminPage() {
               {formItem.type === 'vocabulary' && (
                 <button
                   onClick={() => setActiveFormTab('sentences')}
-                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${
-                    activeFormTab === 'sentences' 
-                      ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                      : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                  }`}
+                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${activeFormTab === 'sentences'
+                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                    }`}
                 >
                   <span>Kalimat Contoh</span>
                   <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
@@ -958,11 +1189,10 @@ export default function AdminPage() {
               {formItem.type !== 'radical' && (
                 <button
                   onClick={() => setActiveFormTab('prerequisites')}
-                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${
-                    activeFormTab === 'prerequisites' 
-                      ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50' 
-                      : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
-                  }`}
+                  className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors flex items-center space-x-1.5 ${activeFormTab === 'prerequisites'
+                    ? 'border-indigo-500 text-indigo-500 dark:text-indigo-400 bg-white dark:bg-slate-900/50'
+                    : 'border-transparent text-slate-550 dark:text-slate-400 hover:text-slate-850 dark:hover:text-slate-200'
+                    }`}
                 >
                   <span>Prasyarat</span>
                   <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
@@ -974,11 +1204,11 @@ export default function AdminPage() {
 
             {/* TAB CONTAINER BODY */}
             <div className="flex-1 p-6 sm:p-8 overflow-y-auto space-y-6">
-              
+
               {/* TAB 1: BASIC INFORMATION DATA */}
               {activeFormTab === 'basic' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 animate-fade-in">
-                  
+
                   {/* Item Type selection */}
                   <div>
                     <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tipe Item Kamus</label>
@@ -1008,7 +1238,7 @@ export default function AdminPage() {
 
                   {/* Slug / Primary meaning name */}
                   <div>
-                    <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Slug / Nama Kunci (Bahasa Inggris/Utama)</label>
+                    <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Slug / Nama Kunci</label>
                     <input
                       type="text"
                       placeholder="Contoh: water, fish, to eat"
@@ -1050,7 +1280,7 @@ export default function AdminPage() {
               {/* TAB 2: MNEMONIC ORAL NOTES */}
               {activeFormTab === 'mnemonics' && (
                 <div className="space-y-6 animate-fade-in">
-                  
+
                   {/* Meaning Mnemonic */}
                   <div>
                     <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Mnemonic Arti Kata</label>
@@ -1111,11 +1341,10 @@ export default function AdminPage() {
 
                   <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2">
                     {formItem.meanings.map((m, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950 border rounded-2xl transition-colors ${
-                          m.primary_meaning ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-850'
-                        }`}
+                      <div
+                        key={idx}
+                        className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950 border rounded-2xl transition-colors ${m.primary_meaning ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-850'
+                          }`}
                       >
                         {/* Meaning Text input */}
                         <div className="flex-1 w-full">
@@ -1192,11 +1421,10 @@ export default function AdminPage() {
 
                   <div className="space-y-3.5 max-h-[300px] overflow-y-auto pr-2">
                     {formItem.readings.map((r, idx) => (
-                      <div 
-                        key={idx} 
-                        className={`flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950 border rounded-2xl transition-colors ${
-                          r.primary_reading ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-850'
-                        }`}
+                      <div
+                        key={idx}
+                        className={`flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 p-3 bg-slate-50 dark:bg-slate-950 border rounded-2xl transition-colors ${r.primary_reading ? 'border-emerald-500/30 bg-emerald-500/5' : 'border-slate-200 dark:border-slate-850'
+                          }`}
                       >
                         {/* Reading Input (Auto transliterated) */}
                         <div className="flex-1 w-full relative">
@@ -1306,7 +1534,7 @@ export default function AdminPage() {
 
                         {/* Indonesian Translation */}
                         <div>
-                          <label className="text-4xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Arti Terjemahan (Bahasa Indonesia)</label>
+                          <label className="text-4xs font-black text-slate-400 uppercase tracking-wider mb-1 block">Arti Terjemahan</label>
                           <input
                             type="text"
                             placeholder="Contoh: Ikan sedang berenang di dalam air."
@@ -1346,7 +1574,7 @@ export default function AdminPage() {
                       .map((item) => {
                         const isChecked = formItem.prerequisites.includes(item.id);
                         return (
-                          <div 
+                          <div
                             key={item.id}
                             onClick={() => {
                               setFormItem(prev => {
@@ -1357,13 +1585,12 @@ export default function AdminPage() {
                                 return { ...prev, prerequisites: newPrereqs };
                               });
                             }}
-                            className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-200 select-none ${
-                              isChecked
-                                ? formItem.type === 'kanji'
-                                  ? 'bg-radical/10 border-radical text-radical'
-                                  : 'bg-kanji/10 border-kanji text-kanji'
-                                : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 opacity-60 hover:opacity-100 text-slate-700 dark:text-slate-300'
-                            }`}
+                            className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-200 select-none ${isChecked
+                              ? formItem.type === 'kanji'
+                                ? 'bg-radical/10 border-radical text-radical'
+                                : 'bg-kanji/10 border-kanji text-kanji'
+                              : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 opacity-60 hover:opacity-100 text-slate-700 dark:text-slate-300'
+                              }`}
                           >
                             <div className="flex flex-col">
                               <span className="text-xl font-black">{item.character}</span>

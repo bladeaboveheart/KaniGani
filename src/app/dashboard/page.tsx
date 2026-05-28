@@ -31,6 +31,7 @@ export default function Dashboard() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [interleaveLessons, setInterleaveLessons] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
 
   // Group lessons by level & type
   const getGroupedLessons = () => {
@@ -105,7 +106,7 @@ export default function Dashboard() {
   const formatDueTime = (nextReviewStr: string) => {
     const nextReview = new Date(nextReviewStr);
     const now = new Date();
-    
+
     const options: Intl.DateTimeFormatOptions = {
       day: 'numeric',
       month: 'short',
@@ -113,9 +114,9 @@ export default function Dashboard() {
       minute: '2-digit',
       hour12: false
     };
-    
+
     const formattedDate = nextReview.toLocaleDateString('id-ID', options);
-    
+
     if (nextReview <= now) {
       return `Review Sekarang (Due: ${formattedDate})`;
     } else {
@@ -201,10 +202,10 @@ export default function Dashboard() {
           return;
         }
 
-        // Fetch username
+        // Fetch username & profile info
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, created_at, level')
           .eq('id', user.id)
           .maybeSingle();
         if (profile) setUsername(profile.username);
@@ -241,16 +242,20 @@ export default function Dashboard() {
         );
 
         let userLevel = 1;
-        while (userLevel <= 10) {
-          const levelKanjiItems = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
-          if (levelKanjiItems.length === 0) break;
+        if (profile && profile.level !== null && profile.level !== undefined) {
+          userLevel = profile.level;
+        } else {
+          while (userLevel <= 10) {
+            const levelKanjiItems = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
+            if (levelKanjiItems.length === 0) break;
 
-          const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-          const ratio = passed / levelKanjiItems.length;
-          if (ratio >= 0.9) {
-            userLevel++;
-          } else {
-            break;
+            const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
+            const ratio = passed / levelKanjiItems.length;
+            if (ratio >= 0.9) {
+              userLevel++;
+            } else {
+              break;
+            }
           }
         }
 
@@ -379,10 +384,10 @@ export default function Dashboard() {
           const progress = progressMap.get(k.id);
           const srs_stage = progress ? progress.srs_stage : 0;
           const next_review = progress ? progress.next_review : null;
-          
+
           // Get all prerequisites
           const allPrereqs = prereqsMap.get(k.id) || [];
-          
+
           // Filter those prerequisites that are NOT yet learned (srs_stage < 5)
           const unlearnedPrereqs = allPrereqs.filter((req: any) => {
             const reqProg = progressMap.get(req.id);
@@ -409,6 +414,22 @@ export default function Dashboard() {
         setItemDetails(loadedItems);
         lessonsList.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position));
         setAvailableLessons(lessonsList);
+
+        // Calculate days since leveling up
+        let daysSinceLevelUp = 0;
+        if (userLevel === 1) {
+          const signupDate = profile?.created_at ? new Date(profile.created_at) : new Date(user.created_at);
+          const diffMs = new Date().getTime() - signupDate.getTime();
+          daysSinceLevelUp = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        } else {
+          const currentLevelProgresses = progresses ? progresses.filter((p: any) => p.items?.level === userLevel && p.unlocked_at) : [];
+          if (currentLevelProgresses.length > 0) {
+            const earliestUnlock = new Date(Math.min(...currentLevelProgresses.map((p: any) => new Date(p.unlocked_at).getTime())));
+            const diffMs = new Date().getTime() - earliestUnlock.getTime();
+            daysSinceLevelUp = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+          }
+        }
+
         setStats({
           lessonsAvailable,
           reviewsDue,
@@ -417,7 +438,38 @@ export default function Dashboard() {
           level: userLevel,
           kanjiPassedInLevel: kanjiPassed,
           kanjiTotalInLevel: totalKanji,
+          daysSinceLevelUp,
         });
+
+        // Fetch real leaderboard from database
+        const { data: leaderboardData, error: leaderboardError } = await supabase
+          .rpc('get_leaderboard');
+
+        if (leaderboardData && !leaderboardError) {
+          const mappedLeaderboard = leaderboardData.map((item: any, idx: number) => ({
+            rank: idx + 1,
+            name: item.username,
+            level: item.level,
+            points: item.points,
+            active: true,
+            isSelf: item.id === user.id
+          }));
+          setLeaderboard(mappedLeaderboard);
+        } else {
+          // Fallback to dummy data
+          const dummy = [
+            { rank: 1, name: 'TanakaSan', level: 10, points: 1200, active: true },
+            { rank: 2, name: 'BudiKanji', level: 8, points: 940, active: true },
+            { rank: 3, name: 'SakuraChan', level: 7, points: 780, active: false },
+            { rank: 4, name: 'KaniMaster', level: 6, points: 640, active: true },
+            { rank: 5, name: 'WaniCrab', level: 5, points: 520, active: false },
+            { rank: 6, name: profile?.username || 'Pengguna', level: userLevel, points: progresses ? progresses.filter((i: any) => i.srs_stage >= 5).length * 10 + progresses.filter((i: any) => i.srs_stage > 0).length : 0, active: true, isSelf: true },
+            { rank: 7, name: 'GanyDev', level: 3, points: 210, active: true },
+            { rank: 8, name: 'NihonLover', level: 1, points: 35, active: false },
+            { rank: 9, name: 'WaniGuru', level: 1, points: 20, active: true },
+          ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
+          setLeaderboard(dummy);
+        }
 
       } catch (err) {
         console.error('Error loading dashboard stats:', err);
@@ -432,7 +484,7 @@ export default function Dashboard() {
   // Generate 24-hour hourly schedule for the bar chart
   const getHourlySchedule = () => {
     const now = new Date();
-    
+
     // Create 24 hourly buckets starting from the current hour
     const buckets = Array.from({ length: 24 }, (_, i) => {
       const bucketDate = new Date(now);
@@ -462,7 +514,7 @@ export default function Dashboard() {
           // Calculate the relative hour index
           const diffMs = reviewTime - buckets[0].timestamp;
           const bucketIndex = Math.floor(diffMs / oneHourMs);
-          
+
           if (bucketIndex >= 0 && bucketIndex < 24) {
             buckets[bucketIndex].count++;
             buckets[bucketIndex].items.push(item);
@@ -512,18 +564,7 @@ export default function Dashboard() {
     ? Math.round((stats.kanjiPassedInLevel / stats.kanjiTotalInLevel) * 100)
     : 0;
 
-  // Dummy Leaderboard Data
-  const leaderboard = [
-    { rank: 1, name: 'TanakaSan', level: 10, points: 1200, active: true },
-    { rank: 2, name: 'BudiKanji', level: 8, points: 940, active: true },
-    { rank: 3, name: 'SakuraChan', level: 7, points: 780, active: false },
-    { rank: 4, name: 'KaniMaster', level: 6, points: 640, active: true },
-    { rank: 5, name: 'WaniCrab', level: 5, points: 520, active: false },
-    { rank: 6, name: username, level: stats?.level || 1, points: itemDetails.filter(i => i.srs_stage >= 5).length * 10 + itemDetails.filter(i => i.srs_stage > 0).length, active: true, isSelf: true },
-    { rank: 7, name: 'GanyDev', level: 3, points: 210, active: true },
-    { rank: 8, name: 'NihonLover', level: 1, points: 35, active: false },
-    { rank: 9, name: 'WaniGuru', level: 1, points: 20, active: true },
-  ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
+
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
@@ -533,11 +574,10 @@ export default function Dashboard() {
       {/* Dev Mode Toast Notification */}
       {devModeToast !== null && (
         <div
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-2xl shadow-xl border text-sm font-bold animate-fade-in transition-all ${
-            devModeToast
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-2xl shadow-xl border text-sm font-bold animate-fade-in transition-all ${devModeToast
               ? 'bg-amber-400 border-amber-500 text-amber-900'
               : 'bg-slate-800 border-slate-700 text-slate-200'
-          }`}
+            }`}
         >
           <Zap className="w-4 h-4" />
           <span>{devModeToast ? 'Dev Mode ON ⚡' : 'Dev Mode OFF'}</span>
@@ -565,12 +605,14 @@ export default function Dashboard() {
           <div className="flex items-center space-x-4">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-center">
               <span className="text-xxs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Level Saat Ini</span>
-              <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">1</span>
+              <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                {stats?.level || 1}
+              </span>
             </div>
             <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50 text-center">
-              <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Kepiting Guru</span>
+              <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Hari Berlalu Sejak Level Sebelumnya</span>
               <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
-                {itemDetails.filter(i => i.srs_stage >= 5).length}
+                {stats?.daysSinceLevelUp !== undefined ? stats.daysSinceLevelUp : 0}
               </span>
             </div>
           </div>
@@ -649,7 +691,6 @@ export default function Dashboard() {
                       }}
                       className="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold rounded-xl shadow-md flex items-center space-x-1.5 transition-all duration-200 select-none cursor-pointer"
                     >
-                      <span className="text-sm">🤓</span>
                       <span>Advanced</span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -795,17 +836,17 @@ export default function Dashboard() {
                   <div className="text-xxs font-extrabold uppercase tracking-widest text-slate-450 dark:text-slate-500">
                     Progres Kanji Level {stats.level}
                   </div>
-                  
+
                   <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-3">
                     {currentLevelKanjiList.map((kanji) => {
                       const isLocked = kanji.srs_stage === 0;
                       const isReadyForLesson = kanji.srs_stage === 1 && !kanji.next_review;
                       const isPassed = kanji.srs_stage >= 5;
-                      
+
                       let cardClass = "";
                       let statusLabel = "";
                       let tooltipText = "";
-                             if (isLocked) {
+                      if (isLocked) {
                         cardClass = "bg-hatched-kanji text-kanji/55 dark:text-kanji/45 border border-dashed border-kanji/35 dark:border-kanji/25";
                         statusLabel = "Terkunci";
                         if (kanji.unlearnedPrereqs.length > 0) {
@@ -826,7 +867,7 @@ export default function Dashboard() {
                         statusLabel = `Kepiting Cilik (${kanji.srs_stage})`;
                         tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Terkunci";
                       }
-                      
+
                       return (
                         <div
                           key={kanji.id}
@@ -840,7 +881,7 @@ export default function Dashboard() {
                               {kanji.slug}
                             </span>
                           </div>
-                          
+
                           <div className="absolute bottom-full mb-2 hidden group-hover:flex flex-col items-center z-50 pointer-events-none transition-all duration-200">
                             <div className="bg-slate-900 dark:bg-slate-950 text-white text-[10px] font-black tracking-wide py-1.5 px-3 rounded-xl shadow-lg border border-slate-800 dark:border-slate-800 whitespace-nowrap space-y-0.5 text-center">
                               <div className="text-slate-400 font-extrabold uppercase text-[8px] tracking-widest">{kanji.slug}</div>
@@ -871,8 +912,8 @@ export default function Dashboard() {
                 <button
                   onClick={() => setActiveTab('schedule')}
                   className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'schedule'
-                      ? 'border-indigo-500 text-indigo-500'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'border-indigo-500 text-indigo-500'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                 >
                   <div className="flex items-center justify-center space-x-1.5">
@@ -883,8 +924,8 @@ export default function Dashboard() {
                 <button
                   onClick={() => setActiveTab('items')}
                   className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'items'
-                      ? 'border-indigo-500 text-indigo-500'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    ? 'border-indigo-500 text-indigo-500'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
                 >
                   <div className="flex items-center justify-center space-x-1.5">
@@ -944,14 +985,13 @@ export default function Dashboard() {
                                       const isSelected = selectedHourIdx === idx;
                                       const hasReviews = item.count > 0;
                                       const barHeightPct = hasReviews ? (item.count / chartMax) * 100 : 0;
-                                      
+
                                       return (
                                         <div
                                           key={idx}
                                           onClick={() => setSelectedHourIdx(idx)}
-                                          className={`flex-1 flex-col items-center justify-end h-full cursor-pointer group relative ${
-                                            idx >= 12 ? 'hidden sm:flex' : 'flex'
-                                          }`}
+                                          className={`flex-1 flex-col items-center justify-end h-full cursor-pointer group relative ${idx >= 12 ? 'hidden sm:flex' : 'flex'
+                                            }`}
                                         >
                                           {/* Hover Count Bubble */}
                                           <div className="absolute -top-8 bg-slate-900 text-white dark:bg-white dark:text-slate-950 text-3xs font-black px-1.5 py-0.5 rounded-md shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none whitespace-nowrap z-20">
@@ -959,23 +999,20 @@ export default function Dashboard() {
                                           </div>
 
                                           {/* Bar Column Outer Container (Slot) */}
-                                          <div 
-                                            className={`w-full h-full bg-slate-100/30 dark:bg-slate-900/10 border border-slate-200/20 dark:border-slate-800/20 rounded-t-md flex flex-col justify-end overflow-hidden transition-all duration-300 ${
-                                              isSelected 
-                                                ? 'ring-2 ring-indigo-500/80 ring-offset-2 dark:ring-offset-slate-950 bg-indigo-50/10 dark:bg-indigo-950/10' 
+                                          <div
+                                            className={`w-full h-full bg-slate-100/30 dark:bg-slate-900/10 border border-slate-200/20 dark:border-slate-800/20 rounded-t-md flex flex-col justify-end overflow-hidden transition-all duration-300 ${isSelected
+                                                ? 'ring-2 ring-indigo-500/80 ring-offset-2 dark:ring-offset-slate-950 bg-indigo-50/10 dark:bg-indigo-950/10'
                                                 : 'hover:bg-slate-200/20 dark:hover:bg-slate-800/20'
-                                            }`}
+                                              }`}
                                           >
                                             {/* Bar Column Inner Value */}
                                             {hasReviews && (
                                               <div
-                                                className={`w-full rounded-t-sm transition-all duration-500 bg-gradient-to-t ${
-                                                  idx === 0 
+                                                className={`w-full rounded-t-sm transition-all duration-500 bg-gradient-to-t ${idx === 0
                                                     ? 'from-pink-500 via-rose-500 to-indigo-500' // Highlight current/overdue hour
                                                     : 'from-indigo-600 to-pink-500 dark:from-indigo-500 dark:to-pink-500'
-                                                } ${
-                                                  isSelected ? 'brightness-110 shadow-lg shadow-indigo-500/20' : 'group-hover:brightness-105'
-                                                }`}
+                                                  } ${isSelected ? 'brightness-110 shadow-lg shadow-indigo-500/20' : 'group-hover:brightness-105'
+                                                  }`}
                                                 style={{ height: `${Math.max(4, barHeightPct)}%` }}
                                               />
                                             )}
@@ -1000,11 +1037,10 @@ export default function Dashboard() {
                                     <div
                                       key={idx}
                                       onClick={() => setSelectedHourIdx(idx)}
-                                      className={`flex-1 text-center cursor-pointer select-none transition-colors duration-200 ${
-                                        isSelected 
-                                          ? 'text-indigo-500 font-black' 
+                                      className={`flex-1 text-center cursor-pointer select-none transition-colors duration-200 ${isSelected
+                                          ? 'text-indigo-500 font-black'
                                           : 'hover:text-slate-700 dark:hover:text-slate-350'
-                                      } ${idx >= 12 ? 'hidden sm:block' : 'block'}`}
+                                        } ${idx >= 12 ? 'hidden sm:block' : 'block'}`}
                                     >
                                       {idx === 0 ? 'Skrg' : item.label.split(':')[0]}
                                     </div>
@@ -1017,12 +1053,12 @@ export default function Dashboard() {
                           {/* INTERACTIVE BREAKDOWN CARD */}
                           {(() => {
                             const selectedBucket = schedule[selectedHourIdx];
-                            const overdueCount = selectedHourIdx === 0 
+                            const overdueCount = selectedHourIdx === 0
                               ? selectedBucket.items.filter((i: any) => {
-                                  const nowTime = new Date().getTime();
-                                  const rTime = new Date(i.next_review).getTime();
-                                  return rTime <= nowTime;
-                                }).length
+                                const nowTime = new Date().getTime();
+                                const rTime = new Date(i.next_review).getTime();
+                                return rTime <= nowTime;
+                              }).length
                               : 0;
 
                             return (
@@ -1034,8 +1070,8 @@ export default function Dashboard() {
                                     </div>
                                     <div>
                                       <h4 className="text-sm font-bold text-slate-800 dark:text-slate-250">
-                                        {selectedHourIdx === 0 
-                                          ? 'Detail Review Saat Ini (Sekarang)' 
+                                        {selectedHourIdx === 0
+                                          ? 'Detail Review Saat Ini (Sekarang)'
                                           : `Detail Review Pukul ${selectedBucket.label} WIB`}
                                       </h4>
                                       <p className="text-3xs font-semibold text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-widest">
@@ -1091,13 +1127,12 @@ export default function Dashboard() {
                                         .map((item: any, idx: number) => (
                                           <div
                                             key={idx}
-                                            className={`w-12 h-12 flex items-center justify-center rounded-xl border text-xl font-black select-none shadow-xxs transition-all hover:scale-110 hover:shadow-xs duration-150 ${
-                                              item.type === 'radical'
+                                            className={`w-12 h-12 flex items-center justify-center rounded-xl border text-xl font-black select-none shadow-xxs transition-all hover:scale-110 hover:shadow-xs duration-150 ${item.type === 'radical'
                                                 ? 'bg-radical/5 border-radical/15 text-radical dark:bg-radical/10/30'
                                                 : item.type === 'kanji'
                                                   ? 'bg-kanji/5 border-kanji/15 text-kanji dark:bg-kanji/10/30'
                                                   : 'bg-vocab/5 border-vocab/15 text-vocab dark:bg-vocab/10/30'
-                                            }`}
+                                              }`}
                                           >
                                             <span>{item.character}</span>
                                           </div>
@@ -1127,10 +1162,10 @@ export default function Dashboard() {
                           <div
                             key={idx}
                             className={`p-3 rounded-2xl flex flex-col justify-between items-center text-center border shadow-xxs ${item.type === 'radical'
-                                ? 'bg-radical/5 border-radical/10 text-radical dark:bg-radical/10'
-                                : item.type === 'kanji'
-                                  ? 'bg-kanji/5 border-kanji/10 text-kanji dark:bg-kanji/10'
-                                  : 'bg-vocab/5 border-vocab/10 text-vocab dark:bg-vocab/10'
+                              ? 'bg-radical/5 border-radical/10 text-radical dark:bg-radical/10'
+                              : item.type === 'kanji'
+                                ? 'bg-kanji/5 border-kanji/10 text-kanji dark:bg-kanji/10'
+                                : 'bg-vocab/5 border-vocab/10 text-vocab dark:bg-vocab/10'
                               }`}
                           >
                             <span className="text-2xl font-black">{item.character}</span>
@@ -1207,19 +1242,19 @@ export default function Dashboard() {
                   <div
                     key={idx}
                     className={`flex items-center justify-between p-3 rounded-2xl transition-all duration-200 ${user.isSelf
-                        ? 'bg-gradient-to-r from-pink-500/20 to-indigo-500/20 border border-indigo-500/30'
-                        : 'bg-slate-900/50 border border-slate-800'
+                      ? 'bg-gradient-to-r from-pink-500/20 to-indigo-500/20 border border-indigo-500/30'
+                      : 'bg-slate-900/50 border border-slate-800'
                       }`}
                   >
                     <div className="flex items-center space-x-3.5">
                       {/* Rank Number */}
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${idx === 0
-                          ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
-                          : idx === 1
-                            ? 'bg-slate-300 text-slate-950'
-                            : idx === 2
-                              ? 'bg-amber-700 text-slate-50'
-                              : 'bg-slate-800 text-slate-400'
+                        ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-400/20'
+                        : idx === 1
+                          ? 'bg-slate-300 text-slate-950'
+                          : idx === 2
+                            ? 'bg-amber-700 text-slate-50'
+                            : 'bg-slate-800 text-slate-400'
                         }`}>
                         {user.rank}
                       </span>
@@ -1263,7 +1298,7 @@ export default function Dashboard() {
       {pickerOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in">
           <div className="max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-fade-in">
-            
+
             {/* Modal Header */}
             <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-start bg-slate-50 dark:bg-slate-900/50">
               <div>
@@ -1291,7 +1326,7 @@ export default function Dashboard() {
 
             {/* Scrollable Content */}
             <div className="p-6 sm:p-8 flex-1 overflow-y-auto space-y-6">
-              
+
               {/* Instructions */}
               <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl flex items-start space-x-3 text-xs leading-relaxed text-indigo-855 dark:text-indigo-300 animate-fade-in">
                 <Info className="w-5 h-5 shrink-0 text-indigo-500 mt-0.5" />
@@ -1311,10 +1346,10 @@ export default function Dashboard() {
                   {Object.entries(getGroupedLessons()).map(([levelNumStr, levelData]) => {
                     const levelNum = parseInt(levelNumStr);
                     const isLvlAll = isLevelAllSelected(levelNum);
-                    
+
                     return (
                       <div key={levelNum} className="space-y-4 border border-slate-150 dark:border-slate-800/80 p-5 rounded-2xl bg-slate-50/30 dark:bg-slate-900/30">
-                        
+
                         {/* Level Header Row */}
                         <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-2">
                           <h3 className="text-lg font-black tracking-tight bg-gradient-to-r from-indigo-500 to-pink-500 bg-clip-text text-transparent">
@@ -1330,7 +1365,7 @@ export default function Dashboard() {
 
                         {/* Level content split by item type */}
                         <div className="space-y-5">
-                          
+
                           {/* Radicals */}
                           {levelData.radical.length > 0 && (
                             <div className="space-y-2 animate-fade-in">
@@ -1350,11 +1385,10 @@ export default function Dashboard() {
                                     <button
                                       key={item.id}
                                       onClick={() => toggleSelection(item.id)}
-                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${
-                                        isSel
+                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${isSel
                                           ? 'bg-radical text-white border-2 border-white scale-105 shadow-md glow-radical cursor-pointer'
                                           : 'bg-radical/15 text-radical border border-dashed border-radical/30 hover:bg-radical/30 hover:text-radical cursor-pointer font-bold'
-                                      }`}
+                                        }`}
                                     >
                                       <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
                                       <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
@@ -1384,11 +1418,10 @@ export default function Dashboard() {
                                     <button
                                       key={item.id}
                                       onClick={() => toggleSelection(item.id)}
-                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${
-                                        isSel
+                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${isSel
                                           ? 'bg-kanji text-white border-2 border-white scale-105 shadow-md glow-kanji cursor-pointer'
                                           : 'bg-kanji/15 text-kanji border border-dashed border-kanji/30 hover:bg-kanji/30 hover:text-kanji cursor-pointer font-bold'
-                                      }`}
+                                        }`}
                                     >
                                       <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
                                       <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
@@ -1418,11 +1451,10 @@ export default function Dashboard() {
                                     <button
                                       key={item.id}
                                       onClick={() => toggleSelection(item.id)}
-                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${
-                                        isSel
+                                      className={`flex flex-col items-center justify-center py-2.5 px-3 min-w-[3.5rem] rounded-xl transition-all duration-150 active:scale-95 select-none ${isSel
                                           ? 'bg-vocab text-white border-2 border-white scale-105 shadow-md glow-vocab cursor-pointer'
                                           : 'bg-vocab/15 text-vocab border border-dashed border-vocab/30 hover:bg-vocab/30 hover:text-vocab cursor-pointer font-bold'
-                                      }`}
+                                        }`}
                                     >
                                       <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
                                       <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
@@ -1445,7 +1477,7 @@ export default function Dashboard() {
 
             {/* Modal Footer */}
             <div className="p-6 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/80 flex flex-col sm:flex-row items-center justify-between gap-4">
-              
+
               {/* Interleave Toggle */}
               <label className="flex items-center space-x-2.5 cursor-pointer select-none text-sm text-slate-700 dark:text-slate-350">
                 <input
