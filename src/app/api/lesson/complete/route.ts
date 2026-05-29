@@ -46,7 +46,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { itemIds } = await request.json();
+    const { itemIds, durationSeconds } = await request.json();
     if (!itemIds || !Array.isArray(itemIds) || itemIds.length === 0) {
       return NextResponse.json({ error: 'Item IDs are required' }, { status: 400 });
     }
@@ -76,6 +76,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       activity_type: 'lesson',
       item_count: itemIds.length,
+      duration_seconds: durationSeconds || 0,
     });
 
     return NextResponse.json({ success: true, count: itemIds.length });

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, Shield, FlaskConical, Zap } from 'lucide-react';
+import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical } from 'lucide-react';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
@@ -13,10 +13,10 @@ export default function Navbar() {
   const [isLoading, setIsLoading] = useState(true);
   const [devMode, setDevMode] = useState<boolean>(false);
   const [betaTester, setBetaTester] = useState<boolean>(false);
-  const [betaResetting, setBetaResetting] = useState(false);
+  const [_betaResetting, setBetaResetting] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -46,7 +46,7 @@ export default function Navbar() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const toggleDevMode = () => {
+  const _toggleDevMode = () => {
     const nextVal = !devMode;
     setDevMode(nextVal);
     localStorage.setItem('kanigani-dev-mode', String(nextVal));
@@ -60,8 +60,8 @@ export default function Navbar() {
     window.dispatchEvent(new Event('storage'));
   };
 
-  const handleAccelerateReviews = async () => {
-    if (!confirm('Percepat semua review menjadi SEKARANG? Kamu bisa langsung review semuanya!')) return;
+  const _handleAccelerateReviews = async () => {
+    if (!confirm('Percepat review menjadi SEKARANG (Hanya untuk item s/d tingkat Kepiting Guru)?')) return;
     setBetaResetting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -72,7 +72,7 @@ export default function Navbar() {
         .update({ next_review: now })
         .eq('user_id', user.id)
         .gte('srs_stage', 1)
-        .lte('srs_stage', 8)
+        .lte('srs_stage', 6)
         .not('next_review', 'is', null);
       if (error) throw error;
       setIsDropdownOpen(false);
@@ -164,73 +164,82 @@ export default function Navbar() {
   if (isAuthPage) return null;
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-slate-900 border-b border-slate-800 text-white shadow-md">
+    <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-sm transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo & Level */}
           <div className="flex items-center space-x-4">
             <Link href="/dashboard" className="flex items-center space-x-2 group">
-              <span className="text-2xl font-extrabold tracking-wider bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-200">
-                KaniGani
-              </span>
-              <span className="hidden sm:inline-block px-2 py-0.5 text-xs font-bold bg-indigo-600 rounded-full text-indigo-50 border border-indigo-500 animate-pulse">
-                v2.0
-              </span>
+              <div className="flex flex-col items-start justify-center group cursor-pointer">
+                {/* Sub-teks kecil aksen Jepang */}
+                <span className="text-[9px] font-bold tracking-[0.3em] text-slate-400 uppercase leading-none mb-0.5 transform group-hover:translate-x-1 transition-transform duration-300">
+                  カニガニ
+                </span>
+                <span className="text-2xl tracking-tight text-slate-800 dark:text-white transition-all duration-200">
+                  <span className="font-black">Kani</span>
+                  {/* Mengubah warna dari indigo menjadi rose (merah modern yang estetik) */}
+                  <span className="font-light text-rose-500 dark:text-rose-400">Gani</span>
+                </span>
+              </div>
             </Link>
-            
+
             {username && (
-              <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-800 rounded-full border border-slate-700 text-slate-300 text-sm">
-                <Layers className="w-4 h-4 text-indigo-400" />
+              <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm">
+                <Layers className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
                 <span className="font-semibold">Level {level}</span>
               </div>
             )}
           </div>
 
-          {/* Navigation Links - Colorful like WaniKani */}
+          {/* Navigation Links - Colorful like KaniGani */}
           <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
-            <Link 
-              href="/dashboard" 
-              className={`px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors ${
-                pathname === '/dashboard' ? 'text-indigo-400 bg-slate-800' : 'text-slate-300'
-              }`}
+            <Link
+              href="/dashboard"
+              className={`px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard'
+                ? 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-slate-800 font-bold'
+                : 'text-slate-650 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
             >
               Dashboard
             </Link>
 
             {/* Radical (Cyan) */}
-            <Link 
-              href="/radical" 
-              className={`px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-radical/20 hover:shadow-[0_0_10px_rgba(0,160,240,0.2)] border border-transparent hover:border-radical/30 transition-all duration-200 cursor-pointer ${
-                pathname === '/radical' ? 'text-radical font-bold bg-slate-800' : ''
-              }`}
+            <Link
+              href="/radical"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/radical'
+                ? 'text-radical font-bold bg-radical/10 dark:bg-slate-800 border border-radical/20 dark:border-slate-700 shadow-xs'
+                : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-radical/20 hover:shadow-[0_0_10px_rgba(0,160,240,0.2)] border border-transparent hover:border-radical/30'
+                }`}
             >
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-radical mr-2"></span>
               Radikal
             </Link>
 
             {/* Kanji (Pink) */}
-            <Link 
-              href="/kanji" 
-              className={`px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-kanji/20 hover:shadow-[0_0_10px_rgba(240,0,160,0.2)] border border-transparent hover:border-kanji/30 transition-all duration-200 cursor-pointer ${
-                pathname === '/kanji' ? 'text-kanji font-bold bg-slate-800' : ''
-              }`}
+            <Link
+              href="/kanji"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/kanji'
+                ? 'text-kanji font-bold bg-kanji/10 dark:bg-slate-800 border border-kanji/20 dark:border-slate-700 shadow-xs'
+                : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-kanji/20 hover:shadow-[0_0_10px_rgba(240,0,160,0.2)] border border-transparent hover:border-kanji/30'
+                }`}
             >
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-kanji mr-2"></span>
               Kanji
             </Link>
 
             {/* Vocabulary (Purple) */}
-            <Link 
-              href="/vocabulary" 
-              className={`px-3 py-2 rounded-lg text-slate-300 hover:text-white hover:bg-vocab/20 hover:shadow-[0_0_10px_rgba(160,0,240,0.2)] border border-transparent hover:border-vocab/30 transition-all duration-200 cursor-pointer ${
-                pathname === '/vocabulary' ? 'text-vocab font-bold bg-slate-800' : ''
-              }`}
+            <Link
+              href="/vocabulary"
+              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/vocabulary'
+                ? 'text-vocab font-bold bg-vocab/10 dark:bg-slate-800 border border-vocab/20 dark:border-slate-700 shadow-xs'
+                : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-vocab/20 hover:shadow-[0_0_10px_rgba(160,0,240,0.2)] border border-transparent hover:border-vocab/30'
+                }`}
             >
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-vocab mr-2"></span>
               Kosakata
             </Link>
 
-            <span className="px-3 py-2 rounded-lg text-slate-400 hover:text-slate-200 transition-colors cursor-pointer flex items-center space-x-1">
+            <span className="px-3 py-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center space-x-1">
               <HelpCircle className="w-4 h-4" />
               <span>Bantuan</span>
             </span>
@@ -243,74 +252,73 @@ export default function Navbar() {
             {!isLoading && username ? (
               <div className="flex items-center space-x-3">
                 <div className="hidden lg:flex flex-col text-right">
-                  <span className="text-sm font-semibold text-slate-200">{username}</span>
-                  <span className="text-xxs text-slate-400">Pengguna KaniGani</span>
+                  <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{username}</span>
+                  <span className="text-xxs text-slate-450 dark:text-slate-500 font-semibold">Pengguna KaniGani</span>
                 </div>
-                
+
                 <div className="relative" ref={dropdownRef}>
-                  <button 
+                  <button
                     onClick={() => setIsDropdownOpen((prev) => !prev)}
-                    className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 focus:outline-none transition-all duration-200"
+                    className="flex items-center justify-center w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 focus:outline-none transition-all duration-200 cursor-pointer"
                   >
                     <User className="w-5 h-5" />
                   </button>
                   {/* Dropdown Menu Wrapper */}
                   {isDropdownOpen && (
                     <div className="absolute right-0 top-full pt-2 w-48 animate-fade-in z-50">
-                      <div className="bg-slate-900 border border-slate-800 rounded-xl shadow-xl py-1 text-slate-300 text-sm">
-                        <div className="px-4 py-2 border-b border-slate-800 text-slate-400 text-xs">
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl py-1 text-slate-700 dark:text-slate-350 text-sm">
+                        <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-slate-450 dark:text-slate-500 text-xs">
                           Menu Akun
                         </div>
-                        <Link 
-                          href="/dashboard" 
+                        <Link
+                          href="/dashboard"
                           onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors"
+                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white transition-colors"
                         >
-                          <BookOpen className="w-4 h-4 text-indigo-400" />
+                          <BookOpen className="w-4 h-4 text-indigo-500" />
                           <span>Belajar</span>
                         </Link>
-                        <Link 
-                          href="/settings" 
+                        <Link
+                          href="/settings"
                           onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-white transition-colors cursor-pointer"
+                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white transition-colors cursor-pointer"
                         >
-                          <Settings className="w-4 h-4 text-slate-400" />
+                          <Settings className="w-4 h-4 text-slate-450" />
                           <span>Pengaturan</span>
                         </Link>
                         {devMode && (
-                          <Link 
-                            href="/admin" 
+                          <Link
+                            href="/admin"
                             onClick={() => setIsDropdownOpen(false)}
-                            className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-800 hover:text-emerald-400 transition-colors text-left border-t border-slate-800"
+                            className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
                           >
-                            <Layers className="w-4 h-4 text-emerald-400" />
+                            <Layers className="w-4 h-4 text-emerald-500" />
                             <span className="font-bold">CRUD Database</span>
                           </Link>
                         )}
                         {/* Beta Tester Toggle */}
                         <button
                           onClick={toggleBetaTester}
-                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-800 transition-colors text-left border-t border-slate-800"
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white transition-colors text-left border-t border-slate-100 dark:border-slate-800 cursor-pointer"
                         >
                           <span className="flex items-center space-x-2">
-                            <FlaskConical className={`w-4 h-4 ${betaTester ? 'text-violet-400' : 'text-slate-400'}`} />
-                            <span className={betaTester ? 'text-violet-300 font-semibold' : ''}>Beta Tester</span>
+                            <FlaskConical className={`w-4 h-4 ${betaTester ? 'text-violet-500 dark:text-violet-400' : 'text-slate-400'}`} />
+                            <span className={betaTester ? 'text-violet-650 dark:text-violet-300 font-semibold' : ''}>Beta Tester</span>
                           </span>
-                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
-                            betaTester
-                              ? 'bg-violet-500/20 text-violet-400 border border-violet-500/30'
-                              : 'bg-slate-800 text-slate-500 border border-slate-700'
-                          }`}>
+                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${betaTester
+                            ? 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border border-violet-200 dark:border-violet-500/30'
+                            : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
+                            }`}>
                             {betaTester ? 'ON' : 'OFF'}
                           </span>
                         </button>
 
-                        <button 
+                        <button
                           onClick={() => {
                             setIsDropdownOpen(false);
                             handleLogout();
-                          }} 
-                          className="w-full flex items-center space-x-2 px-4 py-2 hover:bg-red-900/30 hover:text-red-400 transition-colors text-left border-t border-slate-800"
+                          }}
+                          className="w-full flex items-center space-x-2 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 transition-colors text-left border-t border-slate-100 dark:border-slate-800 cursor-pointer"
                         >
                           <LogOut className="w-4 h-4" />
                           <span>Keluar</span>

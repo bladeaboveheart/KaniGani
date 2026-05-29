@@ -79,7 +79,7 @@ interface QuizStore {
   submitAnswer: () => void | Promise<void>;
   proceedNext: () => void;
   toggleItemInfo: (force?: boolean) => void;
-  toggleWrapUp: () => void;
+  toggleWrapUp: (completedCount?: number) => void;
   resetStore: () => void;
   undoActiveCard: () => void;
 }
@@ -243,6 +243,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
     // Clear warning state first
     set({ warningMsg: '' });
+
+    // 0. LATIN LETTERS IN READING WARNING
+    if (activeCard.cardType === 'reading' && /[a-z]/.test(trimmedInput)) {
+      set({
+        warningMsg: "Jawaban Anda mengandung huruf Latin/Romaji. Silakan ketik dalam Hiragana/Katakana!",
+      });
+      return;
+    }
 
     // Pre-determine correctness of the meaning to bypass warnings if correct
     let isCorrectMeaning = false;
@@ -469,9 +477,13 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     let updatedQueue = queue.filter((_, idx) => idx !== 0);
 
     if (wrapUpActive) {
+      const completedCount = Object.values(progress).filter(
+        (prog) => prog.meaningCorrect && prog.readingCorrect
+      ).length;
+      const remainingNeeded = Math.max(0, 10 - completedCount);
       const remainingUniqueIds = Array.from(new Set(updatedQueue.map(c => c.itemId)));
-      if (remainingUniqueIds.length > 10) {
-        const allowedIds = remainingUniqueIds.slice(0, 10);
+      if (remainingUniqueIds.length > remainingNeeded) {
+        const allowedIds = remainingUniqueIds.slice(0, remainingNeeded);
         updatedQueue = updatedQueue.filter(c => allowedIds.includes(c.itemId));
       }
     }
@@ -491,8 +503,8 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     });
   },
 
-  toggleWrapUp: () => {
-    const { queue, wrapUpActive, untrimmedQueue } = get();
+  toggleWrapUp: (completedCount?: number) => {
+    const { queue, wrapUpActive, untrimmedQueue, itemProgress } = get();
     if (wrapUpActive) {
       if (untrimmedQueue) {
         // Appending restored cards back to the end of the current queue
@@ -511,7 +523,16 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       }
     } else {
       const uniqueItemIds = Array.from(new Set(queue.map(c => c.itemId)));
-      if (uniqueItemIds.length <= 10) {
+      
+      const actualCompletedCount = completedCount !== undefined
+        ? completedCount
+        : Object.values(itemProgress).filter(
+            (prog) => prog.meaningCorrect && prog.readingCorrect
+          ).length;
+
+      const remainingNeeded = Math.max(0, 10 - actualCompletedCount);
+
+      if (uniqueItemIds.length <= remainingNeeded) {
         set({
           wrapUpActive: true,
           untrimmedQueue: queue,
@@ -520,8 +541,8 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         return;
       }
 
-      const first10Ids = uniqueItemIds.slice(0, 10);
-      const trimmedQueue = queue.filter(c => first10Ids.includes(c.itemId));
+      const firstNIds = uniqueItemIds.slice(0, remainingNeeded);
+      const trimmedQueue = queue.filter(c => firstNIds.includes(c.itemId));
 
       set({
         untrimmedQueue: queue,

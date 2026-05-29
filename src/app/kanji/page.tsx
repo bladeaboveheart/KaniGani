@@ -41,7 +41,9 @@ export default function KanjiPage() {
       const params = new URLSearchParams(window.location.search);
       const query = params.get('search');
       if (query) {
-        setSearchQuery(decodeURIComponent(query));
+        setTimeout(() => {
+          setSearchQuery(decodeURIComponent(query));
+        }, 0);
       }
     }
   }, []);
@@ -55,7 +57,9 @@ export default function KanjiPage() {
         const decodedChar = decodeURIComponent(charParam);
         const found = kanjis.find(k => k.character === decodedChar);
         if (found) {
-          setSelectedItem(found);
+          setTimeout(() => {
+            setSelectedItem(found);
+          }, 0);
         }
       }
     }

@@ -1,8 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import Link from 'next/link';
-import { HelpCircle, Shield, Globe, Award } from 'lucide-react';
+import { HelpCircle, Shield, Globe } from 'lucide-react';
 
 export default function Footer() {
   const pathname = usePathname();

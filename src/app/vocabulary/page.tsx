@@ -148,7 +148,7 @@ export default function VocabularyPage() {
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
     if (stage === 8) return 'Kepiting Sakti';
-    return 'Kepiting Rebus 🦀🔥';
+    return 'Kepiting Rebus';
   };
 
   const getSrsColorClass = (stage: number) => {

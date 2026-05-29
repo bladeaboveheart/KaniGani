@@ -11,8 +11,8 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: 'KaniGani — Belajar Karakter Jepang Berbahasa Indonesia',
   description:
-    'Aplikasi klon WaniKani terjemahan Bahasa Indonesia. Kuasai Kanji Jepang melalui alur linear Radical -> Kanji -> Kosakata dengan algoritma Spaced Repetition System (SRS) yang terbukti cerdas dan aman.',
-  keywords: 'wanikani, kanji, bahasa indonesia, bahasa jepang, srs, spaced repetition, belajar jepang, vocabulary, radical',
+    'Aplikasi klon KaniGani terjemahan Bahasa Indonesia. Kuasai Kanji Jepang melalui alur linear Radical -> Kanji -> Kosakata dengan algoritma Spaced Repetition System (SRS) yang terbukti cerdas dan aman.',
+  keywords: 'kanigani, kanji, bahasa indonesia, bahasa jepang, srs, spaced repetition, belajar jepang, vocabulary, radical',
 };
 
 export default function RootLayout({

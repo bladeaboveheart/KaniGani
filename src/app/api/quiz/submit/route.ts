@@ -263,7 +263,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { itemId, wrongCount } = await request.json();
+    const { itemId, wrongCount, durationSeconds } = await request.json();
     if (!itemId || typeof wrongCount !== 'number') {
       return NextResponse.json({ error: 'Item ID dan wrongCount wajib diisi' }, { status: 400 });
     }
@@ -331,6 +331,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       activity_type: 'review',
       item_count: 1,
+      duration_seconds: durationSeconds || 0,
     });
 
     return NextResponse.json({

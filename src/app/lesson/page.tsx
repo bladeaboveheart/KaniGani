@@ -4,17 +4,23 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useQuizStore } from '@/store/useQuizStore';
-import { Item, ItemMeaning, ItemReading, ItemContextSentence } from '@/lib/types';
-import * as wanakana from 'wanakana';
+import { Item } from '@/lib/types';
+import { useActiveTimer } from '@/hooks/useActiveTimer';
 import CrabBackground from '@/components/CrabBackground';
 import {
-  ArrowLeft, ArrowRight, BookOpen, CheckCircle,
-  HelpCircle, Eye, RefreshCw, XCircle, Award, AlertCircle,
-  Home, Check, Inbox, Clock, RotateCcw, ArrowUp, ArrowDown, Zap
+  ArrowLeft, ArrowRight, BookOpen, Award, Home
 } from 'lucide-react';
+
+// Import Shared Modular Quiz Components
+import QuizHeader from '@/components/quiz/QuizHeader';
+import QuizInput from '@/components/quiz/QuizInput';
+import QuizFeedback from '@/components/quiz/QuizFeedback';
+import QuizActionButtons from '@/components/quiz/QuizActionButtons';
+import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 
 export default function LessonPage() {
   const router = useRouter();
+  const { getAndResetSeconds } = useActiveTimer();
 
   // Zustand Store
   const {
@@ -29,6 +35,7 @@ export default function LessonPage() {
     closestAcceptedMeaning,
     warningMsg,
     showItemInfo,
+    wrongCounts,
     setUserInput,
     submitAnswer,
     proceedNext,
@@ -42,18 +49,19 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<'learn' | 'quiz' | 'summary'>('learn');
   const [currentBatch, setCurrentBatch] = useState<Item[]>([]);
-  const [itemIndex, setItemIndex] = useState(0); // Index item di batch aktif
-  const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'sentences'>('info');
+  const [itemIndex, setItemIndex] = useState(0); // Index item in active batch
+  const [activeTab, setActiveTab] = useState<'info' | 'mnemonic'>('info');
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
 
-  // Read global dev mode setting from localStorage
+  // Read global dev mode setting
   useEffect(() => {
-    setGlobalDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+    setTimeout(() => {
+      setGlobalDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
+    }, 0);
   }, []);
 
-  // Dev mode: get the first accepted answer for the active card
   const getDevModeAnswer = () => {
     if (!activeCard) return '';
     if (activeCard.cardType === 'meaning') {
@@ -63,7 +71,6 @@ export default function LessonPage() {
   };
 
   const inputRef = useRef<HTMLInputElement>(null);
-
   const currentItem = currentBatch[itemIndex];
 
   const startQuiz = useCallback(() => {
@@ -82,13 +89,32 @@ export default function LessonPage() {
           return;
         }
 
-        // Ambil item dengan srs_stage = 1 & next_review = null
-        const { data, error } = await supabase
+        // Check custom lesson queue
+        const customQueueStr = localStorage.getItem('custom-lesson-queue');
+        const customInterleaveStr = localStorage.getItem('custom-lesson-interleave');
+        
+        let customQueueIds: string[] | null = null;
+        if (customQueueStr) {
+          try {
+            customQueueIds = JSON.parse(customQueueStr);
+          } catch (e) {
+            console.error('Failed to parse custom-lesson-queue from localStorage:', e);
+          }
+        }
+
+        // Fetch lesson items (srs_stage = 1 & next_review = null)
+        let query = supabase
           .from('user_progress')
           .select('item_id, srs_stage, unlocked_at, items(*)')
           .eq('user_id', user.id)
           .eq('srs_stage', 1)
           .is('next_review', null);
+
+        if (customQueueIds && customQueueIds.length > 0) {
+          query = query.in('item_id', customQueueIds);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         if (!data || data.length === 0) {
@@ -111,7 +137,7 @@ export default function LessonPage() {
         const readings = readingsRes.data || [];
         const sentences = sentencesRes.data || [];
 
-        // Gabungkan detail
+        // Combine details
         const itemsWithDetails: Item[] = rawItems.map((item: any) => {
           const mList = meanings.filter((m) => m.item_id === item.id);
           const rList = readings.filter((r) => r.item_id === item.id);
@@ -136,7 +162,7 @@ export default function LessonPage() {
           };
         });
 
-        // Urutkan berdasarkan level (ASC), tipe (radical→kanji→vocab), lalu lesson_position
+        // Sort: level (ASC), type (radical→kanji→vocab), lesson_position
         const typePriority: Record<string, number> = { radical: 0, kanji: 1, vocabulary: 2 };
         itemsWithDetails.sort((a, b) => {
           const levelDiff = a.level - b.level;
@@ -146,10 +172,27 @@ export default function LessonPage() {
           return a.lesson_position - b.lesson_position;
         });
 
-        setLessons(itemsWithDetails);
+        // Interleave lessons if requested
+        let finalLessons = itemsWithDetails;
+        if (customInterleaveStr === 'true') {
+          const radicals = itemsWithDetails.filter(i => i.type === 'radical');
+          const kanjis = itemsWithDetails.filter(i => i.type === 'kanji');
+          const vocabs = itemsWithDetails.filter(i => i.type === 'vocabulary');
+          
+          const interleaved: Item[] = [];
+          const maxLen = Math.max(radicals.length, kanjis.length, vocabs.length);
+          for (let i = 0; i < maxLen; i++) {
+            if (i < radicals.length) interleaved.push(radicals[i]);
+            if (i < kanjis.length) interleaved.push(kanjis[i]);
+            if (i < vocabs.length) interleaved.push(vocabs[i]);
+          }
+          finalLessons = interleaved;
+        }
 
-        // Ambil batch 5 item pertama
-        const batch = itemsWithDetails.slice(0, 5);
+        setLessons(finalLessons);
+
+        // Get first batch of 5 items
+        const batch = finalLessons.slice(0, 5);
         setCurrentBatch(batch);
         setItemIndex(0);
 
@@ -162,25 +205,23 @@ export default function LessonPage() {
 
     loadLessons();
     return () => resetStore();
-  }, [router, resetStore]);
+  }, [router, resetStore, initializeSession]);
 
-  // Handle WanaKana conversion on input change
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value;
-    if (activeCard && activeCard.cardType === 'reading') {
-      // Ubah ketikan Romaji ke Hiragana secara real-time
-      value = wanakana.toKana(value, { IMEMode: true });
+  const handleQuizSubmitAction = () => {
+    if (!isAnswerSubmitted) {
+      if (userInput.trim() !== '') {
+        submitAnswer();
+      }
+    } else {
+      proceedNext();
     }
-    setUserInput(value);
   };
 
-  // Keyboard controls
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (!isAnswerSubmitted) {
         if (devMode && userInput.trim() === '') {
-          // Dev mode autofill: inject correct answer then submit
           setUserInput(getDevModeAnswer());
           setTimeout(() => {
             submitAnswer();
@@ -201,7 +242,7 @@ export default function LessonPage() {
     }
   };
 
-  // Focus input automatically (skip on mobile to avoid keyboard popups and scroll jumping)
+  // Focus input automatically (skip on mobile)
   useEffect(() => {
     if (phase === 'quiz' && activeCard && inputRef.current) {
       const isMobile = typeof window !== 'undefined' && (
@@ -214,7 +255,7 @@ export default function LessonPage() {
     }
   }, [phase, activeCard, isAnswerSubmitted, incorrectActive]);
 
-  // Hotkey 'f' untuk toggle detail info item setelah submit jawaban
+  // Hotkey 'f' to toggle detail drawer
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.key === 'f' || e.key === 'F') && isAnswerSubmitted && phase === 'quiz') {
@@ -230,12 +271,11 @@ export default function LessonPage() {
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [isAnswerSubmitted, toggleItemInfo, phase]);
 
-  // Keyboard controls for learning phase (ArrowLeft and ArrowRight)
+  // Keyboard controls for learn phase
   useEffect(() => {
     const handleLearnKeyDown = (e: KeyboardEvent) => {
       if (phase !== 'learn') return;
 
-      // Skip keydown actions if user is typing in an input/textarea element
       const isInputActive = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
       if (isInputActive) return;
 
@@ -244,10 +284,8 @@ export default function LessonPage() {
         const hasMnemonic = currentItem && currentItem.type !== 'radical';
 
         if (hasMnemonic && activeTab !== 'info') {
-          // Switch back to 'info' tab first if not already there
           setActiveTab('info');
         } else {
-          // Go to previous card if already on 'info' tab
           if (itemIndex > 0) {
             const prevIdx = itemIndex - 1;
             setItemIndex(prevIdx);
@@ -264,10 +302,8 @@ export default function LessonPage() {
         const hasMnemonic = currentItem && currentItem.type !== 'radical';
 
         if (hasMnemonic && activeTab === 'info') {
-          // 1st press opens 'Cara Baca' tab
           setActiveTab('mnemonic');
         } else {
-          // 2nd press (or if radical / already on cara baca) goes to next card or starts quiz
           if (itemIndex < currentBatch.length - 1) {
             setItemIndex((prev) => prev + 1);
             setActiveTab('info');
@@ -282,9 +318,6 @@ export default function LessonPage() {
     return () => window.removeEventListener('keydown', handleLearnKeyDown);
   }, [phase, itemIndex, currentItem, activeTab, currentBatch, startQuiz]);
 
-
-
-  // Selesaikan kuis batch lesson
   const completeBatch = async () => {
     setLoading(true);
     try {
@@ -292,6 +325,7 @@ export default function LessonPage() {
       const token = session?.access_token;
 
       const itemIds = currentBatch.map(i => i.id);
+      const durationSeconds = getAndResetSeconds();
 
       const res = await fetch('/api/lesson/complete', {
         method: 'POST',
@@ -299,11 +333,28 @@ export default function LessonPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ itemIds })
+        body: JSON.stringify({ itemIds, durationSeconds })
       });
 
       if (!res.ok) {
         throw new Error('Gagal menyimpan hasil lesson di server.');
+      }
+
+      // Remove learned items from custom queue
+      const customQueueStr = localStorage.getItem('custom-lesson-queue');
+      if (customQueueStr) {
+        try {
+          const customQueueIds = JSON.parse(customQueueStr) as string[];
+          const remainingCustomIds = customQueueIds.filter(id => !itemIds.includes(id));
+          if (remainingCustomIds.length === 0) {
+            localStorage.removeItem('custom-lesson-queue');
+            localStorage.removeItem('custom-lesson-interleave');
+          } else {
+            localStorage.setItem('custom-lesson-queue', JSON.stringify(remainingCustomIds));
+          }
+        } catch (e) {
+          console.error('Error updating custom lesson queue:', e);
+        }
       }
 
       setPhase('summary');
@@ -315,19 +366,19 @@ export default function LessonPage() {
     }
   };
 
-  // Pemicu perpindahan kuis setelah selesai kuis batch
   useEffect(() => {
     if (phase === 'quiz' && queue.length === 0 && currentBatch.length > 0) {
-      completeBatch();
+      setTimeout(() => {
+        completeBatch();
+      }, 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, queue, currentBatch]);
 
-  // Lanjut ke batch berikutnya
   const handleNextBatch = () => {
     const remainingLessons = lessons.slice(currentBatch.length);
     if (remainingLessons.length > 0) {
       const nextBatch = remainingLessons.slice(0, 5);
-      // Update lessons list
       setLessons(remainingLessons);
       setCurrentBatch(nextBatch);
       setItemIndex(0);
@@ -343,7 +394,7 @@ export default function LessonPage() {
     return (
       <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
-        <div className="flex flex-col items-center space-y-4">
+        <div className="flex flex-col items-center space-y-4 select-none">
           <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
           <p className="font-semibold text-sm">Menyiapkan materi pembelajaran...</p>
         </div>
@@ -351,10 +402,9 @@ export default function LessonPage() {
     );
   }
 
-  // Jika lesson kosong
   if (lessons.length === 0 && phase !== 'summary') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-55 dark:bg-slate-950 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-955 px-4">
         <CrabBackground />
         <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <BookOpen className="w-16 h-16 mx-auto text-teal-500 animate-bounce" />
@@ -363,8 +413,12 @@ export default function LessonPage() {
             Hebat! Tidak ada item lesson baru yang tersedia saat ini. Silakan kembali ke dashboard atau periksa level up prasyarat Anda.
           </p>
           <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full py-3 bg-teal-500 text-white font-bold rounded-2xl shadow-md hover:bg-teal-600 transition-colors"
+            onClick={() => {
+              localStorage.removeItem('custom-lesson-queue');
+              localStorage.removeItem('custom-lesson-interleave');
+              router.push('/dashboard');
+            }}
+            className="w-full py-3 bg-teal-500 text-white font-bold rounded-2xl shadow-md hover:bg-teal-600 transition-colors cursor-pointer animate-pulse"
           >
             Kembali ke Dashboard
           </button>
@@ -373,9 +427,6 @@ export default function LessonPage() {
     );
   }
 
-
-
-  // Helper styles berdasarkan kategori item
   const getItemColorClass = (type: string) => {
     if (type === 'radical') return 'bg-radical border-radical/20 glow-radical';
     if (type === 'kanji') return 'bg-kanji border-kanji/20 glow-kanji';
@@ -388,149 +439,86 @@ export default function LessonPage() {
     return 'Kosakata';
   };
 
-  const renderPrompt = () => {
-    if (!activeCard) return null;
-
-    if (activeCard.cardType === 'meaning') {
-      return (
-        <span>
-          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-teal-100 text-teal-855 dark:bg-teal-950/60 dark:text-teal-350 font-black border border-teal-200/50 dark:border-teal-900/50 shadow-xxs">arti</span> karakter ini?
-        </span>
-      );
-    }
-
-    if (activeCard.type === 'vocabulary') {
-      return (
-        <span>
-          Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-855 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter ini?
-        </span>
-      );
-    }
-
-    if (activeCard.type === 'kanji') {
-      const readings = activeCard.item.readings || [];
-      const primaryReadingObj = readings.find(r => r.primary_reading);
-      const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
-
-      if (expectedType === 'onyomi') {
-        return (
-          <span>
-            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-indigo-100 text-indigo-855 dark:bg-indigo-950/60 dark:text-indigo-350 font-black border border-indigo-200/50 dark:border-indigo-900/50 shadow-xxs">bacaan Onyomi</span> karakter ini?
-          </span>
-        );
-      }
-      if (expectedType === 'kunyomi') {
-        return (
-          <span>
-            Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-purple-100 text-purple-855 dark:bg-purple-950/60 dark:text-purple-350 font-black border border-purple-200/50 dark:border-purple-900/50 shadow-xxs">bacaan Kunyomi</span> karakter ini?
-          </span>
-        );
-      }
-    }
-
-    return (
-      <span>
-        Apa <span className="px-2 py-0.5 mx-1 rounded-lg bg-violet-100 text-violet-855 dark:bg-violet-950/60 dark:text-violet-350 font-black border border-violet-200/50 dark:border-violet-900/50 shadow-xxs">bacaan</span> karakter Jepang ini?
-      </span>
-    );
-  };
-
-  const renderWaniKaniPrompt = () => {
+  const renderKaniGaniPrompt = () => {
     if (!activeCard) return null;
     const isMeaning = activeCard.cardType === 'meaning';
 
     if (activeCard.type === 'radical') {
       return (
-        <span className="select-text">Nama <span className="font-black text-slate-800 dark:text-slate-100">Radikal</span></span>
+        <span className="select-text">Nama <span className="font-black text-slate-850 dark:text-slate-100">Radikal</span></span>
       );
     }
 
     if (activeCard.type === 'kanji') {
       if (isMeaning) {
         return (
-          <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+          <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
         );
       }
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
-      const expectedType = primaryReadingObj?.reading_type; // 'onyomi' | 'kunyomi'
+      const expectedType = primaryReadingObj?.reading_type;
       return expectedType === 'onyomi' ? (
-        <span className="select-text">Bacaan Onyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Onyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
       ) : (
-        <span className="select-text">Bacaan Kunyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Kunyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
       );
     }
 
-    // Vocabulary
     if (isMeaning) {
       return (
-        <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
+        <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
       );
     }
     return (
-      <span className="select-text">Cara Baca <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
+      <span className="select-text">Cara Baca <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
     );
-  };
-
-  const getSrsStageName = (stage: number) => {
-    if (stage === 1) return 'Kepiting Cilik 1';
-    if (stage === 2) return 'Kepiting Cilik 2';
-    if (stage === 3) return 'Kepiting Cilik 3';
-    if (stage === 4) return 'Kepiting Cilik 4';
-    if (stage === 5) return 'Kepiting Guru 1';
-    if (stage === 6) return 'Kepiting Guru 2';
-    if (stage === 7) return 'Kepiting Suhu';
-    if (stage === 8) return 'Kepiting Sakti';
-    if (stage === 9) return 'Kepiting Rebus 🦀🔥';
-    return 'Kepiting Cilik 1';
   };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
 
-      {/* Main Container */}
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
 
-        {/* PHASE 1: LEARN (PENGENALAN ITEM SLIDES) */}
+        {/* PHASE 1: LEARN (INTRO STUDY SLIDES) */}
         {phase === 'learn' && currentItem && (
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
 
             {/* Header Colorful Character Card */}
             <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
 
-              {/* Integrated Header Bar Inside the Card (Learn phase) */}
+              {/* Integrated Header Bar Inside the Card */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
                   onClick={() => {
                     if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.')) {
+                      localStorage.removeItem('custom-lesson-queue');
+                      localStorage.removeItem('custom-lesson-interleave');
                       router.push('/dashboard');
                     }
                   }}
                   title="Keluar Sesi"
-                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
+                  className="flex items-center justify-center text-white/85 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10 cursor-pointer"
                 >
                   <Home className="w-5 h-5" />
                 </button>
 
                 <div className="text-xs sm:text-sm font-bold text-white/90">
-                  Mempelajari batch ({itemIndex + 1}/{currentBatch.length})
+                  Lesson ({itemIndex + 1}/{currentBatch.length})
                 </div>
               </div>
 
-              <span className="text-xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/10 mb-4 mt-2 select-none">
-                {getItemBadgeName(currentItem.type)}
-              </span>
-              <h1 className="text-7xl font-black tracking-tight select-text text-center">{currentItem.character}</h1>
+              <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{currentItem.character}</h1>
               <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.slug}</p>
             </div>
 
             {/* Explanation Navigation Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 select-none">
               <button
                 onClick={() => setActiveTab('info')}
-                className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'info'
+                className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${activeTab === 'info'
                   ? 'border-teal-500 text-teal-500'
                   : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                   }`}
@@ -541,7 +529,7 @@ export default function LessonPage() {
               {currentItem.type !== 'radical' && (
                 <button
                   onClick={() => setActiveTab('mnemonic')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'mnemonic'
+                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${activeTab === 'mnemonic'
                     ? 'border-teal-500 text-teal-500'
                     : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
                     }`}
@@ -549,28 +537,16 @@ export default function LessonPage() {
                   Cara Baca
                 </button>
               )}
-
-              {currentItem.type === 'vocabulary' && (
-                <button
-                  onClick={() => setActiveTab('sentences')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors ${activeTab === 'sentences'
-                    ? 'border-teal-500 text-teal-500'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
-                >
-                  Contoh Kalimat
-                </button>
-              )}
             </div>
 
             {/* Tab Explanation Details */}
-            <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed">
+            <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text">
 
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Arti Karakter</h3>
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Arti Karakter</h3>
                     <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
                       {currentItem.primary_meaning}
                     </p>
@@ -578,25 +554,25 @@ export default function LessonPage() {
 
                   {currentItem.description && (
                     <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Detail</h3>
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Deskripsi Detail</h3>
                       <p className="text-slate-600 dark:text-slate-350 mt-1">{currentItem.description}</p>
                     </div>
                   )}
 
                   {currentItem.meaning_mnemonic && (
                     <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
-                      <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block">Mnemonic Jembatan Keledai (Arti)</h3>
+                      <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
                       <p className="text-teal-900 dark:text-teal-300 mt-1.5">{currentItem.meaning_mnemonic}</p>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* TAB 2: READINGS (KANJI & VOCABULARY ONLY) */}
+              {/* TAB 2: READINGS & MNEMONICS */}
               {activeTab === 'mnemonic' && currentItem.type !== 'radical' && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
                       {currentItem.type === 'kanji'
                         ? `Bacaan Jepang Utama (${currentItem.readings?.find((r: any) => r.primary_reading)?.reading_type === 'onyomi'
                           ? 'Onyomi'
@@ -611,10 +587,10 @@ export default function LessonPage() {
 
                   {currentItem.readings && currentItem.readings.length > 1 && (
                     <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Variasi Bacaan Lainnya</h3>
-                      <div className="flex flex-wrap gap-2">
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1 select-none">Variasi Bacaan Lainnya</h3>
+                      <div className="flex flex-wrap gap-2 select-none">
                         {currentItem.readings.map((r, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-xs font-semibold rounded-lg">
+                          <span key={idx} className="px-3 py-1 bg-slate-105 dark:bg-slate-800 text-xs font-semibold rounded-lg">
                             {r.reading} {r.reading_type && `(${r.reading_type})`}
                           </span>
                         ))}
@@ -624,29 +600,29 @@ export default function LessonPage() {
 
                   {currentItem.reading_mnemonic && (
                     <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
-                      <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block">Mnemonic Jembatan Keledai (Bacaan)</h3>
+                      <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Bacaan)</h3>
                       <p className="text-indigo-900 dark:text-indigo-300 mt-1.5">{currentItem.reading_mnemonic}</p>
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* TAB 3: CONTEXT SENTENCES (VOCABULARY ONLY) */}
-              {activeTab === 'sentences' && currentItem.type === 'vocabulary' && (
-                <div className="space-y-6 animate-fade-in">
-                  <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h3>
+                  {/* Context sentence - Vocab only */}
+                  {currentItem.type === 'vocabulary' && (
+                    <div className="border-t border-slate-200 dark:border-slate-800 pt-6 mt-6 space-y-4">
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Contoh Kalimat Kontekstual</h3>
 
-                  {currentItem.context_sentences && currentItem.context_sentences.length > 0 ? (
-                    <div className="space-y-6">
-                      {currentItem.context_sentences.map((s, idx) => (
-                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-955 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2">
-                          <p className="text-lg font-bold text-indigo-500 select-all">{s.japanese}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">{s.indonesian}</p>
+                      {currentItem.context_sentences && currentItem.context_sentences.length > 0 ? (
+                        <div className="space-y-4">
+                          {currentItem.context_sentences.map((s, idx) => (
+                            <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 space-y-2">
+                              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 select-all">{s.japanese}</p>
+                              <p className="text-xs text-slate-505 dark:text-slate-400">{s.indonesian}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-slate-400 text-xs italic select-none">Belum ada contoh kalimat untuk kosakata ini.</p>
+                      )}
                     </div>
-                  ) : (
-                    <p className="text-slate-400">Belum ada contoh kalimat untuk kosakata ini.</p>
                   )}
                 </div>
               )}
@@ -654,7 +630,7 @@ export default function LessonPage() {
             </div>
 
             {/* Slide Navigation Buttons */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0">
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0 select-none">
 
               {/* Progress dots - Mobile Only */}
               <div className="flex space-x-1.5 sm:hidden">
@@ -685,7 +661,7 @@ export default function LessonPage() {
                       setActiveTab('info');
                     }
                   }}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0"
+                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
                   <span>Sebelumnya</span>
@@ -712,7 +688,7 @@ export default function LessonPage() {
                       setItemIndex(itemIndex + 1);
                       setActiveTab('info');
                     }}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0"
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
                   >
                     <span>Berikutnya</span>
                     <ArrowRight className="w-4 h-4" />
@@ -720,7 +696,7 @@ export default function LessonPage() {
                 ) : (
                   <button
                     onClick={startQuiz}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0"
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
                   >
                     <span>Mulai Kuis</span>
                     <Award className="w-4 h-4" />
@@ -733,410 +709,144 @@ export default function LessonPage() {
         )}
 
         {/* PHASE 2: BATCH QUIZ (ZUSTAND SESSION) */}
-        {phase === 'quiz' && activeCard && (
-          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-between">
+        {phase === 'quiz' && activeCard && (() => {
+          const currentStage = activeCard.item.srs_stage || 1;
+          const wrongCount = wrongCounts[activeCard.itemId] || 0;
+          const getNewStage = () => {
+            if (isCorrect) {
+              if (wrongCount <= 0) {
+                return Math.min(9, currentStage + 1);
+              }
+              const penaltyFactor = currentStage >= 5 ? 2 : 1;
+              const penalty = Math.ceil(wrongCount / 2) * penaltyFactor;
+              return Math.max(1, currentStage - penalty);
+            } else {
+              const penaltyFactor = currentStage >= 5 ? 2 : 1;
+              const penalty = Math.ceil(wrongCount / 2) * penaltyFactor;
+              return Math.max(1, currentStage - penalty);
+            }
+          };
+          const displayedSrsStage = getNewStage();
 
-            {/* Header quiz card with colors */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
+          return (
+            <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-start">
 
-              {/* Integrated Header Bar Inside the Card (Quiz phase) */}
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
-                <button
-                  type="button"
-                  onClick={() => {
+              {/* Header quiz card with colors */}
+              <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
+                <QuizHeader
+                  onExit={() => {
                     if (confirm('Keluar dari sesi kuis pembelajaran?')) {
+                      localStorage.removeItem('custom-lesson-queue');
+                      localStorage.removeItem('custom-lesson-interleave');
                       router.push('/dashboard');
                     }
                   }}
-                  title="Keluar dari Kuis"
-                  className="flex items-center justify-center text-white/80 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10"
-                >
-                  <Home className="w-5 h-5" />
-                </button>
-
-                <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90 select-none">
-                  {/* Completed count */}
-                  <div className="flex items-center space-x-1" title="Item Selesai">
-                    <Check className="w-4 h-4 text-white/85" />
-                    <span>{10 - queue.length}</span>
-                  </div>
-                  {/* Remaining count */}
-                  <div className="flex items-center space-x-1" title="Kartu Tersisa">
-                    <Inbox className="w-4 h-4 text-white/85" />
-                    <span>{queue.length}</span>
-                  </div>
-                  {/* Dev Mode Toggle — hanya tampil jika dev mode diaktifkan di Settings */}
-                  {globalDevMode && (
-                    <button
-                      type="button"
-                      onClick={() => setDevMode(v => !v)}
-                      title={devMode ? 'Dev Mode: ON (klik untuk matikan)' : 'Dev Mode: OFF (klik untuk aktifkan autofill)'}
-                      className={`flex items-center space-x-1 px-2 py-0.5 rounded-lg text-xs font-bold transition-all duration-200 ${devMode
-                          ? 'bg-amber-400/90 text-amber-900 shadow-sm'
-                          : 'bg-white/10 text-white/60 hover:bg-white/20 hover:text-white'
-                        }`}
-                    >
-                      <Zap className="w-3.5 h-3.5" />
-                      {devMode && <span>DEV</span>}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <h1 className="text-7xl font-black tracking-tight select-text text-center">{activeCard.character}</h1>
-            </div>
-
-            {/* Prompt Label (WaniKani style bar right below character) */}
-            <div className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-300 tracking-wider uppercase select-text">
-              {renderWaniKaniPrompt()}
-            </div>
-
-            {/* Prompt & Input Section */}
-            <div className="p-6 sm:p-8 flex-1 flex flex-col justify-center items-center space-y-6">
-
-              {/* Input Field with focus and submit events */}
-              <div className="w-full max-w-md relative select-none mx-auto">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder={
-                    activeCard.cardType === 'meaning'
-                      ? 'Ketik arti...'
-                      : 'Ketik bacaan (Romaji/Kana)...'
-                  }
-                  value={userInput}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  readOnly={isAnswerSubmitted && !incorrectActive}
-                  className={`w-full py-3.5 px-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${warningMsg
-                    ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'
-                    : isAnswerSubmitted
-                      ? isCorrect
-                        ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-500 text-emerald-600 dark:text-emerald-400'
-                        : 'bg-rose-50 dark:bg-rose-950/20 border-rose-500 text-rose-600 dark:text-rose-400 animate-shake'
-                      : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100'
-                    }`}
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck="false"
+                  title={`Lesson Quiz (${queue.length} sisa)`}
+                  globalDevMode={globalDevMode}
+                  devMode={devMode}
+                  setDevMode={setDevMode}
                 />
-
-                {/* Integrated Chevron-Right/Submit Action Button inside the input box */}
-                <button
-                  type="button"
-                  disabled={!isAnswerSubmitted && userInput.trim() === '' && !devMode}
-                  onClick={() => {
-                    if (!isAnswerSubmitted) {
-                      if (devMode && userInput.trim() === '') {
-                        setUserInput(getDevModeAnswer());
-                        setTimeout(() => {
-                          submitAnswer();
-                          inputRef.current?.focus();
-                        }, 20);
-                      } else {
-                        submitAnswer();
-                      }
-                    } else {
-                      proceedNext();
-                    }
-                    setTimeout(() => {
-                      inputRef.current?.focus();
-                    }, 20);
-                  }}
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed ${isAnswerSubmitted
-                    ? isCorrect
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      : 'bg-rose-500 hover:bg-rose-600 text-white'
-                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/10'
-                    }`}
-                >
-                  <ArrowRight className="w-5 h-5" />
-                </button>
+                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{activeCard.character}</h1>
               </div>
 
-              {warningMsg && (
-                <div className="w-full max-w-md p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-250 dark:border-amber-900/50 text-xs font-bold text-amber-700 dark:text-amber-400 rounded-2xl animate-fade-in flex items-center space-x-2">
-                  <AlertCircle className="w-4 h-4 shrink-0 animate-bounce text-amber-500" />
-                  <span>{warningMsg}</span>
-                </div>
+              {/* Prompt Label KaniGani style */}
+              <div className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-350 tracking-wider uppercase select-none">
+                {renderKaniGaniPrompt()}
+              </div>
+
+              <QuizInput
+                inputRef={inputRef}
+                userInput={userInput}
+                setUserInput={setUserInput}
+                cardType={activeCard.cardType}
+                isAnswerSubmitted={isAnswerSubmitted}
+                incorrectActive={incorrectActive}
+                warningMsg={warningMsg}
+                onSubmit={handleQuizSubmitAction}
+                devMode={devMode}
+                getDevModeAnswer={getDevModeAnswer}
+                onKeyDown={handleKeyDown}
+              />
+
+              {/* Action buttons (Undo, Info) */}
+              <QuizActionButtons
+                onUndo={proceedNext} // for lessons wrong correction, proceedNext acts as the main trigger
+                isUndoDisabled={!isAnswerSubmitted}
+                onToggleInfo={toggleItemInfo}
+                infoActive={showItemInfo}
+                isInfoDisabled={!isAnswerSubmitted}
+                showUndo={false}
+              />
+ 
+              {/* Answer Feedbacks */}
+              <QuizFeedback
+                showFeedback={showFeedback}
+                isCorrect={isCorrect}
+                isAlmostCorrect={isAlmostCorrect}
+                closestAcceptedMeaning={closestAcceptedMeaning}
+                srsStage={displayedSrsStage}
+                acceptedMeanings={activeCard.item.accepted_meanings}
+                acceptedReadings={activeCard.item.accepted_readings}
+                cardType={activeCard.cardType}
+                showSrs={false}
+              />
+ 
+              {/* Collapsible Info Drawer */}
+              {showItemInfo && (
+                <QuizInfoDrawer
+                  item={activeCard.item}
+                  cardType={activeCard.cardType}
+                />
               )}
-
-              {/* WaniKani Mobile Style Action Buttons Bar for Lessons */}
-              <div className="flex justify-center items-center gap-3.5 w-full max-w-md pt-2 select-none">
-                {/* 1. Skip / Exit Session (Home) */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Keluar dari sesi kuis pembelajaran?')) {
-                      router.push('/dashboard');
-                    }
-                  }}
-                  title="Keluar dari Kuis"
-                  className="w-12 h-12 flex items-center justify-center rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-505 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900 shadow-xxs transition-all duration-200 active:scale-90"
-                >
-                  <Home className="w-5 h-5" />
-                </button>
-
-                {/* 2. Eye Button (Toggle Info Drawer) */}
-                <button
-                  type="button"
-                  disabled={!isAnswerSubmitted}
-                  onClick={() => {
-                    toggleItemInfo();
-                    setTimeout(() => inputRef.current?.focus(), 20);
-                  }}
-                  title="Tampilkan Info Detail (F)"
-                  className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 ${showItemInfo
-                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'
-                    : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900'
-                    } disabled:opacity-30 disabled:cursor-not-allowed`}
-                >
-                  <Eye className="w-5 h-5" />
-                </button>
-              </div>
-
+ 
             </div>
+          );
+        })()}
 
-            {/* Answer Feedbacks Panel */}
-            {showFeedback && (
-              <div className={`p-5 text-center text-sm border-t font-semibold ${isCorrect
-                ? isAlmostCorrect
-                  ? 'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:text-amber-400'
-                  : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-                }`}>
-                <div className="max-w-md mx-auto flex items-center justify-center space-x-2">
-                  {isCorrect ? (
-                    isAlmostCorrect ? (
-                      <div className="flex flex-col items-center space-y-1">
-                        <div className="flex items-center space-x-2 text-amber-600 dark:text-amber-400">
-                          <AlertCircle className="w-5 h-5 shrink-0" />
-                          <span className="font-extrabold text-sm">Hampir Benar (Diterima dengan syarat)!</span>
-                        </div>
-                        <span className="text-xs text-slate-500">
-                          Apakah maksud Anda: <span className="font-black text-amber-600 dark:text-amber-400 underline">{closestAcceptedMeaning}</span>?
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                        <span className="flex items-center flex-wrap justify-center gap-y-1">
-                          <span>Sangat Bagus! Jawaban Anda Benar.</span>
-                          <span className="relative inline-flex items-center ml-2">
-                          </span>
-                        </span>
-                      </>
-                    )
-                  ) : (
-                    <>
-                      <XCircle className="w-5 h-5 text-rose-500 shrink-0" />
-                      <div>
-                        <div className="flex items-center flex-wrap justify-center gap-y-1">
-                          <span>Jawaban Salah!</span>
-                          <span className="relative inline-flex items-center ml-2">
-                          </span>
-                        </div>
-                        <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
-                          Jawaban benar: {
-                            activeCard.cardType === 'meaning'
-                              ? activeCard.item.accepted_meanings?.join(', ')
-                              : activeCard.item.accepted_readings?.join(', ')
-                          }
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Sliding Detail Drawer Panel */}
-            {showItemInfo && activeCard && (
-              <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900/50 p-6 sm:p-8 animate-fade-in space-y-6 text-sm leading-relaxed text-left">
-
-                {/* 1. Meaning Info */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Arti Karakter</h4>
-                  <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-                    {activeCard.item.primary_meaning}
-                  </p>
-
-                  {activeCard.item.meaning_mnemonic && (
-                    <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
-                      <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block">Mnemonic (Arti)</h5>
-                      <p className="text-teal-900 dark:text-teal-350 mt-1.5">{activeCard.item.meaning_mnemonic}</p>
-                    </div>
-                  )}
-
-                  {activeCard.item.description && (
-                    <div className="p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
-                      <h5 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest block">Deskripsi Detail</h5>
-                      <p className="text-slate-700 dark:text-slate-350 mt-1.5">{activeCard.item.description}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Reading Info */}
-                {activeCard.type !== 'radical' && (() => {
-                  const readings = activeCard.item.readings || [];
-                  const onyomiList = readings.filter(r => r.reading_type === 'onyomi');
-                  const kunyomiList = readings.filter(r => r.reading_type === 'kunyomi');
-                  const nanoriList = readings.filter(r => r.reading_type === 'nanori');
-
-                  return (
-                    <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 space-y-4">
-                      <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                        {activeCard.type === 'kanji'
-                          ? `Cara Baca Jepang (${activeCard.item.readings?.find((r: any) => r.primary_reading)?.reading_type === 'onyomi'
-                            ? 'Onyomi'
-                            : 'Kunyomi'
-                          })`
-                          : 'Cara Baca Jepang (Kana)'}
-                      </h4>
-
-                      {activeCard.type === 'kanji' ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-100/55 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-200/40 dark:border-slate-800/40">
-                          <div>
-                            <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Onyomi</span>
-                            {onyomiList.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {onyomiList.map((r, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                      ? 'bg-indigo-600 text-white shadow-sm'
-                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                                      }`}
-                                  >
-                                    {r.reading}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-400 dark:text-slate-600 italic mt-1.5 block">n/a</span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Kunyomi</span>
-                            {kunyomiList.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {kunyomiList.map((r, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                      ? 'bg-indigo-600 text-white shadow-sm'
-                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                                      }`}
-                                  >
-                                    {r.reading}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-400 dark:text-slate-600 italic mt-1.5 block">n/a</span>
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Nanori</span>
-                            {nanoriList.length > 0 ? (
-                              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                                {nanoriList.map((r, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                                      ? 'bg-indigo-600 text-white shadow-sm'
-                                      : 'bg-slate-250 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                                      }`}
-                                  >
-                                    {r.reading}
-                                  </span>
-                                ))}
-                              </div>
-                            ) : (
-                              <span className="text-sm text-slate-400 dark:text-slate-600 italic mt-1.5 block">n/a</span>
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-                          {activeCard.item.primary_reading}
-                        </p>
-                      )}
-
-                      {activeCard.item.reading_mnemonic && (
-                        <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl mt-3">
-                          <h5 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block">Mnemonic (Bacaan)</h5>
-                          <p className="text-indigo-900 dark:text-indigo-350 mt-1.5">{activeCard.item.reading_mnemonic}</p>
-                        </div>
-                      )}
-                    </div>
-                  )
-                })()}
-
-                {/* 3. Sentences Info (Vocabulary only) */}
-                {activeCard.type === 'vocabulary' && activeCard.item.context_sentences && activeCard.item.context_sentences.length > 0 && (
-                  <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 space-y-4">
-                    <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h4>
-                    <div className="space-y-4">
-                      {activeCard.item.context_sentences.map((s: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-1.5">
-                          <p className="text-base font-bold text-indigo-500 select-all">{s.japanese}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-405">{s.indonesian}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-              </div>
-            )}
-
-          </div>
-        )}
-
-        {/* PHASE 3: SUMMARY (SELESAI BATCH) */}
+        {/* PHASE 3: BATCH COMPLETED SUMMARY */}
         {phase === 'summary' && (
-          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in p-8 sm:p-10 space-y-8 text-center max-w-md">
+          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-8 text-center space-y-6 animate-fade-in my-12 select-none">
+            <Award className="w-16 h-16 mx-auto text-teal-500 animate-bounce" />
+            <h2 className="text-2xl font-black">Batch Selesai! 🎉</h2>
+            <p className="text-sm text-slate-550 dark:text-slate-400">
+              Selamat! Anda telah menyelesaikan pelajaran baru untuk batch ini. Semua item ini telah terdaftar di SRS dan siap diulas pada jadwal berikutnya.
+            </p>
 
-            <div className="space-y-3">
-              <Award className="w-16 h-16 mx-auto text-yellow-500 animate-bounce" />
-              <h2 className="text-3xl font-black">Batch Selesai! 🦀</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Luar biasa! Anda telah berhasil mempelajari dan menyelesaikan kuis untuk {currentBatch.length} item baru.
-              </p>
+            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-150 dark:border-slate-850">
+              <span className="text-3xs uppercase tracking-widest text-slate-400 block font-bold">Item yang Baru Dipelajari</span>
+              <div className="flex flex-wrap gap-2 justify-center mt-3">
+                {currentBatch.map((item, idx) => (
+                  <span
+                    key={idx}
+                    className={`min-w-10 h-10 px-3 flex items-center justify-center rounded-xl font-black text-lg text-white whitespace-nowrap ${getItemColorClass(item.type)}`}
+                  >
+                    {item.character}
+                  </span>
+                ))}
+              </div>
             </div>
 
-            {/* SRS Stage changes Info */}
-            <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl text-xs text-teal-700 dark:text-teal-350">
-              <CheckCircle className="w-5 h-5 text-teal-500 mx-auto mb-2" />
-              <span>Semua item ini telah terdaftar ke antrean SRS dan akan dijadwalkan untuk review pertama dalam 4 jam dari sekarang.</span>
-            </div>
-
-            {/* Decision options: Continue or Quit */}
-            <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex flex-col gap-3">
               {lessons.length > currentBatch.length ? (
                 <button
                   onClick={handleNextBatch}
-                  className="w-full py-3.5 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-2xl text-sm shadow-md hover:shadow-lg flex items-center justify-center space-x-1.5 transition-all duration-200"
+                  className="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-colors cursor-pointer"
                 >
-                  <RefreshCw className="w-4 h-4 animate-spin" style={{ animationDuration: '4s' }} />
-                  <span>Pelajari Batch Berikutnya ({lessons.length - currentBatch.length} sisa)</span>
+                  Lanjut Batch Berikutnya ({lessons.length - currentBatch.length} item sisa)
                 </button>
-              ) : (
-                <div className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest pb-2">
-                  🎉 Semua Lesson Tersedia Telah Selesai!
-                </div>
-              )}
+              ) : null}
 
               <button
-                onClick={() => router.push('/dashboard')}
-                className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-300 font-bold rounded-2xl text-sm transition-colors"
+                onClick={() => {
+                  localStorage.removeItem('custom-lesson-queue');
+                  localStorage.removeItem('custom-lesson-interleave');
+                  router.push('/dashboard');
+                }}
+                className="w-full py-3 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold rounded-2xl transition-colors cursor-pointer"
               >
-                Kembali ke Dashboard
+                Selesai & Ke Dashboard
               </button>
             </div>
-
           </div>
         )}
 

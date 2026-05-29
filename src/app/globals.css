@@ -206,3 +206,35 @@ body {
 }
 
 
+/* Premium bounce and glow effect for undo button press */
+@keyframes undoPress {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  30% {
+    transform: scale(0.85);
+    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.25);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+  }
+}
+
+.animate-undo-press {
+  animation: undoPress 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+@keyframes undoRotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+.animate-undo-rotate {
+  animation: undoRotate 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}

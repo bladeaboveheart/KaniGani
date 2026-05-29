@@ -37,7 +37,9 @@ export default function RadicalPage() {
       const params = new URLSearchParams(window.location.search);
       const query = params.get('search');
       if (query) {
-        setSearchQuery(decodeURIComponent(query));
+        setTimeout(() => {
+          setSearchQuery(decodeURIComponent(query));
+        }, 0);
       }
     }
   }, []);
@@ -134,7 +136,7 @@ export default function RadicalPage() {
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
     if (stage === 8) return 'Kepiting Sakti';
-    return 'Kepiting Rebus 🦀🔥';
+    return 'Kepiting Rebus';
   };
 
   const getSrsColorClass = (stage: number) => {
@@ -192,7 +194,7 @@ export default function RadicalPage() {
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kamus Radikal</h2>
             <p className="text-xs sm:text-sm text-cyan-100 max-w-2xl leading-relaxed">
-              Radikal adalah komponen pembentuk huruf Kanji. Mempelajari dan mengenali radikal adalah langkah dasar krusial sebelum Anda mulai memahami huruf Kanji yang rumit.
+              Radikal (dikenal sebagai bushu dalam bahasa Jepang) adalah komponen pembentuk huruf Kanji. Mempelajari dan mengenali radikal adalah langkah dasar krusial sebelum Anda mulai memahami huruf Kanji yang rumit.
             </p>
           </div>
         </section>
@@ -407,7 +409,7 @@ export default function RadicalPage() {
                 </div>
               )}
 
-              {/* Found in Kanji (WaniKani Style) */}
+              {/* Found in Kanji (KaniGani Style) */}
               {selectedItem.kanjis && selectedItem.kanjis.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
                   <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">

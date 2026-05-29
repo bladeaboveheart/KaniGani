@@ -146,7 +146,10 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    loadUserData();
+    const fetchUserData = async () => {
+      await loadUserData();
+    };
+    fetchUserData();
   }, [router]);
 
   // Handle Save Username
@@ -292,8 +295,8 @@ export default function SettingsPage() {
                 {/* Success/Error message banner */}
                 {message && (
                   <div className={`p-3 text-xxs font-bold rounded-xl border flex items-center space-x-2 animate-fade-in ${message.type === 'success'
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-450'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                     }`}>
                     {message.type === 'success' ? (
                       <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -340,7 +343,7 @@ export default function SettingsPage() {
               {/* Progress Summary Big Widgets */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                 {[
-                  { label: 'Item Dipelajari', count: stats.totalStudied, color: 'text-indigo-650 bg-indigo-50 dark:bg-indigo-950/20' },
+                  { label: 'Item Dipelajari', count: stats.totalStudied, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20' },
                   { label: 'Progres Guru/Rebus', count: stats.guru + stats.master + stats.enlightened + stats.burned, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' },
                   { label: 'Item Kepiting Cilik', count: stats.apprentice, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
                 ].map((stat, idx) => (
@@ -361,7 +364,7 @@ export default function SettingsPage() {
                     { label: 'Kepiting Guru (Tahap 5 - 6)', count: stats.guru, total: stats.totalStudied, color: 'bg-purple-600' },
                     { label: 'Kepiting Suhu (Tahap 7)', count: stats.master, total: stats.totalStudied, color: 'bg-blue-600' },
                     { label: 'Kepiting Sakti (Tahap 8)', count: stats.enlightened, total: stats.totalStudied, color: 'bg-teal-600' },
-                    { label: 'Kepiting Rebus 🦀🔥 (Tahap 9)', count: stats.burned, total: stats.totalStudied, color: 'bg-slate-700' }
+                    { label: 'Kepiting Rebus (Tahap 9)', count: stats.burned, total: stats.totalStudied, color: 'bg-slate-700' }
                   ].map((stage, idx) => {
                     const pct = stage.total > 0 ? Math.round((stage.count / stage.total) * 100) : 0;
                     return (
