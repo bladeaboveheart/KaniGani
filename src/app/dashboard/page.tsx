@@ -497,16 +497,16 @@ export default function Dashboard() {
   };
 
   const getSrsColorClass = (stage: number) => {
-    if (stage === 0) return 'bg-slate-200 text-slate-505 dark:bg-slate-800 dark:text-slate-500';
+    if (stage === 0) return 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500';
     if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
     if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
     if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
     if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
     if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
     if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
-    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-955';
-    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-955';
-    return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-955';
+    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
+    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
+    return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
   };
 
   const startCustomLesson = () => {
@@ -530,7 +530,7 @@ export default function Dashboard() {
   const schedule = getHourlySchedule();
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <Navbar />
       <CrabBackground />
 
@@ -538,7 +538,7 @@ export default function Dashboard() {
       {devModeToast !== null && (
         <div
           className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center space-x-2 px-4 py-2.5 rounded-2xl shadow-xl border text-sm font-bold animate-fade-in transition-all ${devModeToast
-            ? 'bg-amber-400 border-amber-500 text-amber-905'
+            ? 'bg-amber-400 border-amber-500 text-amber-900'
             : 'bg-slate-800 border-slate-700 text-slate-200'
             }`}
         >
@@ -566,14 +566,14 @@ export default function Dashboard() {
 
           <div className="flex items-center space-x-4 select-none">
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-center">
-              <span className="text-xxs font-bold text-indigo-655 dark:text-indigo-400 uppercase tracking-widest block">Level Saat Ini</span>
+              <span className="text-xxs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Level Saat Ini</span>
               <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                 {stats?.level || 1}
               </span>
             </div>
             <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50 text-center">
               <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Hari Berlalu</span>
-              <span className="text-2xl font-black text-rose-605 dark:text-rose-400">
+              <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
                 {stats?.daysSinceLevelUp !== undefined ? stats.daysSinceLevelUp : 0}
               </span>
             </div>
@@ -700,11 +700,11 @@ export default function Dashboard() {
           {/* Subtle decorative absolute background element */}
           <div className="absolute right-0 top-0 -translate-y-12 translate-x-12 w-48 h-48 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/85 pb-4 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4 relative z-10">
             <div className="flex items-start space-x-3.5">
               <div className={`p-2.5 rounded-2xl transition-all duration-350 ${betaTester
                 ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-500 border border-violet-100 dark:border-violet-900/40 shadow-sm'
-                : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-100 dark:border-slate-850'
+                : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-100 dark:border-slate-800'
                 }`}>
                 <FlaskConical className={`w-6 h-6 ${betaTester ? 'animate-pulse' : ''}`} />
               </div>
@@ -715,7 +715,7 @@ export default function Dashboard() {
                   </h3>
                   <span className={`px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-wider ${betaTester
                     ? 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border border-violet-200/30 dark:border-violet-500/20'
-                    : 'bg-slate-100 text-slate-555 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/40 dark:border-slate-700/50'
+                    : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/40 dark:border-slate-700/50'
                     }`}>
                     {betaTester ? 'Aktif' : 'Nonaktif'}
                   </span>
@@ -728,13 +728,13 @@ export default function Dashboard() {
 
             {/* Premium Toggle Button */}
             <div className="flex items-center space-x-3 self-end sm:self-center shrink-0">
-              <span className="text-xxs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-widest hidden xs:inline">
+              <span className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hidden xs:inline">
                 Status Pengujian
               </span>
               <button
                 type="button"
                 onClick={toggleBetaTester}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${betaTester ? 'bg-violet-650 dark:bg-violet-500' : 'bg-slate-200 dark:bg-slate-800'
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${betaTester ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-200 dark:bg-slate-800'
                   }`}
               >
                 <span
@@ -750,20 +750,20 @@ export default function Dashboard() {
               <p>
                 Mode Beta Tester membuka akses laboratorium pengembang bagi seluruh pengguna. Fitur ini dirancang khusus agar pembelajar dapat mempercepat jalannya proses uji coba sistem pembelajaran KaniGani.
               </p>
-              <p className="text-[10px] text-slate-450 dark:text-slate-500 italic font-medium">
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic font-medium">
                 *Catatan: Anda dapat menonaktifkan fitur ini kapan saja dari tombol di atas atau melalui menu Akun jika ingin kembali ke mode belajar reguler.
               </p>
             </div>
 
             <div className="p-4 bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100/40 dark:border-violet-900/20 rounded-2xl space-y-2.5">
-              <span className="text-[10px] font-black text-violet-655 dark:text-violet-400 uppercase tracking-widest block select-none">
+              <span className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest block select-none">
                 💡 Fitur Khusus Yang Didapatkan:
               </span>
               <ul className="space-y-2 text-xxs font-bold leading-relaxed text-slate-650 dark:text-slate-300">
                 <li className="flex items-start space-x-2">
                   <span className="text-violet-500 select-none">⚡</span>
                   <span>
-                    <strong className="text-slate-800 dark:text-slate-200">Tombol Percepat Review:</strong> Memunculkan opsi <span className="text-violet-650 dark:text-violet-400 font-black">"Percepat" ⚡</span> di kartu kuis latihan di bawah untuk mereset antrean review secara instan.
+                    <strong className="text-slate-800 dark:text-slate-200">Tombol Percepat Review:</strong> Memunculkan opsi <span className="text-violet-600 dark:text-violet-400 font-black">"Percepat" ⚡</span> di kartu kuis latihan di bawah untuk mereset antrean review secara instan.
                   </span>
                 </li>
                 <li className="flex items-start space-x-2">
@@ -779,18 +779,18 @@ export default function Dashboard() {
 
         {/* Developer Mode Admin Tools */}
         {devMode && (
-          <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 rounded-3xl shadow-xl animate-fade-in space-y-4">
-            <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3 select-none">
+          <section className="bg-gradient-to-br from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-indigo-950/20 dark:to-slate-900 border border-slate-200 dark:border-emerald-500/30 p-6 rounded-3xl shadow-sm dark:shadow-emerald-500/5 hover:shadow-md transition-all duration-300 animate-fade-in space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-emerald-500/20 pb-3 select-none">
               <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-emerald-400 animate-pulse" />
-                <h3 className="text-lg font-black tracking-tight text-slate-105">🔧 Developer Mode Admin Tools</h3>
+                <Shield className="w-5 h-5 text-emerald-500 dark:text-emerald-400 animate-pulse" />
+                <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100">🔧 Developer Mode Admin Tools</h3>
               </div>
-              <span className="px-2 py-0.5 text-xxs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md">
+              <span className="px-2 py-0.5 text-xxs font-extrabold bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 rounded-md">
                 ACTIVE
               </span>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <p className="text-xs text-indigo-200 max-w-xl leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-indigo-200 max-w-xl leading-relaxed">
                 Anda dapat mempercepat timer SRS untuk item yang telah Anda pelajari (Kepiting Cilik s/d Kepiting Guru) menjadi saat ini. Item di atas tingkat Kepiting Guru (seperti Kepiting Suhu/Sakti) tidak dapat dipercepat.
               </p>
               <button
