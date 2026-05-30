@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import CrabBackground from '@/components/CrabBackground';
 import {
   BookOpen, Sparkles, AlertCircle, Clock, Calendar, CheckCircle2,
-  Flame, Award, ArrowUpRight, Shield, Zap, ChevronRight
+  Flame, Award, ArrowUpRight, Shield, Zap, ChevronRight, FlaskConical
 } from 'lucide-react';
 import { DashboardStats } from '@/lib/types';
 
@@ -70,10 +70,12 @@ export default function Dashboard() {
     }
   };
   useEffect(() => {
-    setTimeout(() => {
+    const handleStorageChange = () => {
       setDevMode(localStorage.getItem('kanigani-dev-mode') === 'true');
       setBetaTester(localStorage.getItem('kanigani-beta-tester') === 'true');
-    }, 0);
+    };
+    handleStorageChange();
+    window.addEventListener('storage', handleStorageChange);
 
     // Toggle dev mode with 'G' key — only when not typing in an input/textarea
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,12 +86,23 @@ export default function Dashboard() {
         localStorage.setItem('kanigani-dev-mode', String(next));
         setDevMode(next);
         setDevModeToast(next);
+        window.dispatchEvent(new Event('storage'));
         setTimeout(() => setDevModeToast(null), 2500);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
+
+  const toggleBetaTester = () => {
+    const nextVal = !betaTester;
+    setBetaTester(nextVal);
+    localStorage.setItem('kanigani-beta-tester', String(nextVal));
+    window.dispatchEvent(new Event('storage'));
+  };
 
   const handleResetTimers = async () => {
     setResetting(true);
@@ -567,43 +580,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Developer Mode Admin Tools */}
-        {devMode && (
-          <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 rounded-3xl shadow-xl animate-fade-in space-y-4">
-            <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3 select-none">
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-emerald-400 animate-pulse" />
-                <h3 className="text-lg font-black tracking-tight text-slate-105">🔧 Developer Mode Admin Tools</h3>
-              </div>
-              <span className="px-2 py-0.5 text-xxs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md">
-                ACTIVE
-              </span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <p className="text-xs text-indigo-200 max-w-xl leading-relaxed">
-                Anda dapat mempercepat timer SRS untuk item yang telah Anda pelajari (Kepiting Cilik s/d Kepiting Guru) menjadi saat ini. Item di atas tingkat Kepiting Guru (seperti Kepiting Suhu/Sakti) tidak dapat dipercepat.
-              </p>
-              <button
-                onClick={handleResetTimers}
-                disabled={resetting}
-                className="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 disabled:opacity-55 disabled:cursor-not-allowed transition-all duration-200 shrink-0 text-sm flex items-center justify-center space-x-2 cursor-pointer"
-              >
-                {resetting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
-                    <span>Memproses...</span>
-                  </>
-                ) : (
-                  <>
-                    <Clock className="w-4 h-4" />
-                    <span>Percepat Semua Review (Sekarang)</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </section>
-        )}
-
         {/* Big Action Buttons (Lessons & Reviews) */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
 
@@ -615,7 +591,7 @@ export default function Dashboard() {
             <div className="flex flex-col h-full justify-between gap-6 z-10 relative">
               <div>
                 <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-2 select-none">
-                  Lesson Pembelajaran
+                  Lesson
                 </span>
                 <h3 className="text-2xl font-bold tracking-tight mt-1 select-none">Belajar Item Baru</h3>
                 <p className="text-xs text-cyan-50 dark:text-cyan-100 mt-2 max-w-sm">
@@ -669,7 +645,7 @@ export default function Dashboard() {
             <div className="flex flex-col h-full justify-between gap-6 z-10 relative">
               <div>
                 <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-2 select-none">
-                  SRS Review Kuis
+                  Review
                 </span>
                 <h3 className="text-2xl font-bold tracking-tight mt-1 select-none">Latihan Harian</h3>
                 <p className="text-xs text-pink-50 dark:text-pink-100 mt-2 max-w-sm">
@@ -718,6 +694,125 @@ export default function Dashboard() {
           </div>
 
         </section>
+
+        {/* KaniGani Laboratory — Beta Tester Card */}
+        <section className="bg-gradient-to-br from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 space-y-5 relative overflow-hidden group">
+          {/* Subtle decorative absolute background element */}
+          <div className="absolute right-0 top-0 -translate-y-12 translate-x-12 w-48 h-48 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/85 pb-4 relative z-10">
+            <div className="flex items-start space-x-3.5">
+              <div className={`p-2.5 rounded-2xl transition-all duration-350 ${betaTester
+                ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-500 border border-violet-100 dark:border-violet-900/40 shadow-sm'
+                : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-100 dark:border-slate-850'
+                }`}>
+                <FlaskConical className={`w-6 h-6 ${betaTester ? 'animate-pulse' : ''}`} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100">
+                    🧪 KaniGani Lab: Mode Beta Tester
+                  </h3>
+                  <span className={`px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-wider ${betaTester
+                    ? 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border border-violet-200/30 dark:border-violet-500/20'
+                    : 'bg-slate-100 text-slate-555 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/40 dark:border-slate-700/50'
+                    }`}>
+                    {betaTester ? 'Aktif' : 'Nonaktif'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Ikut serta menguji fitur-fitur eksperimental terbaru sebelum dirilis secara publik.
+                </p>
+              </div>
+            </div>
+
+            {/* Premium Toggle Button */}
+            <div className="flex items-center space-x-3 self-end sm:self-center shrink-0">
+              <span className="text-xxs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-widest hidden xs:inline">
+                Status Pengujian
+              </span>
+              <button
+                type="button"
+                onClick={toggleBetaTester}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${betaTester ? 'bg-violet-650 dark:bg-violet-500' : 'bg-slate-200 dark:bg-slate-800'
+                  }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-250 ease-in-out ${betaTester ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+            <div className="space-y-2 text-xxs font-semibold leading-relaxed text-slate-600 dark:text-slate-350">
+              <p>
+                Mode Beta Tester membuka akses laboratorium pengembang bagi seluruh pengguna. Fitur ini dirancang khusus agar pembelajar dapat mempercepat jalannya proses uji coba sistem pembelajaran KaniGani.
+              </p>
+              <p className="text-[10px] text-slate-450 dark:text-slate-500 italic font-medium">
+                *Catatan: Anda dapat menonaktifkan fitur ini kapan saja dari tombol di atas atau melalui menu Akun jika ingin kembali ke mode belajar reguler.
+              </p>
+            </div>
+
+            <div className="p-4 bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100/40 dark:border-violet-900/20 rounded-2xl space-y-2.5">
+              <span className="text-[10px] font-black text-violet-655 dark:text-violet-400 uppercase tracking-widest block select-none">
+                💡 Fitur Khusus Yang Didapatkan:
+              </span>
+              <ul className="space-y-2 text-xxs font-bold leading-relaxed text-slate-650 dark:text-slate-300">
+                <li className="flex items-start space-x-2">
+                  <span className="text-violet-500 select-none">⚡</span>
+                  <span>
+                    <strong className="text-slate-800 dark:text-slate-200">Tombol Percepat Review:</strong> Memunculkan opsi <span className="text-violet-650 dark:text-violet-400 font-black">"Percepat" ⚡</span> di kartu kuis latihan di bawah untuk mereset antrean review secara instan.
+                  </span>
+                </li>
+                <li className="flex items-start space-x-2">
+                  <span className="text-violet-500 select-none">🧪</span>
+                  <span>
+                    <strong className="text-slate-800 dark:text-slate-200">Eksperimental Labs:</strong> Mencoba pembaruan antarmuka dan sistem kuis lebih cepat dibanding pengguna reguler.
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Developer Mode Admin Tools */}
+        {devMode && (
+          <section className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-indigo-500/30 p-6 rounded-3xl shadow-xl animate-fade-in space-y-4">
+            <div className="flex items-center justify-between border-b border-indigo-500/20 pb-3 select-none">
+              <div className="flex items-center space-x-2">
+                <Shield className="w-5 h-5 text-emerald-400 animate-pulse" />
+                <h3 className="text-lg font-black tracking-tight text-slate-105">🔧 Developer Mode Admin Tools</h3>
+              </div>
+              <span className="px-2 py-0.5 text-xxs font-extrabold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-md">
+                ACTIVE
+              </span>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <p className="text-xs text-indigo-200 max-w-xl leading-relaxed">
+                Anda dapat mempercepat timer SRS untuk item yang telah Anda pelajari (Kepiting Cilik s/d Kepiting Guru) menjadi saat ini. Item di atas tingkat Kepiting Guru (seperti Kepiting Suhu/Sakti) tidak dapat dipercepat.
+              </p>
+              <button
+                onClick={handleResetTimers}
+                disabled={resetting}
+                className="px-5 py-3 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-2xl shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 disabled:opacity-55 disabled:cursor-not-allowed transition-all duration-200 shrink-0 text-sm flex items-center justify-center space-x-2 cursor-pointer"
+              >
+                {resetting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></div>
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-4 h-4" />
+                    <span>Percepat Semua Review (Sekarang)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Level Up Progress Component */}
         <LevelProgress
