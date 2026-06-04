@@ -334,12 +334,22 @@ export async function POST(request: Request) {
       duration_seconds: durationSeconds || 0,
     });
 
+    // Tambah EXP (+10 EXP) jika menjawab benar
+    let expResult = null;
+    if (wrongCount === 0) {
+      const { addExp } = await import('@/lib/rankProgress');
+      expResult = await addExp(userClient, user.id, itemId, 10);
+    }
+
     return NextResponse.json({
       success: true,
       currentStage,
       newStage,
       nextReview,
       unlockedDependents,
+      expAdded: expResult ? expResult.expAdded : 0,
+      newExp: expResult ? expResult.newExp : 0,
+      examUnlocked: expResult ? expResult.examUnlocked : false
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

@@ -18,11 +18,13 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_user_date
 ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
 
 -- Policy: User hanya bisa melihat log mereka sendiri
+DROP POLICY IF EXISTS "Users can view own activity logs" ON activity_logs;
 CREATE POLICY "Users can view own activity logs"
   ON activity_logs FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Policy: User bisa insert log mereka sendiri
+DROP POLICY IF EXISTS "Users can insert own activity logs" ON activity_logs;
 CREATE POLICY "Users can insert own activity logs"
   ON activity_logs FOR INSERT
   WITH CHECK (auth.uid() = user_id);

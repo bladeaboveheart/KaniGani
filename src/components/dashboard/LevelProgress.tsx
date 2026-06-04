@@ -26,29 +26,39 @@ export default function LevelProgress({
   const targetKanji = Math.ceil(stats.kanjiTotalInLevel * 0.9);
   const neededKanji = Math.max(0, targetKanji - stats.kanjiPassedInLevel);
 
+  const isStringLevel = typeof stats.level === 'string';
+  const displayLevelName = stats.level;
+  const nextLevelText = isStringLevel ? 'Tingkat Selanjutnya' : `Level ${Number(stats.level) + 1}`;
+
+  // EXP status untuk ujian pangkat
+  const hasExpInfo = stats.currentExp !== undefined && stats.expRequired !== undefined;
+  const expPct = hasExpInfo && stats.expRequired ? Math.round((stats.currentExp! / stats.expRequired!) * 100) : 0;
+
   return (
-    <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+    <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
             <Award className="w-5 h-5 text-indigo-500" />
             <h3 className="font-extrabold text-lg tracking-tight">
-              Kapan Saya Naik Level {stats.level + 1}?
+              {isStringLevel ? `Status Pangkat: ${displayLevelName}` : `Kapan Saya Naik Level ${Number(stats.level) + 1}?`}
             </h3>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            KaniGani mensyaratkan kelulusan minimal 90% Kanji Level {stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
+            {isStringLevel 
+              ? 'Selesaikan seluruh pelajaran (lessons) kanji di pangkat ini untuk naik ke pangkat berikutnya. Di pangkat akhir, kumpulkan EXP untuk membuka Ujian Milestone.'
+              : `KaniGani mensyaratkan kelulusan minimal 90% Kanji Level ${stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.`}
           </p>
         </div>
-        <div className="text-right">
-          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Kanji Lulus</span>
+        <div className="text-left sm:text-right shrink-0">
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Kanji Lulus Pangkat</span>
           <span className="text-xl font-black text-indigo-500">
             {stats.kanjiPassedInLevel} / {stats.kanjiTotalInLevel}
           </span>
         </div>
       </div>
 
-      {/* Progress Bar */}
+      {/* Progress Bar Kanji */}
       <div className="space-y-2">
         <div className="w-full bg-slate-100 dark:bg-slate-800 h-4 rounded-full overflow-hidden flex">
           <div
@@ -58,15 +68,42 @@ export default function LevelProgress({
         </div>
 
         <div className="flex justify-between items-center text-xxs font-bold text-slate-400 dark:text-slate-500">
-          <span>Progress: {kanjiPct}%</span>
-          <span>Target: 90% Lulus</span>
+          <span>Progres Kanji: {kanjiPct}%</span>
+          <span>Target Pangkat: 100% Selesai Lesson</span>
         </div>
       </div>
+
+      {/* EXP Progress Bar (Jika ada informasi EXP) */}
+      {hasExpInfo && (
+        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="text-xs font-extrabold text-slate-700 dark:text-slate-350 block">EXP Ujian Pangkat</span>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">EXP hanya didapat dari lesson/review item di pangkat saat ini.</span>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-black text-amber-500">{stats.currentExp} / {stats.expRequired} EXP</span>
+            </div>
+          </div>
+          <div className="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
+            <div
+              className="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, expPct)}%` }}
+            ></div>
+          </div>
+          {stats.examUnlocked && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl text-xs text-amber-700 dark:text-amber-400 flex items-center space-x-2 animate-bounce">
+              <Award className="w-4 h-4 shrink-0" />
+              <span className="font-bold">Ujian Kenaikan Pangkat JLPT {stats.jlptLevel} Terbuka! Silakan ikuti Milestone Exam di menu kuis.</span>
+            </div>
+          )}
+        </div>
+      )}
 
       {stats.kanjiPassedInLevel >= targetKanji ? (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl text-xs text-emerald-600 dark:text-emerald-400 flex items-center space-x-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>Luar biasa! Anda telah memenuhi syarat kelulusan Kanji level {stats.level}. Tinggal menunggu pembukaan level berikutnya!</span>
+          <span>Luar biasa! Anda telah menyelesaikan target Kanji untuk pangkat {displayLevelName}.</span>
         </div>
       ) : (
         <div className="space-y-3">
@@ -77,7 +114,9 @@ export default function LevelProgress({
             <div className="flex items-center space-x-2.5 font-bold">
               <AlertCircle className="w-5 h-5 text-indigo-500 shrink-0 animate-pulse" />
               <span>
-                Butuh {neededKanji} kanji lagi untuk naik Level {stats.level + 1}! Semangat belajar! (Klik untuk lihat daftar progres)
+                {neededKanji > 0 
+                  ? `Butuh ${neededKanji} kanji lagi untuk memenuhi target pangkat!`
+                  : 'Seluruh Kanji telah di-unlock! Klik untuk melihat status.'}
               </span>
             </div>
             {kanjiDropdownOpen ? (
@@ -90,7 +129,7 @@ export default function LevelProgress({
           {kanjiDropdownOpen && (
             <div className="p-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl animate-fade-in space-y-3">
               <div className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                Progres Kanji Level {stats.level}
+                Progres Kanji Pangkat {displayLevelName}
               </div>
 
               <div className="grid grid-cols-3 sm:grid-cols-6 md:grid-cols-8 gap-3">

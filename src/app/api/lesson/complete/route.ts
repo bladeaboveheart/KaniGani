@@ -79,7 +79,17 @@ export async function POST(request: Request) {
       duration_seconds: durationSeconds || 0,
     });
 
-    return NextResponse.json({ success: true, count: itemIds.length });
+    // Tambah EXP (+20 EXP per item) dan cek kenaikan pangkat general
+    const { addExpBatch, checkAndExecuteGeneralLevelUp } = await import('@/lib/rankProgress');
+    await addExpBatch(userClient, user.id, itemIds, 20);
+    const { levelUpOccurred, newRank } = await checkAndExecuteGeneralLevelUp(userClient, user.id);
+
+    return NextResponse.json({ 
+      success: true, 
+      count: itemIds.length,
+      levelUpOccurred,
+      newRankName: newRank ? newRank.name : null
+    });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

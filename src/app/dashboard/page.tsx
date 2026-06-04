@@ -144,11 +144,31 @@ export default function Dashboard() {
         // Fetch username & profile info
         const { data: profile } = await supabase
           .from('profiles')
-          .select('username, created_at, level')
+          .select('username, created_at')
           .eq('id', user.id)
           .maybeSingle();
         if (profile) setUsername(profile.username);
 
+        // Fetch rank state & active rank details
+        const { data: rankState } = await supabase
+          .from('user_rank_state')
+          .select('*, ranks(*)')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        let activeRank = rankState?.ranks;
+        if (!activeRank) {
+          // fetch N5 Pangkat 1
+          const { data: fallbackRank } = await supabase
+            .from('ranks')
+            .select('*')
+            .order('sort_order', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          activeRank = fallbackRank;
+        }
+
+        const userLevel = activeRank ? activeRank.name : 'N5 - Pangkat 1';
         const now = new Date().toISOString();
 
         // 1. Fetch user progress
@@ -159,49 +179,26 @@ export default function Dashboard() {
 
         if (progErr) throw progErr;
 
-        // 2. Fetch all kanji to calculate dynamic user level
-        const { data: allKanji, error: kanjiErr } = await supabase
+        // 2. Fetch all items (including rank_id) to get active items
+        const { data: allItems, error: itemsErr } = await supabase
           .from('items')
-          .select('id, level, character, slug, type')
-          .eq('type', 'kanji');
+          .select('id, level, character, slug, type, rank_id');
 
-        if (kanjiErr) throw kanjiErr;
+        if (itemsErr) throw itemsErr;
+
+        const allKanji = allItems ? allItems.filter((i: any) => i.type === 'kanji') : [];
 
         // 2b. Fetch prerequisites for locked checks
         const { data: prereqs, error: prereqErr } = await supabase
           .from('item_prerequisites')
-          .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)');
+          .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type, rank_id)');
 
         if (prereqErr) throw prereqErr;
 
-        const progressGuruSet = new Set(
-          (progresses || [])
-            .filter((p: any) => p.srs_stage >= 5)
-            .map((p: any) => p.item_id)
-        );
-
-        let userLevel = 1;
-        if (profile && profile.level !== null && profile.level !== undefined) {
-          userLevel = profile.level;
-        } else {
-          while (userLevel <= 10) {
-            const levelKanjiItems = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
-            if (levelKanjiItems.length === 0) break;
-
-            const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-            const ratio = passed / levelKanjiItems.length;
-            if (ratio >= 0.9) {
-              userLevel++;
-            } else {
-              break;
-            }
-          }
-        }
-
-        // Self-healing check: unlock level <= userLevel radicals that are accidentally locked (srs_stage = 0)
+        // Self-healing check: unlock active rank radicals that are accidentally locked (srs_stage = 0)
         const lockedRadicalsToUnlock = progresses ? progresses.filter((row: any) => {
           const item = row.items;
-          return item && item.type === 'radical' && item.level <= userLevel && row.srs_stage === 0;
+          return item && item.type === 'radical' && item.rank_id === activeRank?.id && row.srs_stage === 0;
         }) : [];
 
         if (lockedRadicalsToUnlock.length > 0) {
@@ -222,8 +219,8 @@ export default function Dashboard() {
           }
         }
 
-        // Calculate stats for current active level
-        const currentLevelKanji = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
+        // Calculate stats for current active rank
+        const currentLevelKanji = (allKanji && activeRank) ? allKanji.filter((k: any) => k.rank_id === activeRank.id) : [];
         const totalKanji = currentLevelKanji.length;
         const kanjiIds = currentLevelKanji.map(k => k.id);
 
@@ -384,18 +381,9 @@ export default function Dashboard() {
         setDurationHeatmap(durationMap);
 
         let daysSinceLevelUp = 0;
-        if (userLevel === 1) {
-          const signupDate = profile?.created_at ? new Date(profile.created_at) : new Date(user.created_at);
-          const diffMs = new Date().getTime() - signupDate.getTime();
-          daysSinceLevelUp = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-        } else {
-          const currentLevelProgresses = progresses ? progresses.filter((p: any) => p.items?.level === userLevel && p.unlocked_at) : [];
-          if (currentLevelProgresses.length > 0) {
-            const earliestUnlock = new Date(Math.min(...currentLevelProgresses.map((p: any) => new Date(p.unlocked_at).getTime())));
-            const diffMs = new Date().getTime() - earliestUnlock.getTime();
-            daysSinceLevelUp = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
-          }
-        }
+        const levelUpDate = rankState?.updated_at ? new Date(rankState.updated_at) : (profile?.created_at ? new Date(profile.created_at) : new Date(user.created_at));
+        const diffMs = new Date().getTime() - levelUpDate.getTime();
+        daysSinceLevelUp = Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
 
         setStats({
           lessonsAvailable,
@@ -406,6 +394,11 @@ export default function Dashboard() {
           kanjiPassedInLevel: kanjiPassed,
           kanjiTotalInLevel: totalKanji,
           daysSinceLevelUp,
+          currentExp: rankState?.current_exp || 0,
+          expRequired: activeRank?.exp_required || 1000,
+          examUnlocked: rankState?.exam_unlocked || false,
+          hasTakenPlacement: rankState?.has_taken_placement || false,
+          jlptLevel: activeRank?.jlpt_level || 'N5'
         });
 
         // Leaderboard load

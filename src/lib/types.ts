@@ -71,8 +71,39 @@ export interface DashboardStats {
     kanji: { total: number; guru: number };
     vocabulary: { total: number; burned: number };
   };
-  level: number;
+  level: string | number;
   kanjiPassedInLevel: number;
   kanjiTotalInLevel: number;
   daysSinceLevelUp?: number;
+  currentExp?: number;
+  expRequired?: number;
+  examUnlocked?: boolean;
+  hasTakenPlacement?: boolean;
+  jlptLevel?: string;
 }
+
+export interface Rank {
+  id: string;
+  name: string;
+  jlpt_level: string;
+  sort_order: number;
+  exp_required: number;
+}
+
+export interface UserRankState {
+  user_id: string;
+  current_rank_id: string;
+  current_exp: number;
+  exam_unlocked: boolean;
+  has_taken_placement: boolean;
+  ranks?: Rank;
+}
+
+export interface PlacementQuestion {
+  id: string;
+  jlpt_level: string;
+  question: string;
+  options: string[];
+  correct_answer: string;
+}
+

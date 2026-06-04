@@ -9,7 +9,7 @@ import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical } fr
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
-  const [level, setLevel] = useState<number>(1);
+  const [level, setLevel] = useState<string>('N5 - Pangkat 1');
   const [isLoading, setIsLoading] = useState(true);
   const [devMode, setDevMode] = useState<boolean>(false);
   const [betaTester, setBetaTester] = useState<boolean>(false);
@@ -90,10 +90,10 @@ export default function Navbar() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // 1. Dapatkan username & level dari profile
+          // 1. Dapatkan username dari profiles
           const { data: profile } = await supabase
             .from('profiles')
-            .select('username, level')
+            .select('username')
             .eq('id', user.id)
             .maybeSingle();
 
@@ -104,44 +104,17 @@ export default function Navbar() {
             setUsername(user.user_metadata?.username || user.email?.split('@')[0] || 'User');
           }
 
-          if (profile && profile.level !== null && profile.level !== undefined) {
-            setLevel(profile.level);
+          // 2. Dapatkan rank aktif dari user_rank_state
+          const { data: rankState } = await supabase
+            .from('user_rank_state')
+            .select('*, ranks(*)')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          if (rankState && rankState.ranks) {
+            setLevel(rankState.ranks.name);
           } else {
-            // 2. Dapatkan level saat ini secara dinamis (dari progres kanji lulus >= 90%)
-            const [progressRes, kanjiRes] = await Promise.all([
-              supabase
-                .from('user_progress')
-                .select('item_id, srs_stage')
-                .eq('user_id', user.id),
-              supabase
-                .from('items')
-                .select('id, level')
-                .eq('type', 'kanji')
-            ]);
-
-            const progresses = progressRes.data || [];
-            const allKanji = kanjiRes.data || [];
-
-            const progressGuruSet = new Set(
-              progresses
-                .filter((p: any) => p.srs_stage >= 5)
-                .map((p: any) => p.item_id)
-            );
-
-            let userLevel = 1;
-            while (userLevel <= 10) {
-              const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
-              if (levelKanjiItems.length === 0) break;
-
-              const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-              const ratio = passed / levelKanjiItems.length;
-              if (ratio >= 0.9) {
-                userLevel++;
-              } else {
-                break;
-              }
-            }
-            setLevel(userLevel);
+            setLevel('N5 - Pangkat 1');
           }
         }
       } catch (err) {

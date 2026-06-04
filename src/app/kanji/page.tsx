@@ -148,7 +148,7 @@ export default function KanjiPage() {
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
     if (stage === 8) return 'Kepiting Sakti';
-    return 'Kepiting Rebus 🦀🔥';
+    return 'Kepiting Rebus🦀🔥';
   };
 
   const getSrsColorClass = (stage: number) => {
@@ -414,11 +414,42 @@ export default function KanjiPage() {
             <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left overflow-y-auto flex-1">
 
               {/* Unlock Info */}
-              <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
-                <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">Status Belajar SRS</span>
-                <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0)}`}>
-                  {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0)}
-                </span>
+              <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">Status Belajar SRS</span>
+                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0)}`}>
+                    {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0)}
+                  </span>
+                </div>
+                {selectedItem.srs_stage === 9 && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Apakah Anda ingin menghidupkan kembali materi ini dan memasukkannya kembali ke antrean review harian?')) return;
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        if (!token) throw new Error('Silakan login terlebih dahulu');
+                        const res = await fetch('/api/archive/revive', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ itemId: selectedItem.id })
+                        });
+                        const data = await res.json();
+                        if (data.error) throw new Error(data.error);
+                        alert('Item berhasil dihidupkan kembali!');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert('Gagal menghidupkan kembali item: ' + err.message);
+                      }
+                    }}
+                    className="w-full mt-1 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
+                  >
+                    <span>Reset ke Antrean Review</span>
+                  </button>
+                )}
               </div>
 
               {/* Readings variations */}

@@ -28,8 +28,11 @@ export default function SettingsPage() {
     master: 0,
     enlightened: 0,
     burned: 0,
-    level: 1,
-    joinedDate: ''
+    level: 'N5 - Pangkat 1' as string | number,
+    joinedDate: '',
+    currentExp: 0,
+    expRequired: 1000,
+    hasTakenPlacement: false
   });
 
   const loadUserData = async () => {
@@ -49,6 +52,13 @@ export default function SettingsPage() {
 
       if (profErr) throw profErr;
 
+      // Fetch user rank state
+      const { data: rankState } = await supabase
+        .from('user_rank_state')
+        .select('*, ranks(*)')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       const currentUsername = profile?.username || user.user_metadata?.username || user.email?.split('@')[0] || 'User';
       setUserProfile({
         id: user.id,
@@ -57,23 +67,22 @@ export default function SettingsPage() {
       });
       setNewUsername(currentUsername);
 
-      // 2. Fetch user progress statistics & all Kanji to calculate dynamic user level
-      const [progressRes, kanjiRes] = await Promise.all([
+      // 2. Fetch user progress statistics
+      const [progressRes, itemsRes] = await Promise.all([
         supabase
           .from('user_progress')
           .select('item_id, srs_stage, next_review')
           .eq('user_id', user.id),
         supabase
           .from('items')
-          .select('id, level')
-          .eq('type', 'kanji')
+          .select('id, type, rank_id')
       ]);
 
       if (progressRes.error) throw progressRes.error;
-      if (kanjiRes.error) throw kanjiRes.error;
+      if (itemsRes.error) throw itemsRes.error;
 
       const progresses = progressRes.data || [];
-      const allKanji = kanjiRes.data || [];
+      const allItems = itemsRes.data || [];
 
       let apprentice = 0;
       let guru = 0;
@@ -95,30 +104,6 @@ export default function SettingsPage() {
         }
       });
 
-      const progressGuruSet = new Set(
-        progresses
-          .filter((p: any) => p.srs_stage >= 5)
-          .map((p: any) => p.item_id)
-      );
-
-      let userLevel = 1;
-      if (profile && profile.level !== null && profile.level !== undefined) {
-        userLevel = profile.level;
-      } else {
-        while (userLevel <= 10) {
-          const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
-          if (levelKanjiItems.length === 0) break;
-
-          const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-          const ratio = passed / levelKanjiItems.length;
-          if (ratio >= 0.9) {
-            userLevel++;
-          } else {
-            break;
-          }
-        }
-      }
-
       // Format Joined Date
       const joinedAt = new Date(profile?.created_at || user.created_at);
       const joinedString = joinedAt.toLocaleDateString('id-ID', {
@@ -134,8 +119,11 @@ export default function SettingsPage() {
         master,
         enlightened,
         burned,
-        level: userLevel,
-        joinedDate: joinedString
+        level: rankState?.ranks ? rankState.ranks.name : 'N5 - Pangkat 1',
+        joinedDate: joinedString,
+        currentExp: rankState?.current_exp || 0,
+        expRequired: rankState?.ranks ? rankState.ranks.exp_required : 1000,
+        hasTakenPlacement: rankState?.has_taken_placement || false
       });
 
     } catch (err) {
@@ -328,6 +316,50 @@ export default function SettingsPage() {
 
               </form>
 
+            </div>
+
+            {/* Placement Test Reset Card */}
+            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+              <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+                <RefreshCw className="w-5 h-5 text-rose-500" />
+                <h3 className="font-extrabold text-base">Ulangi Placement Test</h3>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-450 leading-relaxed">
+                Jika Anda merasa materi saat ini terlalu mudah atau sulit, Anda dapat mereset kemajuan belajar Anda untuk mengulang Placement Test dari awal.
+              </p>
+              <div className="p-4 bg-rose-500/5 dark:bg-rose-500/10 border border-rose-500/15 dark:border-rose-900/30 rounded-2xl text-xxs text-rose-600 dark:text-rose-400 flex items-center space-x-2.5 leading-relaxed">
+                <AlertCircle className="w-6 h-6 shrink-0" />
+                <p className="font-semibold">
+                  PENTING: Seluruh kemajuan SRS, EXP, status pangkat aktif Anda saat ini akan dihapus permanen dari sistem.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!confirm('PERINGATAN: Apakah Anda yakin ingin menghapus seluruh kemajuan belajar Anda dan mengulang placement test dari awal? Tindakan ini tidak dapat dibatalkan.')) return;
+                  try {
+                    const { data: { session } } = await supabase.auth.getSession();
+                    const token = session?.access_token;
+                    if (!token) throw new Error('Silakan login terlebih dahulu');
+                    const res = await fetch('/api/placement/retake', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                      }
+                    });
+                    const data = await res.json();
+                    if (data.error) throw new Error(data.error);
+                    alert('Progres berhasil direset! Silakan lakukan penempatan kuis baru.');
+                    router.push('/dashboard');
+                  } catch (err: any) {
+                    alert('Gagal mereset progres: ' + err.message);
+                  }
+                }}
+                className="w-full py-3 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-md shadow-rose-600/5"
+              >
+                Reset Progres & Ulangi Tes
+              </button>
             </div>
           </div>
 
