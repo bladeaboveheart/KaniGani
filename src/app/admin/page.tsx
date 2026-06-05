@@ -58,6 +58,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'radical' | 'kanji' | 'vocabulary'>('all');
   const [filterRank, setFilterRank] = useState<string>('all');
   const [ranks, setRanks] = useState<any[]>([]);
@@ -120,6 +121,13 @@ export default function AdminPage() {
     });
   }, [router]);
 
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
+
   const checkUserLevel = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -163,7 +171,7 @@ export default function AdminPage() {
     }
   };
 
-  const loadDatabase = async (selectedRankId?: string) => {
+  const loadDatabase = async () => {
     setLoading(true);
     try {
       const [totalCount, radicalCount, kanjiCount, vocabCount] = await Promise.all([
@@ -183,17 +191,36 @@ export default function AdminPage() {
       let query = supabase
         .from('items')
         .select(`
-          *,
-          item_meanings(*),
-          item_readings(*),
-          item_context_sentences(*),
-          item_prerequisites!item_id(requires_item_id)
-        `)
-        .order('lesson_position', { ascending: true });
+          id,
+          type,
+          character,
+          slug,
+          level,
+          rank_id,
+          lesson_position,
+          item_meanings(meaning, primary_meaning),
+          item_readings(reading, primary_reading)
+        `);
 
-      const currentRank = (typeof selectedRankId === 'string') ? selectedRankId : filterRank;
-      if (currentRank !== 'all') {
-        query = query.eq('rank_id', currentRank);
+      if (filterRank !== 'all') {
+        query = query.eq('rank_id', filterRank);
+      }
+
+      if (filterType !== 'all') {
+        query = query.eq('type', filterType);
+      }
+
+      if (debouncedSearchQuery.trim() !== '') {
+        const term = `%${debouncedSearchQuery.trim().toLowerCase()}%`;
+        query = query.or(`character.ilike.${term},slug.ilike.${term}`);
+      }
+
+      query = query.order('lesson_position', { ascending: true });
+
+      if (filterRank === 'all' && filterType === 'all' && debouncedSearchQuery.trim() === '') {
+        query = query.limit(200);
+      } else {
+        query = query.limit(1000);
       }
 
       const { data, error } = await query;
@@ -249,13 +276,19 @@ export default function AdminPage() {
           .order('sort_order', { ascending: true });
         setRanks(ranksData || []);
 
-        setFilterRank('all');
-        loadDatabase('all');
+        const defaultRank = ranksData && ranksData.length > 0 ? ranksData[0].id : 'all';
+        setFilterRank(defaultRank);
         loadUsers();
       };
       init();
     }
   }, [devMode]);
+
+  useEffect(() => {
+    if (devMode) {
+      loadDatabase();
+    }
+  }, [devMode, filterRank, filterType, debouncedSearchQuery]);
 
   const handleEnableDevMode = () => {
     localStorage.setItem('kanigani-dev-mode', 'true');
@@ -268,47 +301,71 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: any) => {
-    setFormItem({
-      id: item.id,
-      type: item.type,
-      character: item.character,
-      slug: item.slug || '',
-      level: item.level || 1,
-      rank_id: item.rank_id || null,
-      lesson_position: item.lesson_position || 0,
-      meaning_mnemonic: item.meaning_mnemonic || '',
-      reading_mnemonic: item.reading_mnemonic || '',
-      description: item.description || '',
-      meanings: item.item_meanings && item.item_meanings.length > 0
-        ? item.item_meanings.map((m: any) => ({
-          id: m.id,
-          meaning: m.meaning,
-          primary_meaning: m.primary_meaning,
-          accepted_answer: m.accepted_answer
-        }))
-        : [{ meaning: '', primary_meaning: true, accepted_answer: true }],
-      readings: item.item_readings && item.item_readings.length > 0
-        ? item.item_readings.map((r: any) => ({
-          id: r.id,
-          reading: r.reading,
-          reading_type: r.reading_type,
-          primary_reading: r.primary_reading,
-          accepted_answer: r.accepted_answer
-        }))
-        : [],
-      context_sentences: item.item_context_sentences && item.item_context_sentences.length > 0
-        ? item.item_context_sentences.map((s: any) => ({
-          id: s.id,
-          japanese: s.japanese,
-          indonesian: s.indonesian
-        }))
-        : [],
-      prerequisites: item.item_prerequisites && item.item_prerequisites.length > 0
-        ? item.item_prerequisites.map((p: any) => p.requires_item_id)
-        : []
-    });
-    setIsModalOpen(true);
+  const openEditModal = async (item: any) => {
+    setFormLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select(`
+          *,
+          item_meanings(*),
+          item_readings(*),
+          item_context_sentences(*),
+          item_prerequisites!item_id(requires_item_id)
+        `)
+        .eq('id', item.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormItem({
+          id: data.id,
+          type: data.type,
+          character: data.character,
+          slug: data.slug || '',
+          level: data.level || 1,
+          rank_id: data.rank_id || null,
+          lesson_position: data.lesson_position || 0,
+          meaning_mnemonic: data.meaning_mnemonic || '',
+          reading_mnemonic: data.reading_mnemonic || '',
+          description: data.description || '',
+          meanings: data.item_meanings && data.item_meanings.length > 0
+            ? data.item_meanings.map((m: any) => ({
+              id: m.id,
+              meaning: m.meaning,
+              primary_meaning: m.primary_meaning,
+              accepted_answer: m.accepted_answer
+            }))
+            : [{ meaning: '', primary_meaning: true, accepted_answer: true }],
+          readings: data.item_readings && data.item_readings.length > 0
+            ? data.item_readings.map((r: any) => ({
+              id: r.id,
+              reading: r.reading,
+              reading_type: r.reading_type,
+              primary_reading: r.primary_reading,
+              accepted_answer: r.accepted_answer
+            }))
+            : [],
+          context_sentences: data.item_context_sentences && data.item_context_sentences.length > 0
+            ? data.item_context_sentences.map((s: any) => ({
+              id: s.id,
+              japanese: s.japanese,
+              indonesian: s.indonesian
+            }))
+            : [],
+          prerequisites: data.item_prerequisites && data.item_prerequisites.length > 0
+            ? data.item_prerequisites.map((p: any) => p.requires_item_id)
+            : []
+        });
+        setIsModalOpen(true);
+      }
+    } catch (err: any) {
+      console.error('Error fetching item details:', err);
+      alert('Gagal mengambil detail item: ' + (err?.message || String(err)));
+    } finally {
+      setFormLoading(false);
+    }
   };
 
   const handleSaveItem = async () => {
@@ -626,7 +683,6 @@ export default function AdminPage() {
         setFormItem={setFormItem}
         handleSaveItem={handleSaveItem}
         formLoading={formLoading}
-        items={items}
         ranks={ranks}
       />
     </div>

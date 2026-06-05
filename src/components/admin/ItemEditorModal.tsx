@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Languages, FileText, Layers, ChevronRight, Loader2, Save } from 'lucide-react';
 import * as wanakana from 'wanakana';
+import { supabase } from '@/lib/supabase';
 
 // Type definitions
 interface MeaningInput {
@@ -50,7 +51,6 @@ interface ItemEditorModalProps {
   setFormItem: React.Dispatch<React.SetStateAction<ItemInput>>;
   handleSaveItem: () => void;
   formLoading: boolean;
-  items: any[];
   ranks: any[];
 }
 
@@ -61,10 +61,40 @@ export default function ItemEditorModal({
   setFormItem,
   handleSaveItem,
   formLoading,
-  items,
   ranks
 }: ItemEditorModalProps) {
   const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites'>('basic');
+  const [prereqCandidates, setPrereqCandidates] = useState<any[]>([]);
+  const [loadingPrereqs, setLoadingPrereqs] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      const loadPrereqs = async () => {
+        setLoadingPrereqs(true);
+        try {
+          let targetType: 'radical' | 'kanji' | null = null;
+          if (formItem.type === 'kanji') targetType = 'radical';
+          else if (formItem.type === 'vocabulary') targetType = 'kanji';
+
+          if (targetType) {
+            const { data, error } = await supabase
+              .from('items')
+              .select('id, character, slug, rank_id, level')
+              .eq('type', targetType);
+            if (error) throw error;
+            setPrereqCandidates(data || []);
+          } else {
+            setPrereqCandidates([]);
+          }
+        } catch (err) {
+          console.error('Error loading prerequisite candidates:', err);
+        } finally {
+          setLoadingPrereqs(false);
+        }
+      };
+      loadPrereqs();
+    }
+  }, [isOpen, formItem.type]);
 
   if (!isOpen) return null;
 
@@ -681,13 +711,17 @@ export default function ItemEditorModal({
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                {items
-                  .filter(i => {
-                    if (formItem.type === 'kanji') return i.type === 'radical';
-                    if (formItem.type === 'vocabulary') return i.type === 'kanji';
-                    return false;
-                  })
-                  .map((item) => {
+                {loadingPrereqs ? (
+                  <div className="col-span-full py-8 text-center flex flex-col items-center justify-center space-y-2 select-none">
+                    <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+                    <span className="text-xs font-semibold text-slate-500">Memuat item prasyarat...</span>
+                  </div>
+                ) : prereqCandidates.length === 0 ? (
+                  <div className="col-span-full py-8 text-center text-xs font-semibold text-slate-400 select-none">
+                    Tidak ada item prasyarat yang tersedia.
+                  </div>
+                ) : (
+                  prereqCandidates.map((item) => {
                     const isChecked = formItem.prerequisites.includes(item.id);
                     return (
                       <div
@@ -719,7 +753,8 @@ export default function ItemEditorModal({
                         </span>
                       </div>
                     );
-                  })}
+                  })
+                )}
               </div>
             </div>
           )}

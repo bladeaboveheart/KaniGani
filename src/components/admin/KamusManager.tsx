@@ -17,7 +17,7 @@ interface KamusManagerProps {
   filterRank: string;
   setFilterRank: (r: string) => void;
   ranks: any[];
-  loadDatabase: (rankId?: string) => void;
+  loadDatabase: () => void;
   openEditModal: (item: any) => void;
   handleDeleteItem: (id: string) => void;
   deleteConfirmId: string | null;
@@ -110,11 +110,7 @@ export default function KamusManager({
           {/* Level Filter */}
           <select
             value={filterRank}
-            onChange={(e) => {
-              const newRank = e.target.value;
-              setFilterRank(newRank);
-              loadDatabase(newRank);
-            }}
+            onChange={(e) => setFilterRank(e.target.value)}
             className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
             <option value="all">Semua Pangkat</option>
@@ -128,6 +124,11 @@ export default function KamusManager({
       {/* DYNAMIC DATABASE ITEMS GRID */}
       {filteredItems.length > 0 ? (
         <div className="space-y-8 animate-fade-in">
+          {filterRank === 'all' && filterType === 'all' && searchQuery.trim() === '' && items.length >= 200 && (
+            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-2xl text-xs font-semibold select-none flex items-center justify-between">
+              <span>Menampilkan 200 item pertama untuk mengoptimalkan kinerja. Gunakan filter pangkat atau pencarian untuk mencari item tertentu.</span>
+            </div>
+          )}
           {ranks.map((rank) => {
             const rankItems = filteredItems.filter(item => item.rank_id === rank.id);
             if (rankItems.length === 0) return null;
