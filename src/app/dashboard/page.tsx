@@ -480,8 +480,9 @@ export default function Dashboard() {
     return buckets;
   };
 
-  const getSrsLabel = (stage: number) => {
+  const getSrsLabel = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'Terkunci';
+    if (stage === 1 && !nextReview) return 'Dalam Pelajaran';
     if (stage >= 1 && stage <= 4) return 'Kepiting Cilik';
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
@@ -489,8 +490,13 @@ export default function Dashboard() {
     return 'Kepiting Rebus';
   };
 
-  const getSrsColorClass = (stage: number) => {
+  const getSrsColorClass = (stage: number, nextReview?: string | null, type?: string) => {
     if (stage === 0) return 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-500';
+    if (stage === 1 && !nextReview) {
+      if (type === 'radical') return 'bg-radical/10 text-radical border border-radical/20 dark:bg-radical/10';
+      if (type === 'kanji') return 'bg-kanji/10 text-kanji border border-kanji/20 dark:bg-kanji/10';
+      return 'bg-vocab/10 text-vocab border border-vocab/20 dark:bg-vocab/10';
+    }
     if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
     if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
     if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
@@ -933,8 +939,8 @@ export default function Dashboard() {
                             <span className="text-xxs font-semibold mt-1 text-slate-500 dark:text-slate-400 truncate max-w-full uppercase tracking-wider">
                               {item.name}
                             </span>
-                            <span className={`text-3xs font-extrabold px-2 py-0.5 rounded-full mt-2 ${getSrsColorClass(item.srs_stage)}`}>
-                              {getSrsLabel(item.srs_stage)}
+                            <span className={`text-3xs font-extrabold px-2 py-0.5 rounded-full mt-2 ${getSrsColorClass(item.srs_stage, item.next_review, item.type)}`}>
+                              {getSrsLabel(item.srs_stage, item.next_review)}
                             </span>
                           </div>
                         ))}

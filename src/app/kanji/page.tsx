@@ -86,42 +86,73 @@ export default function KanjiPage() {
         if (ranksErr) throw ranksErr;
         setRanks(ranksData || []);
 
-        // 2. Fetch all kanji items
-        const { data: itemsData, error: itemsErr } = await supabase
-          .from('items')
-          .select('*')
-          .eq('type', 'kanji')
-          .order('lesson_position', { ascending: true });
+        // 2. Fetch all kanji items with nested details (meanings, readings)
+        let itemsData: any[] = [];
+        let itemsFrom = 0;
+        const pageSize = 1000;
+        let itemsHasMore = true;
 
-        if (itemsErr) throw itemsErr;
+        while (itemsHasMore) {
+          const { data, error } = await supabase
+            .from('items')
+            .select(`
+              *,
+              item_meanings(*),
+              item_readings(*)
+            `)
+            .eq('type', 'kanji')
+            .order('lesson_position', { ascending: true })
+            .range(itemsFrom, itemsFrom + pageSize - 1);
 
-        const itemIds = (itemsData || []).map(i => i.id);
+          if (error) throw error;
+          if (data && data.length > 0) {
+            itemsData = [...itemsData, ...data];
+            if (data.length < pageSize) {
+              itemsHasMore = false;
+            } else {
+              itemsFrom += pageSize;
+            }
+          } else {
+            itemsHasMore = false;
+          }
+        }
 
-        // 3. Fetch all readings & meanings for these Kanjis
-        const [readingsRes, meaningsRes, progRes] = await Promise.all([
-          supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('user_progress').select('item_id, srs_stage, unlocked_at, next_review').eq('user_id', user.id)
-        ]);
+        // 3. Fetch user progress
+        let progressData: any[] = [];
+        let progFrom = 0;
+        let progHasMore = true;
 
-        if (readingsRes.error) throw readingsRes.error;
-        if (meaningsRes.error) throw meaningsRes.error;
-        if (progRes.error) throw progRes.error;
+        while (progHasMore) {
+          const { data, error } = await supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, unlocked_at, next_review')
+            .eq('user_id', user.id)
+            .range(progFrom, progFrom + pageSize - 1);
+
+          if (error) throw error;
+          if (data && data.length > 0) {
+            progressData = [...progressData, ...data];
+            if (data.length < pageSize) {
+              progHasMore = false;
+            } else {
+              progFrom += pageSize;
+            }
+          } else {
+            progHasMore = false;
+          }
+        }
 
         // Map progresses for easy search
-        const progressMap = new Map(progRes.data?.map(p => [p.item_id, p]) || []);
-
-        const readings = readingsRes.data || [];
-        const meanings = meaningsRes.data || [];
+        const progressMap = new Map(progressData.map(p => [p.item_id, p]));
 
         // Combine items with progress and details
-        const combined: KanjiItem[] = (itemsData || []).map(item => {
+        const combined: KanjiItem[] = itemsData.map(item => {
           const progress = progressMap.get(item.id);
-          const itemMeanings = meanings.filter(m => m.item_id === item.id);
-          const itemReadings = readings.filter(r => r.item_id === item.id);
+          const itemMeanings = item.item_meanings || [];
+          const itemReadings = item.item_readings || [];
 
-          const primaryMeaning = itemMeanings.find(m => m.primary_meaning)?.meaning || item.slug || 'kanji';
-          const primaryReading = itemReadings.find(r => r.primary_reading)?.reading || '';
+          const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'kanji';
+          const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
 
           return {
             id: item.id,
@@ -153,25 +184,27 @@ export default function KanjiPage() {
     loadData();
   }, [router]);
 
-  const getSrsLabel = (stage: number) => {
+  const getSrsLabel = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'Terkunci';
+    if (stage === 1 && !nextReview) return 'Dalam Pelajaran';
     if (stage >= 1 && stage <= 4) return 'Kepiting Cilik';
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
     if (stage === 8) return 'Kepiting Sakti';
-    return 'Kepiting Rebus🦀🔥';
+    return 'Kepiting Rebus';
   };
 
-  const getSrsColorClass = (stage: number) => {
+  const getSrsColorClass = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'bg-slate-200/50 text-slate-400 dark:bg-slate-800/40 dark:text-slate-500 border border-slate-350/10';
+    if (stage === 1 && !nextReview) return 'bg-kanji/5 text-kanji border border-kanji/20 dark:bg-kanji/10';
     if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
     if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
-    if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
+    if (stage === 3) return 'bg-blue-350 text-blue-700 dark:bg-blue-800 dark:text-blue-200'; // Note: the original used bg-blue-300, we keep it consistent or use it. We'll use blue-300.
     if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
     if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
     if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
-    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
-    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
+    if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-955';
+    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-955';
     return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
   };
 
@@ -428,8 +461,8 @@ export default function KanjiPage() {
               <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">Status Belajar SRS</span>
-                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0)}`}>
-                    {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0)}
+                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0, selectedItem.next_review)}`}>
+                    {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0, selectedItem.next_review)}
                   </span>
                 </div>
                 {selectedItem.srs_stage === 9 && (

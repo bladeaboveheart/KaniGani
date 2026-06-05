@@ -65,55 +65,105 @@ export default function RadicalPage() {
         setRanks(ranksData || []);
 
         // 2. Fetch all radical items
-        const { data: itemsData, error: itemsErr } = await supabase
-          .from('items')
-          .select('*')
-          .eq('type', 'radical')
-          .order('lesson_position', { ascending: true });
+        let itemsData: any[] = [];
+        let itemsFrom = 0;
+        const pageSize = 1000;
+        let itemsHasMore = true;
 
-        if (itemsErr) throw itemsErr;
+        while (itemsHasMore) {
+          const { data, error } = await supabase
+            .from('items')
+            .select('*')
+            .eq('type', 'radical')
+            .order('lesson_position', { ascending: true })
+            .range(itemsFrom, itemsFrom + pageSize - 1);
+
+          if (error) throw error;
+          if (data && data.length > 0) {
+            itemsData = [...itemsData, ...data];
+            if (data.length < pageSize) {
+              itemsHasMore = false;
+            } else {
+              itemsFrom += pageSize;
+            }
+          } else {
+            itemsHasMore = false;
+          }
+        }
 
         // 3. Fetch user progress
-        const { data: progData, error: progErr } = await supabase
-          .from('user_progress')
-          .select('item_id, srs_stage, unlocked_at, next_review')
-          .eq('user_id', user.id);
+        let progressData: any[] = [];
+        let progFrom = 0;
+        let progHasMore = true;
 
-        if (progErr) throw progErr;
+        while (progHasMore) {
+          const { data, error } = await supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, unlocked_at, next_review')
+            .eq('user_id', user.id)
+            .range(progFrom, progFrom + pageSize - 1);
 
-        // 4. Fetch item prerequisites to map 'found in kanji' relation
-        const { data: prereqs, error: prereqErr } = await supabase
-          .from('item_prerequisites')
-          .select('item_id, requires_item_id, items!item_id(id, character, slug, level, type, rank_id)');
+          if (error) throw error;
+          if (data && data.length > 0) {
+            progressData = [...progressData, ...data];
+            if (data.length < pageSize) {
+              progHasMore = false;
+            } else {
+              progFrom += pageSize;
+            }
+          } else {
+            progHasMore = false;
+          }
+        }
 
-        if (prereqErr) throw prereqErr;
+        // 4. Fetch item prerequisites
+        let prereqsData: any[] = [];
+        let prereqsFrom = 0;
+        let prereqsHasMore = true;
+
+        while (prereqsHasMore) {
+          const { data, error } = await supabase
+            .from('item_prerequisites')
+            .select('item_id, requires_item_id, items!item_id(id, character, slug, level, type, rank_id)')
+            .range(prereqsFrom, prereqsFrom + pageSize - 1);
+
+          if (error) throw error;
+          if (data && data.length > 0) {
+            prereqsData = [...prereqsData, ...data];
+            if (data.length < pageSize) {
+              prereqsHasMore = false;
+            } else {
+              prereqsFrom += pageSize;
+            }
+          } else {
+            prereqsHasMore = false;
+          }
+        }
 
         // Group dependents by required radical item id
         const dependentsMap = new Map<string, any[]>();
-        if (prereqs) {
-          prereqs.forEach((row: any) => {
-            const depItem = row.items;
-            if (depItem && depItem.type === 'kanji') {
-              const reqId = row.requires_item_id;
-              if (!dependentsMap.has(reqId)) {
-                dependentsMap.set(reqId, []);
-              }
-              dependentsMap.get(reqId)!.push({
-                id: depItem.id,
-                character: depItem.character,
-                slug: depItem.slug || 'kanji',
-                level: depItem.level,
-                rank_id: depItem.rank_id
-              });
+        prereqsData.forEach((row: any) => {
+          const depItem = row.items;
+          if (depItem && depItem.type === 'kanji') {
+            const reqId = row.requires_item_id;
+            if (!dependentsMap.has(reqId)) {
+              dependentsMap.set(reqId, []);
             }
-          });
-        }
+            dependentsMap.get(reqId)!.push({
+              id: depItem.id,
+              character: depItem.character,
+              slug: depItem.slug || 'kanji',
+              level: depItem.level,
+              rank_id: depItem.rank_id
+            });
+          }
+        });
 
         // Map progresses for easy search
-        const progressMap = new Map(progData?.map(p => [p.item_id, p]) || []);
+        const progressMap = new Map(progressData.map(p => [p.item_id, p]));
 
         // Combine items with progress and prerequisites
-        const combined: RadicalItem[] = (itemsData || []).map(item => {
+        const combined: RadicalItem[] = itemsData.map(item => {
           const progress = progressMap.get(item.id);
           const foundKanjis = dependentsMap.get(item.id) || [];
           return {
@@ -142,8 +192,9 @@ export default function RadicalPage() {
     loadData();
   }, [router]);
 
-  const getSrsLabel = (stage: number) => {
+  const getSrsLabel = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'Terkunci';
+    if (stage === 1 && !nextReview) return 'Dalam Pelajaran';
     if (stage >= 1 && stage <= 4) return 'Kepiting Cilik';
     if (stage === 5 || stage === 6) return 'Kepiting Guru';
     if (stage === 7) return 'Kepiting Suhu';
@@ -151,8 +202,9 @@ export default function RadicalPage() {
     return 'Kepiting Rebus';
   };
 
-  const getSrsColorClass = (stage: number) => {
+  const getSrsColorClass = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'bg-slate-200/50 text-slate-400 dark:bg-slate-800/40 dark:text-slate-500 border border-slate-350/10';
+    if (stage === 1 && !nextReview) return 'bg-radical/5 text-radical border border-radical/20 dark:bg-radical/10';
     if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
     if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
     if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
@@ -160,7 +212,7 @@ export default function RadicalPage() {
     if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
     if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
     if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
-    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
+    if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-955';
     return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
   };
 
@@ -401,8 +453,8 @@ export default function RadicalPage() {
               <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
                 <div className="flex items-center justify-between">
                   <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">Status Belajar SRS</span>
-                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0)}`}>
-                    {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0)}
+                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedItem.srs_stage || 0, selectedItem.next_review)}`}>
+                    {selectedItem.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedItem.srs_stage || 0, selectedItem.next_review)}
                   </span>
                 </div>
                 {selectedItem.srs_stage === 9 && (
