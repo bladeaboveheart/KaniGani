@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Award, AlertCircle, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { DashboardStats } from '@/lib/types';
 
@@ -15,6 +16,7 @@ export default function LevelProgress({
   currentLevelKanjiList,
   formatDueTime
 }: LevelProgressProps) {
+  const router = useRouter();
   const [kanjiDropdownOpen, setKanjiDropdownOpen] = useState(false);
 
   if (!stats) return null;
@@ -92,9 +94,17 @@ export default function LevelProgress({
             ></div>
           </div>
           {stats.examUnlocked && (
-            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/30 rounded-2xl text-xs text-amber-700 dark:text-amber-400 flex items-center space-x-2 animate-bounce">
-              <Award className="w-4 h-4 shrink-0" />
-              <span className="font-bold">Ujian Kenaikan Pangkat JLPT {stats.jlptLevel} Terbuka! Silakan ikuti Milestone Exam di menu kuis.</span>
+            <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-900/40 rounded-3xl text-sm text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-bounce">
+              <div className="flex items-center space-x-2.5">
+                <Award className="w-5 h-5 text-amber-500 shrink-0" />
+                <span className="font-bold">Ujian Kenaikan Pangkat JLPT {stats.jlptLevel} Terbuka! Selesaikan ujian untuk naik pangkat.</span>
+              </div>
+              <button
+                onClick={() => router.push(`/placement?mode=exam&level=${stats.jlptLevel}`)}
+                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold rounded-xl text-xs transition-all shadow-md cursor-pointer shrink-0 self-end sm:self-center"
+              >
+                Ikuti Ujian Milestone
+              </button>
             </div>
           )}
         </div>

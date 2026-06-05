@@ -32,6 +32,7 @@ interface ItemInput {
   character: string;
   slug: string;
   level: number;
+  rank_id?: string | null;
   lesson_position: number;
   meaning_mnemonic: string;
   reading_mnemonic: string;
@@ -50,6 +51,7 @@ interface ItemEditorModalProps {
   handleSaveItem: () => void;
   formLoading: boolean;
   items: any[];
+  ranks: any[];
 }
 
 export default function ItemEditorModal({
@@ -59,7 +61,8 @@ export default function ItemEditorModal({
   setFormItem,
   handleSaveItem,
   formLoading,
-  items
+  items,
+  ranks
 }: ItemEditorModalProps) {
   const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites'>('basic');
 
@@ -369,6 +372,21 @@ export default function ItemEditorModal({
                   onChange={(e) => setFormItem(prev => ({ ...prev, level: Number(e.target.value) }))}
                   className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              {/* Rank selection */}
+              <div>
+                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Pangkat (Ranks)</label>
+                <select
+                  value={formItem.rank_id || ''}
+                  onChange={(e) => setFormItem(prev => ({ ...prev, rank_id: e.target.value || null }))}
+                  className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Pilih Pangkat</option>
+                  {ranks.map(r => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
               </div>
  
               {/* Lesson Queue Position */}
@@ -697,7 +715,7 @@ export default function ItemEditorModal({
                           </span>
                         </div>
                         <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-505">
-                          Lvl {item.level}
+                          {ranks.find(r => r.id === item.rank_id)?.name || `Lvl ${item.level}`}
                         </span>
                       </div>
                     );

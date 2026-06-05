@@ -15,6 +15,7 @@ interface VocabItem {
   character: string;
   slug: string;
   level: number;
+  rank_id?: string | null;
   meaning_mnemonic?: string;
   reading_mnemonic?: string;
   description?: string;
@@ -34,7 +35,8 @@ export default function VocabularyPage() {
   const [loading, setLoading] = useState(true);
   const [vocabs, setVocabs] = useState<VocabItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [selectedRank, setSelectedRank] = useState<string>('all');
+  const [ranks, setRanks] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null);
 
   useEffect(() => {
@@ -46,25 +48,33 @@ export default function VocabularyPage() {
           return;
         }
 
-        // 1. Fetch all vocabulary items
+        // 1. Fetch ranks
+        const { data: ranksData, error: ranksErr } = await supabase
+          .from('ranks')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (ranksErr) throw ranksErr;
+        setRanks(ranksData || []);
+
+        // 2. Fetch all vocabulary items
         const { data: itemsData, error: itemsErr } = await supabase
           .from('items')
           .select('*')
           .eq('type', 'vocabulary')
-          .order('level', { ascending: true })
           .order('lesson_position', { ascending: true });
 
         if (itemsErr) throw itemsErr;
 
         const itemIds = (itemsData || []).map(i => i.id);
 
-        // 2. Fetch all readings, meanings, context sentences, progress & prerequisites
+        // 3. Fetch all readings, meanings, context sentences, progress & prerequisites
         const [readingsRes, meaningsRes, sentencesRes, progRes, prereqsRes] = await Promise.all([
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
           supabase.from('user_progress').select('item_id, srs_stage, unlocked_at, next_review').eq('user_id', user.id),
-          supabase.from('item_prerequisites').select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+          supabase.from('item_prerequisites').select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type, rank_id)')
         ]);
 
         if (readingsRes.error) throw readingsRes.error;
@@ -87,7 +97,8 @@ export default function VocabularyPage() {
                 id: reqItem.id,
                 character: reqItem.character,
                 slug: reqItem.slug || 'kanji',
-                level: reqItem.level
+                level: reqItem.level,
+                rank_id: reqItem.rank_id
               });
             }
           });
@@ -116,6 +127,7 @@ export default function VocabularyPage() {
             character: item.character,
             slug: item.slug || 'vocabulary',
             level: item.level,
+            rank_id: item.rank_id,
             meaning_mnemonic: item.meaning_mnemonic || '',
             reading_mnemonic: item.reading_mnemonic || '',
             description: item.description || '',
@@ -166,7 +178,7 @@ export default function VocabularyPage() {
 
   // Filters
   const filtered = vocabs.filter(item => {
-    if (selectedLevel !== 'all' && String(item.level) !== selectedLevel) return false;
+    if (selectedRank !== 'all' && item.rank_id !== selectedRank) return false;
 
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase().trim();
@@ -178,8 +190,6 @@ export default function VocabularyPage() {
     }
     return true;
   });
-
-  const levelList = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
   if (loading) {
     return (
@@ -229,18 +239,18 @@ export default function VocabularyPage() {
           </div>
 
           <div className="flex items-center space-x-3 w-full sm:w-auto shrink-0 justify-end">
-            <div className="flex items-center space-x-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
-              <Layers className="w-4 h-4 text-slate-450" />
-              <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest">Level</span>
+            <div className="flex items-center space-x-1 px-3 py-2 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+              <Layers className="w-4 h-4 text-slate-455" />
+              <span className="text-xxs font-bold text-slate-455 uppercase tracking-widest">Pangkat</span>
             </div>
             <select
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-              className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-vocab"
+              value={selectedRank}
+              onChange={(e) => setSelectedRank(e.target.value)}
+              className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-vocab"
             >
-              <option value="all">Semua Level</option>
-              {levelList.map(l => (
-                <option key={l} value={l}>Level {l}</option>
+              <option value="all">Semua Pangkat</option>
+              {ranks.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
           </div>
@@ -286,23 +296,25 @@ export default function VocabularyPage() {
         {/* Vocab Grouped Layout */}
         {filtered.length > 0 ? (
           <div className="space-y-8">
-            {Array.from(new Set(filtered.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
-              const levelItems = filtered.filter(item => item.level === lvl);
-              const levelTotalItems = vocabs.filter(item => item.level === lvl);
-              const unlockedCount = levelTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
-              const totalCount = levelTotalItems.length;
+            {ranks.map((rank) => {
+              const rankItems = filtered.filter(item => item.rank_id === rank.id);
+              if (rankItems.length === 0) return null;
+
+              const rankTotalItems = vocabs.filter(item => item.rank_id === rank.id);
+              const unlockedCount = rankTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
+              const totalCount = rankTotalItems.length;
 
               return (
-                <div key={lvl} className="space-y-4">
+                <div key={rank.id} className="space-y-4">
                   {/* Level Header Panel */}
                   <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
-                    <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">Level {lvl}</span>
-                    <span className="text-xxs font-bold text-slate-400 dark:text-slate-550">({unlockedCount}/{totalCount} unlocked)</span>
+                    <span className="text-base font-extrabold text-slate-855 dark:text-slate-100">{rank.name}</span>
+                    <span className="text-xxs font-bold text-slate-400 dark:text-slate-555">({unlockedCount}/{totalCount} unlocked)</span>
                   </div>
 
                   {/* Grid of level items */}
                   <div className="flex flex-wrap gap-3 justify-start">
-                    {levelItems.map((item) => {
+                    {rankItems.map((item) => {
                       const isLocked = item.srs_stage === 0;
                       const isInLessons = item.srs_stage === 1 && !item.next_review;
                       const isBurned = item.srs_stage === 9;
@@ -404,7 +416,7 @@ export default function VocabularyPage() {
                 <X className="w-5 h-5" />
               </button>
               <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
-                Kosakata Kamus • Level {selectedItem.level}
+                Kosakata Kamus • {ranks.find(r => r.id === selectedItem.rank_id)?.name || `Level ${selectedItem.level}`}
               </span>
               <h1 className="text-5xl sm:text-6xl font-black select-all">{selectedItem.character}</h1>
               <p className="text-lg font-bold tracking-wide mt-2 uppercase opacity-90">{selectedItem.primary_meaning}</p>
@@ -502,7 +514,7 @@ export default function VocabularyPage() {
                           </span>
                         </div>
                         <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                          Lvl {kj.level}
+                          {ranks.find(r => r.id === kj.rank_id)?.name || `Lvl ${kj.level}`}
                         </span>
                       </div>
                     ))}

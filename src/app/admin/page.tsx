@@ -41,6 +41,7 @@ interface ItemInput {
   character: string;
   slug: string;
   level: number;
+  rank_id?: string | null;
   lesson_position: number;
   meaning_mnemonic: string;
   reading_mnemonic: string;
@@ -58,7 +59,8 @@ export default function AdminPage() {
   const [items, setItems] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'radical' | 'kanji' | 'vocabulary'>('all');
-  const [filterLevel, setFilterLevel] = useState<string>('all');
+  const [filterRank, setFilterRank] = useState<string>('all');
+  const [ranks, setRanks] = useState<any[]>([]);
 
   const [stats, setStats] = useState({
     total: 0,
@@ -75,6 +77,7 @@ export default function AdminPage() {
     character: '',
     slug: '',
     level: 1,
+    rank_id: null,
     lesson_position: 0,
     meaning_mnemonic: '',
     reading_mnemonic: '',
@@ -160,7 +163,7 @@ export default function AdminPage() {
     }
   };
 
-  const loadDatabase = async (selectedLvl?: string) => {
+  const loadDatabase = async (selectedRankId?: string) => {
     setLoading(true);
     try {
       const [totalCount, radicalCount, kanjiCount, vocabCount] = await Promise.all([
@@ -186,12 +189,11 @@ export default function AdminPage() {
           item_context_sentences(*),
           item_prerequisites!item_id(requires_item_id)
         `)
-        .order('level', { ascending: true })
         .order('lesson_position', { ascending: true });
 
-      const currentLvl = (typeof selectedLvl === 'string') ? selectedLvl : filterLevel;
-      if (currentLvl !== 'all') {
-        query = query.eq('level', Number(currentLvl));
+      const currentRank = (typeof selectedRankId === 'string') ? selectedRankId : filterRank;
+      if (currentRank !== 'all') {
+        query = query.eq('rank_id', currentRank);
       }
 
       const { data, error } = await query;
@@ -241,9 +243,14 @@ export default function AdminPage() {
   useEffect(() => {
     if (devMode) {
       const init = async () => {
-        const lvl = await checkUserLevel();
-        setFilterLevel(String(lvl));
-        loadDatabase(String(lvl));
+        const { data: ranksData } = await supabase
+          .from('ranks')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        setRanks(ranksData || []);
+
+        setFilterRank('all');
+        loadDatabase('all');
         loadUsers();
       };
       init();
@@ -268,6 +275,7 @@ export default function AdminPage() {
       character: item.character,
       slug: item.slug || '',
       level: item.level || 1,
+      rank_id: item.rank_id || null,
       lesson_position: item.lesson_position || 0,
       meaning_mnemonic: item.meaning_mnemonic || '',
       reading_mnemonic: item.reading_mnemonic || '',
@@ -347,6 +355,7 @@ export default function AdminPage() {
         character: formItem.character.trim(),
         slug: formItem.slug.trim().toLowerCase(),
         level: Number(formItem.level),
+        rank_id: formItem.rank_id || null,
         lesson_position: Number(formItem.lesson_position),
         meaning_mnemonic: formItem.meaning_mnemonic.trim() || null,
         reading_mnemonic: formItem.type !== 'radical' ? formItem.reading_mnemonic.trim() || null : null,
@@ -593,8 +602,9 @@ export default function AdminPage() {
                 setSearchQuery={setSearchQuery}
                 filterType={filterType}
                 setFilterType={setFilterType}
-                filterLevel={filterLevel}
-                setFilterLevel={setFilterLevel}
+                filterRank={filterRank}
+                setFilterRank={setFilterRank}
+                ranks={ranks}
                 loadDatabase={loadDatabase}
                 openEditModal={openEditModal}
                 handleDeleteItem={handleDeleteItem}
@@ -617,6 +627,7 @@ export default function AdminPage() {
         handleSaveItem={handleSaveItem}
         formLoading={formLoading}
         items={items}
+        ranks={ranks}
       />
     </div>
   );

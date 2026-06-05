@@ -509,6 +509,32 @@ export default function Dashboard() {
     router.push('/lesson');
   };
 
+  const handleSkipPlacement = async () => {
+    if (!confirm('Apakah Anda yakin ingin melewati Placement Test dan langsung mulai dari N5 - Pangkat 1?')) return;
+    setLoading(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error('Silakan login terlebih dahulu');
+      const res = await fetch('/api/placement/execute', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ targetRankId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d' }) // N5 - Pangkat 1
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      alert('Anda memilih untuk memulai belajar dari N5 - Pangkat 1. Selamat belajar!');
+      window.location.reload();
+    } catch (err: any) {
+      alert('Gagal memproses permintaan: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
@@ -572,6 +598,37 @@ export default function Dashboard() {
             </div>
           </div>
         </section>
+
+        {/* Placement Test Prompter Banner */}
+        {stats && !stats.hasTakenPlacement && (
+          <section className="bg-gradient-to-r from-amber-500 to-orange-600 text-white p-6 sm:p-8 rounded-3xl border border-amber-400/20 shadow-lg flex flex-col md:flex-row md:items-center justify-between gap-6 animate-pulse" style={{ animationDuration: '3s' }}>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2 text-amber-100 select-none">
+                <Award className="w-5 h-5 text-amber-200" />
+                <span className="text-xs font-bold uppercase tracking-widest">Tes Penempatan Kemampuan</span>
+              </div>
+              <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight">🎯 Tentukan Pangkat Belajarmu!</h3>
+              <p className="text-sm text-amber-50 leading-relaxed max-w-2xl">
+                Anda belum mengambil Kuis Penempatan (Placement Test). Ikuti tes singkat kami untuk langsung ditempatkan di tingkat belajar yang sesuai dengan kemampuan bahasa Jepang Anda (N5 s/d N1).
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={handleSkipPlacement}
+                className="px-4 py-2.5 bg-amber-700/30 hover:bg-amber-700/50 border border-amber-400/30 text-amber-100 font-bold rounded-xl text-xs sm:text-sm transition-all duration-200 cursor-pointer"
+              >
+                Lewati & Mulai N5
+              </button>
+              <button
+                onClick={() => router.push('/placement')}
+                className="px-5 py-2.5 bg-white text-orange-600 font-bold rounded-xl shadow-md hover:bg-amber-50 text-xs sm:text-sm transition-all duration-200 flex items-center space-x-1.5 cursor-pointer"
+              >
+                <span>Mulai Tes</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Big Action Buttons (Lessons & Reviews) */}
         <section className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">

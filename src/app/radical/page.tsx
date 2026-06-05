@@ -15,6 +15,7 @@ interface RadicalItem {
   character: string;
   slug: string;
   level: number;
+  rank_id?: string | null;
   meaning_mnemonic?: string;
   description?: string;
   srs_stage?: number;
@@ -28,7 +29,8 @@ export default function RadicalPage() {
   const [loading, setLoading] = useState(true);
   const [radicals, setRadicals] = useState<RadicalItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLevel, setSelectedLevel] = useState<string>('all');
+  const [selectedRank, setSelectedRank] = useState<string>('all');
+  const [ranks, setRanks] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<RadicalItem | null>(null);
 
   // Read search param on load for deep linking
@@ -53,17 +55,25 @@ export default function RadicalPage() {
           return;
         }
 
-        // 1. Fetch all radical items
+        // 1. Fetch ranks
+        const { data: ranksData, error: ranksErr } = await supabase
+          .from('ranks')
+          .select('*')
+          .order('sort_order', { ascending: true });
+
+        if (ranksErr) throw ranksErr;
+        setRanks(ranksData || []);
+
+        // 2. Fetch all radical items
         const { data: itemsData, error: itemsErr } = await supabase
           .from('items')
           .select('*')
           .eq('type', 'radical')
-          .order('level', { ascending: true })
           .order('lesson_position', { ascending: true });
 
         if (itemsErr) throw itemsErr;
 
-        // 2. Fetch user progress
+        // 3. Fetch user progress
         const { data: progData, error: progErr } = await supabase
           .from('user_progress')
           .select('item_id, srs_stage, unlocked_at, next_review')
@@ -71,10 +81,10 @@ export default function RadicalPage() {
 
         if (progErr) throw progErr;
 
-        // 3. Fetch item prerequisites to map 'found in kanji' relation
+        // 4. Fetch item prerequisites to map 'found in kanji' relation
         const { data: prereqs, error: prereqErr } = await supabase
           .from('item_prerequisites')
-          .select('item_id, requires_item_id, items!item_id(id, character, slug, level, type)');
+          .select('item_id, requires_item_id, items!item_id(id, character, slug, level, type, rank_id)');
 
         if (prereqErr) throw prereqErr;
 
@@ -92,7 +102,8 @@ export default function RadicalPage() {
                 id: depItem.id,
                 character: depItem.character,
                 slug: depItem.slug || 'kanji',
-                level: depItem.level
+                level: depItem.level,
+                rank_id: depItem.rank_id
               });
             }
           });
@@ -110,6 +121,7 @@ export default function RadicalPage() {
             character: item.character,
             slug: item.slug || 'radical',
             level: item.level,
+            rank_id: item.rank_id,
             meaning_mnemonic: item.meaning_mnemonic || '',
             description: item.description || '',
             srs_stage: progress ? progress.srs_stage : 0,
@@ -154,7 +166,7 @@ export default function RadicalPage() {
 
   // Filters
   const filtered = radicals.filter(item => {
-    if (selectedLevel !== 'all' && String(item.level) !== selectedLevel) return false;
+    if (selectedRank !== 'all' && item.rank_id !== selectedRank) return false;
 
     if (searchQuery.trim() !== '') {
       const q = searchQuery.toLowerCase().trim();
@@ -162,8 +174,6 @@ export default function RadicalPage() {
     }
     return true;
   });
-
-  const levelList = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
   if (loading) {
     return (
@@ -213,18 +223,18 @@ export default function RadicalPage() {
           </div>
 
           <div className="flex items-center space-x-3 w-full sm:w-auto shrink-0 justify-end">
-            <div className="flex items-center space-x-1 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
-              <Layers className="w-4 h-4 text-slate-450" />
-              <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest">Level</span>
+            <div className="flex items-center space-x-1 px-3 py-2 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+              <Layers className="w-4 h-4 text-slate-455" />
+              <span className="text-xxs font-bold text-slate-455 uppercase tracking-widest">Pangkat</span>
             </div>
             <select
-              value={selectedLevel}
-              onChange={(e) => setSelectedLevel(e.target.value)}
-              className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-radical"
+              value={selectedRank}
+              onChange={(e) => setSelectedRank(e.target.value)}
+              className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-radical"
             >
-              <option value="all">Semua Level</option>
-              {levelList.map(l => (
-                <option key={l} value={l}>Level {l}</option>
+              <option value="all">Semua Pangkat</option>
+              {ranks.map(r => (
+                <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
           </div>
@@ -270,23 +280,25 @@ export default function RadicalPage() {
         {/* Radicals Grouped Layout */}
         {filtered.length > 0 ? (
           <div className="space-y-8">
-            {Array.from(new Set(filtered.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
-              const levelItems = filtered.filter(item => item.level === lvl);
-              const levelTotalItems = radicals.filter(item => item.level === lvl);
-              const unlockedCount = levelTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
-              const totalCount = levelTotalItems.length;
+            {ranks.map((rank) => {
+              const rankItems = filtered.filter(item => item.rank_id === rank.id);
+              if (rankItems.length === 0) return null;
+
+              const rankTotalItems = radicals.filter(item => item.rank_id === rank.id);
+              const unlockedCount = rankTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
+              const totalCount = rankTotalItems.length;
 
               return (
-                <div key={lvl} className="space-y-4">
+                <div key={rank.id} className="space-y-4">
                   {/* Level Header Panel */}
                   <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
-                    <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">Level {lvl}</span>
+                    <span className="text-base font-extrabold text-slate-855 dark:text-slate-100">{rank.name}</span>
                     <span className="text-xxs font-bold text-slate-400 dark:text-slate-550">({unlockedCount}/{totalCount} unlocked)</span>
                   </div>
 
                   {/* Grid of level items */}
                   <div className="flex flex-wrap gap-3 justify-start">
-                    {levelItems.map((item) => {
+                    {rankItems.map((item) => {
                       const isLocked = item.srs_stage === 0;
                       const isInLessons = item.srs_stage === 1 && !item.next_review;
                       const isBurned = item.srs_stage === 9;
@@ -377,7 +389,7 @@ export default function RadicalPage() {
                 <X className="w-5 h-5" />
               </button>
               <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
-                Radikal Kamus • Level {selectedItem.level}
+                Radikal Kamus • {ranks.find(r => r.id === selectedItem.rank_id)?.name || `Level ${selectedItem.level}`}
               </span>
               <h1 className="text-7xl font-black select-all">{selectedItem.character}</h1>
               <p className="text-lg font-bold tracking-wide mt-2 uppercase opacity-90">{selectedItem.slug}</p>
@@ -467,8 +479,8 @@ export default function RadicalPage() {
                             {kj.slug}
                           </span>
                         </div>
-                        <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                          Lvl {kj.level}
+                        <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-505">
+                          {ranks.find(r => r.id === kj.rank_id)?.name || `Lvl ${kj.level}`}
                         </span>
                       </div>
                     ))}

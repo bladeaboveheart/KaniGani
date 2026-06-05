@@ -14,9 +14,10 @@ interface KamusManagerProps {
   setSearchQuery: (q: string) => void;
   filterType: 'all' | 'radical' | 'kanji' | 'vocabulary';
   setFilterType: (t: 'all' | 'radical' | 'kanji' | 'vocabulary') => void;
-  filterLevel: string;
-  setFilterLevel: (l: string) => void;
-  loadDatabase: (lvl?: string) => void;
+  filterRank: string;
+  setFilterRank: (r: string) => void;
+  ranks: any[];
+  loadDatabase: (rankId?: string) => void;
   openEditModal: (item: any) => void;
   handleDeleteItem: (id: string) => void;
   deleteConfirmId: string | null;
@@ -30,8 +31,9 @@ export default function KamusManager({
   setSearchQuery,
   filterType,
   setFilterType,
-  filterLevel,
-  setFilterLevel,
+  filterRank,
+  setFilterRank,
+  ranks,
   loadDatabase,
   openEditModal,
   handleDeleteItem,
@@ -41,7 +43,7 @@ export default function KamusManager({
   // Filtering & Search
   const filteredItems = items.filter(item => {
     if (filterType !== 'all' && item.type !== filterType) return false;
-    if (filterLevel !== 'all' && String(item.level) !== filterLevel) return false;
+    if (filterRank !== 'all' && item.rank_id !== filterRank) return false;
 
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
@@ -54,8 +56,6 @@ export default function KamusManager({
 
     return true;
   });
-
-  const levelList = Array.from({ length: 10 }, (_, i) => String(i + 1));
 
   return (
     <div className="space-y-6">
@@ -109,17 +109,17 @@ export default function KamusManager({
 
           {/* Level Filter */}
           <select
-            value={filterLevel}
+            value={filterRank}
             onChange={(e) => {
-              const newLvl = e.target.value;
-              setFilterLevel(newLvl);
-              loadDatabase(newLvl);
+              const newRank = e.target.value;
+              setFilterRank(newRank);
+              loadDatabase(newRank);
             }}
-            className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
           >
-            <option value="all">Semua Level</option>
-            {levelList.map(lvl => (
-              <option key={lvl} value={lvl}>Level {lvl}</option>
+            <option value="all">Semua Pangkat</option>
+            {ranks.map(r => (
+              <option key={r.id} value={r.id}>{r.name}</option>
             ))}
           </select>
         </div>
@@ -128,20 +128,21 @@ export default function KamusManager({
       {/* DYNAMIC DATABASE ITEMS GRID */}
       {filteredItems.length > 0 ? (
         <div className="space-y-8 animate-fade-in">
-          {Array.from(new Set(filteredItems.map(item => item.level))).sort((a, b) => a - b).map((lvl) => {
-            const levelItems = filteredItems.filter(item => item.level === lvl);
+          {ranks.map((rank) => {
+            const rankItems = filteredItems.filter(item => item.rank_id === rank.id);
+            if (rankItems.length === 0) return null;
 
             return (
-              <div key={lvl} className="space-y-4">
+              <div key={rank.id} className="space-y-4">
                 {/* Level Header Panel */}
                 <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-baseline space-x-2 shrink-0 select-none">
-                  <span className="text-base font-extrabold text-slate-800 dark:text-slate-100">Level {lvl}</span>
-                  <span className="text-xxs font-bold text-slate-400 dark:text-slate-500">({levelItems.length} item)</span>
+                  <span className="text-base font-extrabold text-slate-800 dark:text-slate-100">{rank.name}</span>
+                  <span className="text-xxs font-bold text-slate-400 dark:text-slate-555">({rankItems.length} item)</span>
                 </div>
 
                 {/* Grid of level items */}
                 <div className="flex flex-wrap gap-3 justify-start">
-                  {levelItems.map((item) => {
+                  {rankItems.map((item) => {
                     const meanings = item.item_meanings || [];
                     const readings = item.item_readings || [];
                     const primaryMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'item';
