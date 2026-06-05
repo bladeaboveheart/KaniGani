@@ -250,11 +250,16 @@ export async function checkAndExecuteGeneralLevelUp(userClient: any, userId: str
       };
     });
 
-    await userClient
+    const { error: upsertError } = await userClient
       .from('user_progress')
-      .insert(insertRows)
-      .onConflict('user_id,item_id')
-      .doNothing();
+      .upsert(insertRows, {
+        onConflict: 'user_id,item_id',
+        ignoreDuplicates: true
+      });
+
+    if (upsertError) {
+      console.error('Error unlocking next rank items:', upsertError);
+    }
   }
 
   // Update user_rank_state
