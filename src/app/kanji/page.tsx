@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { getVocabularyReadingType } from '@/lib/japanese';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
-  Lock, CheckCircle2, ChevronRight, Loader2, Languages
+  Lock, CheckCircle2, ChevronRight, Loader2, Languages, ArrowRight
 } from 'lucide-react';
 
 interface KanjiItem {
@@ -31,11 +32,29 @@ interface KanjiItem {
 export default function KanjiPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [kanjis, setKanjis] = useState<KanjiItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [selectedRank, setSelectedRank] = useState<string>('all');
+  const [selectedJlpt, setSelectedJlpt] = useState<string>('all');
   const [ranks, setRanks] = useState<any[]>([]);
   const [selectedItem, setSelectedItem] = useState<KanjiItem | null>(null);
+  const [selectedItemVocabs, setSelectedItemVocabs] = useState<any[]>([]);
+  const [loadingVocabs, setLoadingVocabs] = useState(false);
+  const [selectedItemRadicals, setSelectedItemRadicals] = useState<any[]>([]);
+  const [loadingRadicals, setLoadingRadicals] = useState(false);
+  const [selectedVocabDetail, setSelectedVocabDetail] = useState<any | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   // Read search query parameters from URL for deep linking
   useEffect(() => {
@@ -67,122 +86,392 @@ export default function KanjiPage() {
     }
   }, [kanjis]);
 
+  // Load ranks and user level once
+  useEffect(() => {
+    async function loadRanksAndUserLevel() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: rankState } = await supabase
+            .from('user_rank_state')
+            .select('*, ranks(*)')
+            .eq('user_id', user.id)
+            .maybeSingle();
 
+          let activeRank = rankState?.ranks;
+          if (!activeRank) {
+            const { data: fallbackRank } = await supabase
+              .from('ranks')
+              .select('*')
+              .order('sort_order', { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            activeRank = fallbackRank;
+          }
+
+          if (activeRank?.jlpt_level) {
+            setSelectedJlpt(activeRank.jlpt_level);
+          }
+        }
+
+        const { data, error } = await supabase
+          .from('ranks')
+          .select('*')
+          .order('sort_order', { ascending: true });
+        if (error) throw error;
+        setRanks(data || []);
+      } catch (err) {
+        console.error('Error loading ranks/user level:', err);
+      }
+    }
+    loadRanksAndUserLevel();
+  }, []);
+
+  // Fetch items based on active parameters
   useEffect(() => {
     async function loadData() {
       try {
+        if (page === 0) {
+          setLoading(true);
+        } else {
+          setLoadingMore(true);
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
           router.push('/');
           return;
         }
 
-        // 1. Fetch ranks
-        const { data: ranksData, error: ranksErr } = await supabase
-          .from('ranks')
-          .select('*')
-          .order('sort_order', { ascending: true });
+        const pageSize = 100;
+        const from = page * pageSize;
+        const to = from + pageSize - 1;
 
-        if (ranksErr) throw ranksErr;
-        setRanks(ranksData || []);
+        // Build items query
+        let query = supabase
+          .from('items')
+          .select(`
+            *,
+            item_meanings(*),
+            item_readings(*),
+            ranks!inner(*)
+          `)
+          .eq('type', 'kanji')
+          .order('lesson_position', { ascending: true })
+          .range(from, to);
 
-        // 2. Fetch all kanji items with nested details (meanings, readings)
-        let itemsData: any[] = [];
-        let itemsFrom = 0;
-        const pageSize = 1000;
-        let itemsHasMore = true;
-
-        while (itemsHasMore) {
-          const { data, error } = await supabase
-            .from('items')
-            .select(`
-              *,
-              item_meanings(*),
-              item_readings(*)
-            `)
-            .eq('type', 'kanji')
-            .order('lesson_position', { ascending: true })
-            .range(itemsFrom, itemsFrom + pageSize - 1);
-
-          if (error) throw error;
-          if (data && data.length > 0) {
-            itemsData = [...itemsData, ...data];
-            if (data.length < pageSize) {
-              itemsHasMore = false;
-            } else {
-              itemsFrom += pageSize;
-            }
-          } else {
-            itemsHasMore = false;
-          }
+        if (selectedRank !== 'all') {
+          query = query.eq('rank_id', selectedRank);
         }
 
-        // 3. Fetch user progress
-        let progressData: any[] = [];
-        let progFrom = 0;
-        let progHasMore = true;
+        if (selectedJlpt !== 'all') {
+          query = query.eq('ranks.jlpt_level', selectedJlpt);
+        }
 
-        while (progHasMore) {
-          const { data, error } = await supabase
+        if (debouncedSearchQuery.trim() !== '') {
+          const q = debouncedSearchQuery.toLowerCase().trim();
+          query = query.or(`character.ilike.%${q}%,slug.ilike.%${q}%`);
+        }
+
+        const { data: itemsData, error: itemsErr } = await query;
+        if (itemsErr) throw itemsErr;
+
+        if (!itemsData || itemsData.length < pageSize) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+
+        if (itemsData && itemsData.length > 0) {
+          const itemIds = itemsData.map(item => item.id);
+
+          // Fetch user progress for current items
+          const { data: progressData, error: progErr } = await supabase
             .from('user_progress')
             .select('item_id, srs_stage, unlocked_at, next_review')
             .eq('user_id', user.id)
-            .range(progFrom, progFrom + pageSize - 1);
+            .in('item_id', itemIds);
 
-          if (error) throw error;
-          if (data && data.length > 0) {
-            progressData = [...progressData, ...data];
-            if (data.length < pageSize) {
-              progHasMore = false;
-            } else {
-              progFrom += pageSize;
-            }
+          if (progErr) throw progErr;
+
+          const progressMap = new Map(progressData?.map(p => [p.item_id, p]) || []);
+
+          // Combine items with progress and details
+          const combined: KanjiItem[] = itemsData.map(item => {
+            const progress = progressMap.get(item.id);
+            const itemMeanings = item.item_meanings || [];
+            const itemReadings = item.item_readings || [];
+
+            const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'kanji';
+            const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
+
+            return {
+              id: item.id,
+              character: item.character,
+              slug: item.slug || 'kanji',
+              level: item.level,
+              rank_id: item.rank_id,
+              meaning_mnemonic: item.meaning_mnemonic || '',
+              reading_mnemonic: item.reading_mnemonic || '',
+              description: item.description || '',
+              srs_stage: progress ? progress.srs_stage : 0,
+              unlocked_at: progress ? progress.unlocked_at : null,
+              next_review: progress ? progress.next_review : null,
+              meanings: itemMeanings,
+              readings: itemReadings,
+              primary_meaning: primaryMeaning,
+              primary_reading: primaryReading
+            };
+          });
+
+          if (page === 0) {
+            setKanjis(combined);
           } else {
-            progHasMore = false;
+            setKanjis(prev => [...prev, ...combined]);
+          }
+        } else {
+          if (page === 0) {
+            setKanjis([]);
           }
         }
-
-        // Map progresses for easy search
-        const progressMap = new Map(progressData.map(p => [p.item_id, p]));
-
-        // Combine items with progress and details
-        const combined: KanjiItem[] = itemsData.map(item => {
-          const progress = progressMap.get(item.id);
-          const itemMeanings = item.item_meanings || [];
-          const itemReadings = item.item_readings || [];
-
-          const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'kanji';
-          const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
-
-          return {
-            id: item.id,
-            character: item.character,
-            slug: item.slug || 'kanji',
-            level: item.level,
-            rank_id: item.rank_id,
-            meaning_mnemonic: item.meaning_mnemonic || '',
-            reading_mnemonic: item.reading_mnemonic || '',
-            description: item.description || '',
-            srs_stage: progress ? progress.srs_stage : 0,
-            unlocked_at: progress ? progress.unlocked_at : null,
-            next_review: progress ? progress.next_review : null,
-            meanings: itemMeanings,
-            readings: itemReadings,
-            primary_meaning: primaryMeaning,
-            primary_reading: primaryReading
-          };
-        });
-
-        setKanjis(combined);
       } catch (err) {
         console.error('Error loading Kanji:', err);
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     }
 
     loadData();
-  }, [router]);
+  }, [page, selectedRank, selectedJlpt, debouncedSearchQuery, router]);
+
+  // Reset page when parameters change
+  useEffect(() => {
+    setPage(0);
+    setKanjis([]);
+    setHasMore(true);
+  }, [selectedRank, selectedJlpt, debouncedSearchQuery]);
+
+  // Load related vocabularies when a Kanji is clicked/selected
+  useEffect(() => {
+    async function loadRelatedVocab() {
+      if (!selectedItem) {
+        setSelectedItemVocabs([]);
+        return;
+      }
+
+      setLoadingVocabs(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Query items where type = 'vocabulary' and prerequisite is this selectedItem.id
+        const { data, error } = await supabase
+          .from('item_prerequisites')
+          .select(`
+            item_id,
+            items!item_id(
+              id,
+              character,
+              slug,
+              level,
+              type,
+              rank_id,
+              meaning_mnemonic,
+              reading_mnemonic,
+              description,
+              item_meanings(*),
+              item_readings(*),
+              item_context_sentences(*)
+            )
+          `)
+          .eq('requires_item_id', selectedItem.id);
+
+        if (error) throw error;
+
+        const rawVocabs = (data || [])
+          .map((row: any) => row.items)
+          .filter((item: any) => item && item.type === 'vocabulary');
+
+        if (rawVocabs.length === 0) {
+          setSelectedItemVocabs([]);
+          return;
+        }
+
+        const vocabIds = rawVocabs.map(v => v.id);
+
+        // Fetch user progress for these vocabularies
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('item_id, srs_stage, unlocked_at, next_review')
+          .eq('user_id', user.id)
+          .in('item_id', vocabIds);
+
+        // Fetch prerequisites (kanjis) for these vocabularies
+        const { data: prereqsData } = await supabase
+          .from('item_prerequisites')
+          .select(`
+            item_id,
+            requires_item_id,
+            items!requires_item_id(
+              id,
+              character,
+              slug,
+              level,
+              type,
+              rank_id,
+              item_meanings(*),
+              item_readings(*)
+            )
+          `)
+          .in('item_id', vocabIds);
+
+        const progressMap = new Map(progressData?.map(p => [p.item_id, p]) || []);
+
+        const kanjisMap = new Map<string, any[]>();
+        prereqsData?.forEach((row: any) => {
+          const reqItem = row.items;
+          if (reqItem && reqItem.type === 'kanji') {
+            const vocabId = row.item_id;
+            if (!kanjisMap.has(vocabId)) {
+              kanjisMap.set(vocabId, []);
+            }
+            const itemMeanings = reqItem.item_meanings || [];
+            const itemReadings = reqItem.item_readings || [];
+            const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || reqItem.slug || 'kanji';
+            const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
+
+            kanjisMap.get(vocabId)!.push({
+              id: reqItem.id,
+              character: reqItem.character,
+              slug: reqItem.slug || 'kanji',
+              level: reqItem.level,
+              rank_id: reqItem.rank_id,
+              meanings: itemMeanings,
+              readings: itemReadings,
+              primary_meaning: primaryMeaning,
+              primary_reading: primaryReading
+            });
+          }
+        });
+
+        const vocabs = rawVocabs.map((item: any) => {
+          const progress = progressMap.get(item.id);
+          const primaryMeaning = item.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'vocabulary';
+          const primaryReading = item.item_readings?.find((r: any) => r.primary_reading)?.reading || '';
+          const foundKanjis = kanjisMap.get(item.id) || [];
+
+          return {
+            id: item.id,
+            character: item.character,
+            slug: item.slug,
+            primary_meaning: primaryMeaning,
+            primary_reading: primaryReading,
+            meaning_mnemonic: item.meaning_mnemonic,
+            reading_mnemonic: item.reading_mnemonic,
+            description: item.description,
+            meanings: item.item_meanings || [],
+            readings: item.item_readings || [],
+            sentences: item.item_context_sentences || [],
+            rank_id: item.rank_id,
+            level: item.level,
+            srs_stage: progress ? progress.srs_stage : 0,
+            unlocked_at: progress ? progress.unlocked_at : null,
+            next_review: progress ? progress.next_review : null,
+            kanjis: foundKanjis
+          };
+        });
+
+        setSelectedItemVocabs(vocabs);
+      } catch (err) {
+        console.error('Error loading related vocabularies:', err);
+      } finally {
+        setLoadingVocabs(false);
+      }
+    }
+    loadRelatedVocab();
+  }, [selectedItem]);
+
+  // Load prerequisite radicals when a Kanji is clicked/selected
+  useEffect(() => {
+    async function loadPrerequisiteRadicals() {
+      if (!selectedItem) {
+        setSelectedItemRadicals([]);
+        return;
+      }
+
+      setLoadingRadicals(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        // Query items where type = 'radical' and this selectedItem requires it
+        const { data, error } = await supabase
+          .from('item_prerequisites')
+          .select(`
+            requires_item_id,
+            items!requires_item_id(
+              id,
+              character,
+              slug,
+              level,
+              type,
+              rank_id,
+              description,
+              item_meanings(*)
+            )
+          `)
+          .eq('item_id', selectedItem.id);
+
+        if (error) throw error;
+
+        const rawRadicals = (data || [])
+          .map((row: any) => row.items)
+          .filter((item: any) => item && item.type === 'radical');
+
+        if (rawRadicals.length === 0) {
+          setSelectedItemRadicals([]);
+          return;
+        }
+
+        const radIds = rawRadicals.map(r => r.id);
+
+        // Fetch user progress for these radicals
+        const { data: progressData } = await supabase
+          .from('user_progress')
+          .select('item_id, srs_stage, unlocked_at, next_review')
+          .eq('user_id', user.id)
+          .in('item_id', radIds);
+
+        const progressMap = new Map(progressData?.map(p => [p.item_id, p]) || []);
+
+        const radicals = rawRadicals.map((item: any) => {
+          const progress = progressMap.get(item.id);
+          const primaryMeaning = item.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'radical';
+
+          return {
+            id: item.id,
+            character: item.character,
+            slug: item.slug,
+            primary_meaning: primaryMeaning,
+            description: item.description,
+            rank_id: item.rank_id,
+            level: item.level,
+            srs_stage: progress ? progress.srs_stage : 0,
+            unlocked_at: progress ? progress.unlocked_at : null,
+            next_review: progress ? progress.next_review : null
+          };
+        });
+
+        setSelectedItemRadicals(radicals);
+      } catch (err) {
+        console.error('Error loading prerequisite radicals:', err);
+      } finally {
+        setLoadingRadicals(false);
+      }
+    }
+    loadPrerequisiteRadicals();
+  }, [selectedItem]);
 
   const getSrsLabel = (stage: number, nextReview?: string | null) => {
     if (stage === 0) return 'Terkunci';
@@ -199,7 +488,7 @@ export default function KanjiPage() {
     if (stage === 1 && !nextReview) return 'bg-kanji/5 text-kanji border border-kanji/20 dark:bg-kanji/10';
     if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
     if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
-    if (stage === 3) return 'bg-blue-350 text-blue-700 dark:bg-blue-800 dark:text-blue-200'; // Note: the original used bg-blue-300, we keep it consistent or use it. We'll use blue-300.
+    if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
     if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
     if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
     if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
@@ -209,19 +498,7 @@ export default function KanjiPage() {
   };
 
   // Filters
-  const filtered = kanjis.filter(item => {
-    if (selectedRank !== 'all' && item.rank_id !== selectedRank) return false;
-
-    if (searchQuery.trim() !== '') {
-      const q = searchQuery.toLowerCase().trim();
-      return (
-        item.character.toLowerCase().includes(q) ||
-        item.primary_meaning.toLowerCase().includes(q) ||
-        item.primary_reading.toLowerCase().includes(q)
-      );
-    }
-    return true;
-  });
+  const filtered = kanjis;
 
   if (loading) {
     return (
@@ -270,21 +547,43 @@ export default function KanjiPage() {
             />
           </div>
 
-          <div className="flex items-center space-x-3 w-full sm:w-auto shrink-0 justify-end">
-            <div className="flex items-center space-x-1 px-3 py-2 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
-              <Layers className="w-4 h-4 text-slate-455" />
-              <span className="text-xxs font-bold text-slate-455 uppercase tracking-widest">Pangkat</span>
+          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto shrink-0 justify-end">
+            <div className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+              <Languages className="w-4 h-4 text-slate-400" />
+              <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest">JLPT</span>
+              <select
+                value={selectedJlpt}
+                onChange={(e) => {
+                  setSelectedJlpt(e.target.value);
+                  setSelectedRank('all');
+                }}
+                className="bg-transparent dark:bg-slate-900 border-none text-xs font-extrabold focus:outline-none cursor-pointer text-slate-800 dark:text-slate-100"
+              >
+                <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">Semua Level</option>
+                <option value="N5" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">JLPT N5</option>
+                <option value="N4" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">JLPT N4</option>
+                <option value="N3" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">JLPT N3</option>
+                <option value="N2" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">JLPT N2</option>
+                <option value="N1" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">JLPT N1</option>
+              </select>
             </div>
-            <select
-              value={selectedRank}
-              onChange={(e) => setSelectedRank(e.target.value)}
-              className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-855 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-kanji"
-            >
-              <option value="all">Semua Pangkat</option>
-              {ranks.map(r => (
-                <option key={r.id} value={r.id}>{r.name}</option>
-              ))}
-            </select>
+
+            <div className="flex items-center space-x-1.5 px-3.5 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+              <Layers className="w-4 h-4 text-slate-400" />
+              <span className="text-xxs font-bold text-slate-400 uppercase tracking-widest">Pangkat</span>
+              <select
+                value={selectedRank}
+                onChange={(e) => setSelectedRank(e.target.value)}
+                className="bg-transparent dark:bg-slate-900 border-none text-xs font-extrabold focus:outline-none cursor-pointer text-slate-800 dark:text-slate-100"
+              >
+                <option value="all" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">Semua Pangkat</option>
+                {ranks
+                  .filter(r => selectedJlpt === 'all' || r.jlpt_level === selectedJlpt)
+                  .map(r => (
+                    <option key={r.id} value={r.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100">{r.name}</option>
+                  ))}
+              </select>
+            </div>
           </div>
         </section>
 
@@ -328,16 +627,18 @@ export default function KanjiPage() {
         {/* Kanji Grouped Layout */}
         {filtered.length > 0 ? (
           <div className="space-y-8">
-            {ranks.map((rank) => {
-              const rankItems = filtered.filter(item => item.rank_id === rank.id);
-              if (rankItems.length === 0) return null;
+            {ranks
+              .filter(r => selectedJlpt === 'all' || r.jlpt_level === selectedJlpt)
+              .map((rank) => {
+                const rankItems = filtered.filter(item => item.rank_id === rank.id);
+                if (rankItems.length === 0) return null;
 
-              const rankTotalItems = kanjis.filter(item => item.rank_id === rank.id);
-              const unlockedCount = rankTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
-              const totalCount = rankTotalItems.length;
+                const rankTotalItems = kanjis.filter(item => item.rank_id === rank.id);
+                const unlockedCount = rankTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
+                const totalCount = rankTotalItems.length;
 
-              return (
-                <div key={rank.id} className="space-y-4">
+                return (
+                  <div key={rank.id} className="space-y-4">
                   {/* Level Header Panel */}
                   <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-850 shadow-2xs flex items-baseline space-x-2 shrink-0">
                     <span className="text-base font-extrabold text-slate-850 dark:text-slate-100">{rank.name}</span>
@@ -413,6 +714,29 @@ export default function KanjiPage() {
                 </div>
               );
             })}
+
+            {/* Load More Button */}
+            {hasMore && (
+              <div className="flex justify-center pt-6">
+                <button
+                  onClick={() => setPage(prev => prev + 1)}
+                  disabled={loadingMore}
+                  className="px-6 py-3 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white text-xs font-bold rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex items-center space-x-2 cursor-pointer"
+                >
+                  {loadingMore ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Memuat...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Muat Lebih Banyak</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-400 dark:text-slate-500 shadow-sm space-y-3">
@@ -553,12 +877,294 @@ export default function KanjiPage() {
                   <p className="text-slate-600 dark:text-slate-350 text-xs leading-relaxed">{selectedItem.description}</p>
                 </div>
               )}
+
+              {/* Radical Combination (Kombinasi Radikal) */}
+              {selectedItemRadicals && selectedItemRadicals.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-radical" />
+                    <span>Kombinasi Radikal (Radical Combination)</span>
+                  </h3>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {selectedItemRadicals.map((rad: any) => (
+                      <div
+                        key={rad.id}
+                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad transition-all duration-200"
+                        title={`Radikal: ${rad.character}`}
+                      >
+                        <div>
+                          <span className="text-xl font-black text-radical group-hover/rad:scale-105 transition-transform duration-200 block leading-tight">
+                            {rad.character}
+                          </span>
+                          <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={rad.primary_meaning}>
+                            {rad.primary_meaning}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Related Vocabularies Section */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Kosakata yang Menggunakan Kanji Ini</h3>
+                {loadingVocabs ? (
+                  <div className="flex items-center space-x-2 py-4 text-xs text-slate-400">
+                    <Loader2 className="w-4 h-4 animate-spin text-kanji" />
+                    <span>Mendapatkan kosakata terkait...</span>
+                  </div>
+                ) : selectedItemVocabs.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedItemVocabs.map((vocab) => (
+                      <div
+                        key={vocab.id}
+                        onClick={() => {
+                          setSelectedVocabDetail(vocab);
+                        }}
+                        className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 hover:border-vocab/40 dark:hover:border-vocab/30 rounded-2xl cursor-pointer hover:shadow-xs transition-all duration-200 flex flex-col justify-between"
+                      >
+                        <span className="font-japanese font-bold text-base text-slate-800 dark:text-slate-100">{vocab.character}</span>
+                        <div className="flex flex-col mt-1 space-y-0.5 leading-none">
+                          <span className="text-[10px] text-vocab font-bold">{vocab.primary_reading}</span>
+                          <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate font-medium">{vocab.primary_meaning}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic py-2">Tidak ada kosakata terkait untuk kanji ini.</p>
+                )}
+              </div>
             </div>
 
             {/* Bottom Actions */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-end shrink-0">
               <button
                 onClick={() => setSelectedItem(null)}
+                className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Tutup Detail
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECONDARY VOCABULARY DETAIL MODAL DRAWER OVERLAY */}
+      {selectedVocabDetail && (
+        <div
+          onClick={() => setSelectedVocabDetail(null)}
+          className="fixed inset-0 z-[60] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 transition-all duration-300"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fade-in max-h-[90vh]"
+          >
+
+            {/* Header Banner */}
+            <div className="bg-vocab-gradient p-8 text-white flex flex-col items-center justify-center relative shrink-0">
+              <button
+                onClick={() => setSelectedVocabDetail(null)}
+                className="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
+                Kosakata Kamus • {ranks.find(r => r.id === selectedVocabDetail.rank_id)?.name || `Level ${selectedVocabDetail.level}`}
+              </span>
+              <h1 className="text-5xl sm:text-6xl font-black select-all">{selectedVocabDetail.character}</h1>
+              <p className="text-lg font-bold tracking-wide mt-2 uppercase opacity-90">{selectedVocabDetail.primary_meaning}</p>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left overflow-y-auto flex-1">
+
+              {/* Unlock Info */}
+              <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xxs font-bold text-slate-455 uppercase tracking-widest block">Status Belajar SRS</span>
+                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedVocabDetail.srs_stage || 0, selectedVocabDetail.next_review)}`}>
+                    {selectedVocabDetail.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedVocabDetail.srs_stage || 0, selectedVocabDetail.next_review)}
+                  </span>
+                </div>
+                {selectedVocabDetail.srs_stage === 9 && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Apakah Anda ingin menghidupkan kembali materi ini dan memasukkannya kembali ke antrean review harian?')) return;
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        if (!token) throw new Error('Silakan login terlebih dahulu');
+                        const res = await fetch('/api/archive/revive', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ itemId: selectedVocabDetail.id })
+                        });
+                        const data = await res.json();
+                        if (data.error) throw new Error(data.error);
+                        alert('Item berhasil dihidupkan kembali!');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert('Gagal menghidupkan kembali item: ' + err.message);
+                      }
+                    }}
+                    className="w-full mt-1 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
+                  >
+                    <span>Reset ke Antrean Review</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Readings & Meanings List */}
+              <div className="space-y-4">
+                {/* Meanings */}
+                <div className="space-y-2">
+                  <h4 className="text-xxs font-bold text-slate-455 uppercase tracking-widest block">Daftar Makna (Meanings)</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedVocabDetail.meanings.map((m: any, idx: number) => (
+                      <span
+                        key={idx}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold ${m.primary_meaning
+                          ? 'bg-vocab text-white font-extrabold shadow-3xs'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-355'
+                          }`}
+                      >
+                        {m.meaning}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Readings */}
+                <div className="space-y-2">
+                  <h4 className="text-xxs font-bold text-slate-455 uppercase tracking-widest block">Daftar Cara Baca (Readings)</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedVocabDetail.readings.map((r: any, idx: number) => {
+                      const inferredReadingType = getVocabularyReadingType(
+                        selectedVocabDetail.character,
+                        r.reading,
+                        selectedVocabDetail.kanjis
+                      );
+                      const isOnyomi = inferredReadingType === 'onyomi';
+                      const isKunyomi = inferredReadingType === 'kunyomi';
+                      const typeLabel = isOnyomi ? 'Onyomi' : isKunyomi ? 'Kunyomi' : '';
+                      return (
+                        <span
+                          key={idx}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold ${r.primary_reading
+                            ? 'bg-indigo-600 text-white font-extrabold shadow-3xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-355'
+                            }`}
+                        >
+                          {r.reading} {typeLabel ? `(${typeLabel})` : ''}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  {/* Explanatory text for primary reading */}
+                  {selectedVocabDetail.readings.find((r: any) => r.primary_reading) && (() => {
+                    const primaryR = selectedVocabDetail.readings.find((r: any) => r.primary_reading);
+                    const inferredType = getVocabularyReadingType(
+                      selectedVocabDetail.character,
+                      primaryR.reading,
+                      selectedVocabDetail.kanjis
+                    );
+                    return (
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 italic mt-1.5">
+                        * Cara baca utama kosakata ini menggunakan cara baca{' '}
+                        <strong>
+                          {inferredType === 'onyomi'
+                            ? 'Onyomi'
+                            : 'Kunyomi'}
+                        </strong>.
+                      </p>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Meaning Mnemonic */}
+              {selectedVocabDetail.meaning_mnemonic && (
+                <div className="p-4 bg-vocab/5 dark:bg-vocab/10 border border-vocab/10 dark:border-vocab/30 rounded-2xl">
+                  <h3 className="text-xxs font-bold text-vocab uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Arti)</h3>
+                  <p className="text-slate-750 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedVocabDetail.meaning_mnemonic}</p>
+                </div>
+              )}
+
+              {/* Reading Mnemonic */}
+              {selectedVocabDetail.reading_mnemonic && (
+                <div className="p-4 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 dark:border-indigo-900/30 rounded-2xl">
+                  <h3 className="text-xxs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Cara Baca)</h3>
+                  <p className="text-slate-750 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedVocabDetail.reading_mnemonic}</p>
+                </div>
+              )}
+
+              {/* Kanji Components (Kanji Pembentuk) */}
+              {selectedVocabDetail.kanjis && selectedVocabDetail.kanjis.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                    <Layers className="w-3.5 h-3.5 text-pink-500" />
+                    <span>Kanji Pembentuk (Kanji Components)</span>
+                  </h3>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {selectedVocabDetail.kanjis.map((kj: any) => (
+                      <div
+                        key={kj.id}
+                        onClick={() => {
+                          setSelectedItem(kj);
+                          setSelectedVocabDetail(null);
+                        }}
+                        className="p-2.5 bg-kanji/5 border border-kanji/15 hover:border-kanji/35 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/kj cursor-pointer transition-all duration-200"
+                        title={`Lihat detail kanji ${kj.character}`}
+                      >
+                        <div>
+                          <span className="text-xl font-black text-kanji group-hover/kj:scale-105 transition-transform duration-200 block leading-tight">
+                            {kj.character}
+                          </span>
+                          <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={kj.slug}>
+                            {kj.slug}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Context sentences */}
+              {selectedVocabDetail.sentences && selectedVocabDetail.sentences.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h3>
+                  <div className="space-y-4">
+                    {selectedVocabDetail.sentences.map((s: any, idx: number) => (
+                      <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850/50 rounded-2xl space-y-1.5">
+                        <p className="text-base font-bold text-indigo-600 dark:text-indigo-400 select-all leading-normal">{s.japanese}</p>
+                        <p className="text-xxs text-slate-500 dark:text-slate-400 leading-normal">{s.indonesian}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedVocabDetail.description && (
+                <div className="space-y-1">
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Tambahan</h3>
+                  <p className="text-slate-600 dark:text-slate-355 text-xs leading-relaxed">{selectedVocabDetail.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-end shrink-0">
+              <button
+                onClick={() => setSelectedVocabDetail(null)}
                 className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
               >
                 Tutup Detail

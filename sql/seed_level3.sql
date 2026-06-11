@@ -144,7 +144,7 @@ BEGIN
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '太', 'fat', 3, 7, 'Orang besar dengan bintik lemak berlebih di bawah selangkangan — Gemuk.') RETURNING id INTO r_tai_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
-    VALUES ('radical', '父', 'father', 3, 8, 'Dua goresan menyilang seperti kumis seorang ayah.') RETURNING id INTO r_chichi_rad;
+    VALUES ('radical', '父', 'ayah', 3, 8, 'Dua goresan menyilang seperti kumis seorang ayah.') RETURNING id INTO r_chichi_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '扌', 'fingers', 3, 9, 'Bentuk jari-jari tangan di sebelah kiri kanji.') RETURNING id INTO r_yubi;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
@@ -156,11 +156,11 @@ BEGIN
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '冫', 'ice', 3, 13, 'Dua tetes air yang membeku menjadi es dingin.') RETURNING id INTO r_koori;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
-    VALUES ('radical', '生', 'life', 3, 14, 'Tunas tanaman bertunas menyembul dari tanah melambangkan kehidupan.') RETURNING id INTO r_sei_rad;
+    VALUES ('radical', '生', 'hidup', 3, 14, 'Tunas tanaman bertunas menyembul dari tanah melambangkan kehidupan.') RETURNING id INTO r_sei_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
-    VALUES ('radical', '北', 'north', 3, 15, 'Dua orang duduk membelakangi satu sama lain mencari kehangatan di arah Utara.') RETURNING id INTO r_kita_rad;
+    VALUES ('radical', '北', 'utara', 3, 15, 'Dua orang duduk membelakangi satu sama lain mencari kehangatan di arah Utara.') RETURNING id INTO r_kita_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
-    VALUES ('radical', '今', 'now', 3, 16, 'Topi di atas bangku, menyimbolkan kondisi saat ini.') RETURNING id INTO r_ima_rad;
+    VALUES ('radical', '今', 'sekarang', 3, 16, 'Topi di atas bangku, menyimbolkan kondisi saat ini.') RETURNING id INTO r_ima_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '古', 'old', 3, 17, 'Mulut sepuluh generasi menceritakan kisah lama yang kuno.') RETURNING id INTO r_ko_rad;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
@@ -178,7 +178,7 @@ BEGIN
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '巾', 'towel', 3, 24, 'Sehelai handuk tergantung di gantungan jemuran.') RETURNING id INTO r_haba;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
-    VALUES ('radical', '⺌', 'triceratops', 3, 25, 'Tiga tanduk dinosaurus triceratops menonjol.') RETURNING id INTO r_tiga_tanduk;
+    VALUES ('radical', '⺌', 'triseratops', 3, 25, 'Tiga tanduk dinosaurus triceratops menonjol.') RETURNING id INTO r_tiga_tanduk;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
     VALUES ('radical', '毋', 'window', 3, 26, 'Sebuah bingkai jendela kaca kayu terbagi dua.') RETURNING id INTO r_mado;
   INSERT INTO items (type, character, slug, level, lesson_position, description)
@@ -218,189 +218,127 @@ BEGIN
   -- 2. KANJI (Level 3)
   -- ============================================================
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '矢', 'arrow', 3, 28,
-      'Goresan melambangkan sebuah anak panah tajam berkepala runcing yang siap dilepaskan.',
-      'Suara lesatan panah terdengar kencang seperti teriakan **や** (YA) yang bergema.')
+    VALUES ('kanji', '矢', 'arrow', 3, 28, 'Goresan melambangkan sebuah anak panah tajam berkepala runcing yang siap dilepaskan.', 'Suara lesatan panah terdengar kencang seperti teriakan **や** (YA) yang bergema.')
     RETURNING id INTO k_ya;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '明', 'bright', 3, 29,
-      'Perpaduan matahari (日) dan bulan (月) menyatu memancarkan cahaya benderang — sangat TERANG.',
-      '**あ** (A)ku terpana menatap cahaya terang mentari pagi.')
+    VALUES ('kanji', '明', 'bright', 3, 29, 'Perpaduan matahari (日) dan bulan (月) menyatu memancarkan cahaya benderang — sangat TERANG.', '**あ** (A)ku terpana menatap cahaya terang mentari pagi.')
     RETURNING id INTO k_mei;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '市', 'city', 3, 30,
-      'Topi di atas handuk membentuk simbol perbatasan dan pusat administrasi sebuah KOTA.',
-      'Kota suci yang dipenuhi bangunan megah dan patung dewa **し** (SHI).')
+    VALUES ('kanji', '市', 'city', 3, 30, 'Topi di atas handuk membentuk simbol perbatasan dan pusat administrasi sebuah KOTA.', 'Kota suci yang dipenuhi bangunan megah dan patung dewa **し** (SHI).')
     RETURNING id INTO k_shi_town;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '牛', 'cow', 3, 31,
-      'Bentuk sketsa tanduk dan kepala seekor SAPI.',
-      'Susu sapi murni **ぎゅう** (GYŪ) sangat baik untuk kesehatan.')
+    VALUES ('kanji', '牛', 'sapi', 3, 31, 'Bentuk sketsa tanduk dan kepala seekor SAPI.', 'Susu sapi murni **ぎゅう** (GYŪ) sangat baik untuk kesehatan.')
     RETURNING id INTO k_ushi_k;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '切', 'cut', 3, 32,
-      'Tujuh (七) bilah pedang (刀) digunakan untuk MEMOTONG kertas dan kain.',
-      'Pemotongan kain dilakukan di dalam pabrik **せつ** (SETSU).')
+    VALUES ('kanji', '切', 'cut', 3, 32, 'Tujuh (七) bilah pedang (刀) digunakan untuk MEMOTONG kertas dan kain.', 'Pemotongan kain dilakukan di dalam pabrik **せつ** (SETSU).')
     RETURNING id INTO k_setsu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '方', 'direction', 3, 33,
-      'Seseorang berdiri tegak membawa tiang bendera untuk menunjukkan ARAH kiblat.',
-      'Di manakah arah jalan pulang ke **ほう** (HŌ)mu?')
+    VALUES ('kanji', '方', 'direction', 3, 33, 'Seseorang berdiri tegak membawa tiang bendera untuk menunjukkan ARAH kiblat.', 'Di manakah arah jalan pulang ke **ほう** (HŌ)mu?')
     RETURNING id INTO k_hou;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '戸', 'door', 3, 34,
-      'Goresan yang melukiskan panel daun PINTU kayu geser khas Jepang.',
-      '**と** (TO)long ketuk pintu sebelum masuk.')
+    VALUES ('kanji', '戸', 'door', 3, 34, 'Goresan yang melukiskan panel daun PINTU kayu geser khas Jepang.', '**と** (TO)long ketuk pintu sebelum masuk.')
     RETURNING id INTO k_to;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '太', 'fat', 3, 35,
-      'Orang besar (大) yang memiliki bintik lemak berlebih di bawahnya melambangkan badan GEMUK.',
-      'Anak GEMUK itu memiliki pipi bulat **ふと** (FUTO) yang menggemaskan.')
+    VALUES ('kanji', '太', 'fat', 3, 35, 'Orang besar (大) yang memiliki bintik lemak berlebih di bawahnya melambangkan badan GEMUK.', 'Anak GEMUK itu memiliki pipi bulat **ふと** (FUTO) yang menggemaskan.')
     RETURNING id INTO k_tai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '父', 'father', 3, 36,
-      'Dua garis melengkung menyilang melambangkan kumis wibawa seorang AYAH.',
-      '**ちち** (CHICHI) tersenyum ramah menyambut kepulangan anaknya.')
+    VALUES ('kanji', '父', 'ayah', 3, 36, 'Dua garis melengkung menyilang melambangkan kumis wibawa seorang AYAH.', '**ちち** (CHICHI) tersenyum ramah menyambut kepulangan anaknya.')
     RETURNING id INTO k_chichi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '少', 'few', 3, 37,
-      'Benda kecil (小) yang digores meluncur miring menunjukkan jumlah yang SEDIKIT.',
-      'Pemimpin perang **しょう** (SHÃ–)gun hanya memiliki sedikit sisa pasukan pengawal.')
+    VALUES ('kanji', '少', 'few', 3, 37, 'Benda kecil (小) yang digores meluncur miring menunjukkan jumlah yang SEDIKIT.', 'Pemimpin perang **しょう** (SHÃ–)gun hanya memiliki sedikit sisa pasukan pengawal.')
     RETURNING id INTO k_sho_few;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '友', 'friend', 3, 38,
-      'Dua tangan saling menggenggam erat dan merangkul bahu — melambangkan jalinan TEMAN karib.',
-      'TEMAN sejatiku bernama **ゆう** (YŪ) yang selalu setia membantu.')
+    VALUES ('kanji', '友', 'teman', 3, 38, 'Dua tangan saling menggenggam erat dan merangkul bahu — melambangkan jalinan TEMAN karib.', 'TEMAN sejatiku bernama **ゆう** (YŪ) yang selalu setia membantu.')
     RETURNING id INTO k_yuu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '毛', 'fur', 3, 39,
-      'Goresan menyerupai bulu-bulu halus hewan yang meliuk lembut — BULU/RAMBUT halus.',
-      'Bulu halus kucing persia itu sangat lebat bagaikan selimut **もう** (MŌ)nster.')
+    VALUES ('kanji', '毛', 'fur', 3, 39, 'Goresan menyerupai bulu-bulu halus hewan yang meliuk lembut — BULU/RAMBUT halus.', 'Bulu halus kucing persia itu sangat lebat bagaikan selimut **もう** (MŌ)nster.')
     RETURNING id INTO k_mou;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '半', 'half', 3, 40,
-      'Dua garis silang membagi tiga garis horizontal tepat di tengah — SETENGAH bagian.',
-      'Pesta meriah itu terpaksa selesai **はん** (HAN) setengah jam lebih awal.')
+    VALUES ('kanji', '半', 'half', 3, 40, 'Dua garis silang membagi tiga garis horizontal tepat di tengah — SETENGAH bagian.', 'Pesta meriah itu terpaksa selesai **はん** (HAN) setengah jam lebih awal.')
     RETURNING id INTO k_han;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '心', 'heart', 3, 41,
-      'Sketsa anatomi bilik JANTUNG atau pusat emosi HATI manusia.',
-      'Detak jantung yang sehat berdenyut secara **しん** (SHIN)kron.')
+    VALUES ('kanji', '心', 'heart', 3, 41, 'Sketsa anatomi bilik JANTUNG atau pusat emosi HATI manusia.', 'Detak jantung yang sehat berdenyut secara **しん** (SHIN)kron.')
     RETURNING id INTO k_shin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '内', 'inside', 3, 42,
-      'Seseorang (人) yang melangkah masuk ke dalam batas gerbang (冂) — berada di DALAM.',
-      'Di dalam tas belanja itu **ない** (NAI) ada sekotak susu cokelat.')
+    VALUES ('kanji', '内', 'dalam', 3, 42, 'Seseorang (人) yang melangkah masuk ke dalam batas gerbang (冂) — berada di DALAM.', 'Di dalam tas belanja itu **ない** (NAI) ada sekotak susu cokelat.')
     RETURNING id INTO k_nai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '字', 'letter', 3, 43,
-      'Anak kecil (子) yang duduk belajar di bawah atap rumah (宀) sedang menulis aksara HURUF.',
-      'Belajar menulis huruf kanji bersama paman **じ** (JI)mmy.')
+    VALUES ('kanji', '字', 'letter', 3, 43, 'Anak kecil (子) yang duduk belajar di bawah atap rumah (宀) sedang menulis aksara HURUF.', 'Belajar menulis huruf kanji bersama paman **じ** (JI)mmy.')
     RETURNING id INTO k_ji;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '生', 'life', 3, 44,
-      'Tunas hijau yang tumbuh mekar dari permukaan tanah menggambarkan kehidupan — HIDUP.',
-      'Kehidupan yang damai terwujud melalui ibadah yang **せい** (SEI)mbang.')
+    VALUES ('kanji', '生', 'hidup', 3, 44, 'Tunas hijau yang tumbuh mekar dari permukaan tanah menggambarkan kehidupan — HIDUP.', 'Kehidupan yang damai terwujud melalui ibadah yang **せい** (SEI)mbang.')
     RETURNING id INTO k_sei;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '台', 'machine', 3, 45,
-      'Mulut (口) di atas tiang kayu bangku menggambarkan dudukan atau dudukan MESIN.',
-      'Mesin cetak koran canggih itu bermerek **だい** (DAI)mon.')
+    VALUES ('kanji', '台', 'machine', 3, 45, 'Mulut (口) di atas tiang kayu bangku menggambarkan dudukan atau dudukan MESIN.', 'Mesin cetak koran canggih itu bermerek **だい** (DAI)mon.')
     RETURNING id INTO k_dai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '母', 'mother', 3, 46,
-      'Sosok wanita (女) dengan tambahan dua titik melambangkan kelenjar susu keibuan — IBU.',
-      '**はは** (HAHA) tertawa gembira mendengar lelucon jenaka bersama IBU.')
+    VALUES ('kanji', '母', 'mother', 3, 46, 'Sosok wanita (女) dengan tambahan dua titik melambangkan kelenjar susu keibuan — IBU.', '**はは** (HAHA) tertawa gembira mendengar lelucon jenaka bersama IBU.')
     RETURNING id INTO k_haha;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '午', 'noon', 3, 47,
-      'Goresan silang kayu penanda jam matahari menunjuk ke arah TENGAH HARI / SIANG.',
-      'Siang hari adalah waktu makan pisang bagi **ご** (GO)rila sirkus.')
+    VALUES ('kanji', '午', 'noon', 3, 47, 'Goresan silang kayu penanda jam matahari menunjuk ke arah TENGAH HARI / SIANG.', 'Siang hari adalah waktu makan pisang bagi **ご** (GO)rila sirkus.')
     RETURNING id INTO k_go_noon;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '北', 'north', 3, 48,
-      'Dua orang duduk berhimpitan saling membelakangi mencari kehangatan di wilayah dingin UTARA.',
-      'Arah UTARA ditunjukkan dengan kompas milik **きた** (KITA).')
+    VALUES ('kanji', '北', 'utara', 3, 48, 'Dua orang duduk berhimpitan saling membelakangi mencari kehangatan di wilayah dingin UTARA.', 'Arah UTARA ditunjukkan dengan kompas milik **きた** (KITA).')
     RETURNING id INTO k_kita;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '今', 'now', 3, 49,
-      'Goresan melambangkan penutup topi di atas bangku kecil — menyimbolkan kejadian SEKARANG.',
-      '**こん** (KON)disi cuaca sekarang sedang hujan gerimis.')
+    VALUES ('kanji', '今', 'sekarang', 3, 49, 'Goresan melambangkan penutup topi di atas bangku kecil — menyimbolkan kejadian SEKARANG.', '**こん** (KON)disi cuaca sekarang sedang hujan gerimis.')
     RETURNING id INTO k_kon;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '古', 'old', 3, 50,
-      'Sepuluh (十) mulut (口) generasi turun temurun menceritakan dongeng kuno — KUNO/TUA.',
-      'Buku KUNO peninggalan kakek ditaruh di dalam **こ** (KO)tak kayu.')
+    VALUES ('kanji', '古', 'old', 3, 50, 'Sepuluh (十) mulut (口) generasi turun temurun menceritakan dongeng kuno — KUNO/TUA.', 'Buku KUNO peninggalan kakek ditaruh di dalam **こ** (KO)tak kayu.')
     RETURNING id INTO k_ko_old;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '外', 'outside', 3, 51,
-      'Sore hari (夕) dengan tongkat penunjuk arah ke LUAR rumah — BAGIAN LUAR.',
-      'Di bagian luar gerbang kuil **がい** (GAI) ada penjual takoyaki.')
+    VALUES ('kanji', '外', 'outside', 3, 51, 'Sore hari (夕) dengan tongkat penunjuk arah ke LUAR rumah — BAGIAN LUAR.', 'Di bagian luar gerbang kuil **がい** (GAI) ada penjual takoyaki.')
     RETURNING id INTO k_gai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '分', 'part', 3, 52,
-      'Pedang tajam (刀) memotong delapan bagian buah (八) menjadi BAGIAN.',
-      'Setiap bagian bunga mawar **ぶん** (BUN)ga menebarkan keharuman.')
+    VALUES ('kanji', '分', 'part', 3, 52, 'Pedang tajam (刀) memotong delapan bagian buah (八) menjadi BAGIAN.', 'Setiap bagian bunga mawar **ぶん** (BUN)ga menebarkan keharuman.')
     RETURNING id INTO k_bun;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '引', 'pull', 3, 53,
-      'Busur panah (弓) dipasang tali lurus (丨) untuk ditarik — MENARIK.',
-      'Aksi menarik tambang berlangsung **ひ** (HI)ngga malam.')
+    VALUES ('kanji', '引', 'pull', 3, 53, 'Busur panah (弓) dipasang tali lurus (丨) untuk ditarik — MENARIK.', 'Aksi menarik tambang berlangsung **ひ** (HI)ngga malam.')
     RETURNING id INTO k_hi_pull;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '止', 'stop', 3, 54,
-      'Goresan kaki kokoh berpijak di atas tanah — BERHENTI melangkah.',
-      '**し** (SHI)lakan berhenti sejenak di tepi jalan untuk istirahat.')
+    VALUES ('kanji', '止', 'berhenti', 3, 54, 'Goresan kaki kokoh berpijak di atas tanah — BERHENTI melangkah.', '**し** (SHI)lakan berhenti sejenak di tepi jalan untuk istirahat.')
     RETURNING id INTO k_shi_stop;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '用', 'task', 3, 55,
-      'Sebuah papan tulis berisi coretan daftar tugas penting — TUGAS/KEGUNAAN.',
-      'Tugas mencuci motor dilakukan oleh kakak **よう** (YŌ)gi.')
+    VALUES ('kanji', '用', 'task', 3, 55, 'Sebuah papan tulis berisi coretan daftar tugas penting — TUGAS/KEGUNAAN.', 'Tugas mencuci motor dilakukan oleh kakak **よう** (YŌ)gi.')
     RETURNING id INTO k_you;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '万', 'ten thousand', 3, 56,
-      'Goresan menyilang yang menyimbolkan kelipatan angka besar — SEPULUH RIBU.',
-      'Uang sepuluh ribu yen dibelikan komik **まん** (MAN)ga.')
+    VALUES ('kanji', '万', 'ten thousand', 3, 56, 'Goresan menyilang yang menyimbolkan kelipatan angka besar — SEPULUH RIBU.', 'Uang sepuluh ribu yen dibelikan komik **まん** (MAN)ga.')
     RETURNING id INTO k_man;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '広', 'wide', 3, 57,
-      'Sebuah kanopi (广) luas yang melindungi lahan lapang di bawahnya — LUAS.',
-      'Halaman rumah kakek **ひろ** (HIRO)i terbentang luas.')
+    VALUES ('kanji', '広', 'wide', 3, 57, 'Sebuah kanopi (广) luas yang melindungi lahan lapang di bawahnya — LUAS.', 'Halaman rumah kakek **ひろ** (HIRO)i terbentang luas.')
     RETURNING id INTO k_hiro;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic)
-    VALUES ('kanji', '冬', 'winter', 3, 58,
-      'Butiran salju membeku menjadi es (冫) di bawah kanopi musim — MUSIM DINGIN.',
-      'Saat musim dingin tiba, kita memakai **ふゆ** (FUYU) tebal.')
+    VALUES ('kanji', '冬', 'winter', 3, 58, 'Butiran salju membeku menjadi es (冫) di bawah kanopi musim — MUSIM DINGIN.', 'Saat musim dingin tiba, kita memakai **ふゆ** (FUYU) tebal.')
     RETURNING id INTO k_fuyu;
 
   -- Kanji meanings
@@ -499,10 +437,10 @@ BEGIN
     VALUES ('vocabulary', '少し', 'a-little', 3, 59, 'Kanji SEDIKIT (少) dengan akhiran hiragana し membentuk keterangan sedikit.', 'Kata keterangan yang menyatakan jumlah sedikit.') RETURNING id INTO v_sukoshi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'アメリカ人', 'american-person', 3, 60, 'Kombinasi kata Amerika (katakana) dengan kanji ORANG (人) — Orang Amerika.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_amerikajin;
+    VALUES ('vocabulary', 'アメリカ人', 'orang-amerika', 3, 60, 'Kombinasi kata Amerika (katakana) dengan kanji ORANG (人) — Orang Amerika.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_amerikajin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'リンゴ', 'apple', 3, 61, 'Buah apel manis yang ditulis dalam huruf katakana.', 'Kata benda umum untuk buah apel.') RETURNING id INTO v_ringo;
+    VALUES ('vocabulary', 'リンゴ', 'apel', 3, 61, 'Buah apel manis yang ditulis dalam huruf katakana.', 'Kata benda umum untuk buah apel.') RETURNING id INTO v_ringo;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '矢', 'arrow', 3, 62, 'Kanji ANAK PANAH (矢) dibaca secara mandiri.', 'Kata benda umum untuk anak panah.') RETURNING id INTO v_ya;
@@ -511,7 +449,7 @@ BEGIN
     VALUES ('vocabulary', '〜台', 'big-machine-counter', 3, 63, 'Sufiks penghitung untuk mesin besar seperti mobil, komputer, dll.', 'Kata bantu bilangan.') RETURNING id INTO v_counter_id;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'イギリス人', 'british-person', 3, 64, 'Kombinasi kata Inggris dengan kanji ORANG (人) — Orang Inggris.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_igirisujin;
+    VALUES ('vocabulary', 'イギリス人', 'orang-inggris', 3, 64, 'Kombinasi kata Inggris dengan kanji ORANG (人) — Orang Inggris.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_igirisujin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '中止', 'cancellation', 3, 65, 'Membawa tugas ke TENGAH (中) dan langsung BERHENTI (止) — Pembatalan.', 'Kata benda untuk pembatalan acara atau jadwal.') RETURNING id INTO v_chuushi;
@@ -523,10 +461,10 @@ BEGIN
     VALUES ('vocabulary', '市', 'city', 3, 67, 'Kanji KOTA (市) dibaca secara mandiri.', 'Kata benda untuk kota.') RETURNING id INTO v_shi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'コーヒー', 'coffee', 3, 68, 'Minuman kopi hitam beraroma wangi yang ditulis dengan katakana.', 'Kata benda umum.') RETURNING id INTO v_kohi;
+    VALUES ('vocabulary', 'コーヒー', 'kopi', 3, 68, 'Minuman kopi hitam beraroma wangi yang ditulis dengan katakana.', 'Kata benda umum.') RETURNING id INTO v_kohi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '牛', 'cow', 3, 69, 'Kanji SAPI (牛) dibaca mandiri.', 'Kata benda umum untuk hewan sapi.') RETURNING id INTO v_ushi;
+    VALUES ('vocabulary', '牛', 'sapi', 3, 69, 'Kanji SAPI (牛) dibaca mandiri.', 'Kata benda umum untuk hewan sapi.') RETURNING id INTO v_ushi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '方', 'direction', 3, 70, 'Kanji ARAH (方) dibaca secara mandiri.', 'Kata benda untuk arah, metode, atau sisi pihak.') RETURNING id INTO v_hou;
@@ -541,16 +479,16 @@ BEGIN
     VALUES ('vocabulary', '生ビール', 'draft-beer', 3, 73, 'Kombinasi SEGAR/HIDUP (生) dan Beer (katakana) — Bir draf segar.', 'Kata benda minuman.') RETURNING id INTO v_namabiiru;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '山びこ', 'echo', 3, 74, 'Suara teriakan di GUNUNG (山) yang memantul kembali — Gema.', 'Gema di daerah pegunungan.') RETURNING id INTO v_yamabiko;
+    VALUES ('vocabulary', '山びこ', 'gema', 3, 74, 'Suara teriakan di GUNUNG (山) yang memantul kembali — Gema.', 'Gema di daerah pegunungan.') RETURNING id INTO v_yamabiko;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '太い', 'fat', 3, 75, 'Kanji GEMUK (太) dengan akhiran い menjadi kata sifat gemuk/tebal.', 'Kata sifat yang berarti tebal atau gemuk.') RETURNING id INTO v_futoi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'お父さん', 'father-polite', 3, 76, 'Bentuk panggilan sopan untuk AYAH (父) dengan awalan お dan akhiran さん.', 'Panggilan sopan "Ayah".') RETURNING id INTO v_otousan;
+    VALUES ('vocabulary', 'お父さん', 'ayah', 3, 76, 'Bentuk panggilan sopan untuk AYAH (父) dengan awalan お dan akhiran さん.', 'Panggilan sopan "Ayah".') RETURNING id INTO v_otousan;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '父', 'father', 3, 77, 'Kanji AYAH (父) dibaca mandiri untuk menyebut ayah sendiri.', 'Kata benda untuk ayah sendiri.') RETURNING id INTO v_chichi;
+    VALUES ('vocabulary', '父', 'ayah', 3, 77, 'Kanji AYAH (父) dibaca mandiri untuk menyebut ayah sendiri.', 'Kata benda untuk ayah sendiri.') RETURNING id INTO v_chichi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '少ない', 'few', 3, 78, 'Kanji SEDIKIT (少) dengan akhiran ない menjadi kata sifat sedikit.', 'Kata sifat yang menyatakan jumlah sedikit.') RETURNING id INTO v_sukunai;
@@ -562,19 +500,19 @@ BEGIN
     VALUES ('vocabulary', '外人', 'foreigner', 3, 80, 'Kombinasi LUAR (外) dan ORANG (人) — Orang luar negeri/asing.', 'Kata benda untuk orang asing.') RETURNING id INTO v_gaijin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'フランス人', 'french-person', 3, 81, 'Kombinasi kata Prancis dengan kanji ORANG (人) — Orang Prancis.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_furansujin;
+    VALUES ('vocabulary', 'フランス人', 'orang-prancis', 3, 81, 'Kombinasi kata Prancis dengan kanji ORANG (人) — Orang Prancis.', 'Kata benda kewarganegaraan.') RETURNING id INTO v_furansujin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '生', 'fresh', 3, 82, 'Kanji HIDUP/SEGAR (生) dibaca secara mandiri.', 'Bisa berarti mentah, segar, atau hidup.') RETURNING id INTO v_nama;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '友人', 'friend', 3, 83, 'Kombinasi TEMAN (友) dan ORANG (人) — Teman karib.', 'Kata benda formal untuk sahabat.') RETURNING id INTO v_yuujin;
+    VALUES ('vocabulary', '友人', 'teman', 3, 83, 'Kombinasi TEMAN (友) dan ORANG (人) — Teman karib.', 'Kata benda formal untuk sahabat.') RETURNING id INTO v_yuujin;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '毛', 'fur', 3, 84, 'Kanji BULU (毛) dibaca secara mandiri.', 'Kata benda untuk bulu halus hewan atau rambut.') RETURNING id INTO v_ke;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '少女', 'girl', 3, 85, 'Kombinasi SEDIKIT/MUDA (少) dan WANITA (女) — Anak gadis remaja.', 'Kata benda untuk gadis remaja.') RETURNING id INTO v_shoujo;
+    VALUES ('vocabulary', '少女', 'anak-perempuan', 3, 85, 'Kombinasi SEDIKIT/MUDA (少) dan WANITA (女) — Anak gadis remaja.', 'Kata benda untuk gadis remaja.') RETURNING id INTO v_shoujo;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '半分', 'half', 3, 86, 'Kombinasi SETENGAH (半) dan BAGIAN (分) — Setengah bagian.', 'Kata benda setengah bagian.') RETURNING id INTO v_hanbun;
@@ -586,13 +524,13 @@ BEGIN
     VALUES ('vocabulary', '心', 'heart', 3, 88, 'Kanji JANTUNG/HATI (心) dibaca secara mandiri.', 'Kata benda jantung fisik atau lubuk hati.') RETURNING id INTO v_kokoro;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'こんにちは', 'hello', 3, 89, 'Sapaan hangat di siang hari untuk mengucapkan halo/selamat siang.', 'Ungkapan salam.') RETURNING id INTO v_konnichiha;
+    VALUES ('vocabulary', 'こんにちは', 'halo', 3, 89, 'Sapaan hangat di siang hari untuk mengucapkan halo/selamat siang.', 'Ungkapan salam.') RETURNING id INTO v_konnichiha;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '大切', 'important', 3, 90, 'Sesuatu yang jika diPOTONG (切) akan berdampak BESAR (大) — Sangat penting.', 'Kata sifat na-adjective.') RETURNING id INTO v_taisetsu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '内', 'inside', 3, 91, 'Kanji BAGIAN DALAM (内) dibaca secara mandiri.', 'Kata benda posisi bagian dalam.') RETURNING id INTO v_uchi;
+    VALUES ('vocabulary', '内', 'dalam', 3, 91, 'Kanji BAGIAN DALAM (内) dibaca secara mandiri.', 'Kata benda posisi bagian dalam.') RETURNING id INTO v_uchi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '明かり', 'light', 3, 92, 'Cahaya TERANG (明) yang terpancar menyinari kegelapan.', 'Kata benda untuk sinar cahaya atau lampu penerangan.') RETURNING id INTO v_akari;
@@ -610,25 +548,25 @@ BEGIN
     VALUES ('vocabulary', '市立', 'municipal', 3, 96, 'Sesuatu yang didirikan (立) secara resmi oleh KOTA (市) — Milik kotamadya.', 'Milik pemerintah kota.') RETURNING id INTO v_shiritsu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '北', 'north', 3, 97, 'Kanji UTARA (北) dibaca secara mandiri.', 'Arah mata angin utara.') RETURNING id INTO v_kita;
+    VALUES ('vocabulary', '北', 'utara', 3, 97, 'Kanji UTARA (北) dibaca secara mandiri.', 'Arah mata angin utara.') RETURNING id INTO v_kita;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '北口', 'north-exit', 3, 98, 'Kombinasi UTARA (北) dan pintu/MULUT (口) — Pintu gerbang sebelah utara.', 'Kata benda.') RETURNING id INTO v_kitaguchi;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '今', 'now', 3, 99, 'Kanji SEKARANG (今) dibaca secara mandiri.', 'Kata benda keterangan waktu sekarang.') RETURNING id INTO v_ima;
+    VALUES ('vocabulary', '今', 'sekarang', 3, 99, 'Kanji SEKARANG (今) dibaca secara mandiri.', 'Kata benda keterangan waktu sekarang.') RETURNING id INTO v_ima;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '〜人', 'people-counter', 3, 100, 'Sufiks angka khusus untuk menghitung jumlah manusia/orang.', 'Kata bantu bilangan.') RETURNING id INTO v_nin_counter;
+    VALUES ('vocabulary', '〜人', 'penghitung-orang', 3, 100, 'Sufiks angka khusus untuk menghitung jumlah manusia/orang.', 'Kata bantu bilangan.') RETURNING id INTO v_nin_counter;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '大人しい', 'obedient', 3, 101, 'Sikap anak yang bertingkah tenang dan sopan layaknya ORANG DEWASA (大人).', 'Kata sifat yang berarti penurut, tenang, atau pendiam.') RETURNING id INTO v_otonashii;
+    VALUES ('vocabulary', '大人しい', 'penurut', 3, 101, 'Sikap anak yang bertingkah tenang dan sopan layaknya ORANG DEWASA (大人).', 'Kata sifat yang berarti penurut, tenang, atau pendiam.') RETURNING id INTO v_otonashii;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '古い', 'old', 3, 102, 'Kanji KUNO/TUA (古) dengan akhiran い membentuk kata sifat lama/tua.', 'Kata sifat yang berarti tua atau kuno.') RETURNING id INTO v_furui;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '十万', 'one-hundred-thousand', 3, 103, 'Kombinasi SEPULUH (十) kali SEPULUH RIBU (万) membentuk seratus ribu.', 'Bilangan angka 100.000.') RETURNING id INTO v_juuman;
+    VALUES ('vocabulary', '十万', 'seratus-ribu', 3, 103, 'Kombinasi SEPULUH (十) kali SEPULUH RIBU (万) membentuk seratus ribu.', 'Bilangan angka 100.000.') RETURNING id INTO v_juuman;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '一台', 'one-machine', 3, 104, 'Kombinasi SATU (一) dan MESIN (台) — Satu unit kendaraan atau mesin.', 'Satu unit mesin.') RETURNING id INTO v_ichidai;
@@ -637,13 +575,13 @@ BEGIN
     VALUES ('vocabulary', '人生', 'life-career', 3, 105, 'Perjalanan HIDUP (生) seorang MANUSIA (人) — Kehidupan manusia.', 'Kehidupan atau jalan hidup seseorang.') RETURNING id INTO v_jinsei;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'テーブルの上', 'on-the-table', 3, 106, 'Ungkapan untuk menyatakan letak posisi tepat di atas permukaan meja.', 'Di atas meja.') RETURNING id INTO v_table_ue;
+    VALUES ('vocabulary', 'テーブルの上', 'di-atas-meja', 3, 106, 'Ungkapan untuk menyatakan letak posisi tepat di atas permukaan meja.', 'Di atas meja.') RETURNING id INTO v_table_ue;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '外', 'outside', 3, 107, 'Kanji BAGIAN LUAR (外) dibaca secara mandiri.', 'Di luar rumah.') RETURNING id INTO v_soto;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '分', 'part-noun', 3, 108, 'Kanji BAGIAN (分) dibaca secara mandiri.', 'Bagian, menit, atau porsi.') RETURNING id INTO v_bun;
+    VALUES ('vocabulary', '分', 'bagian', 3, 108, 'Kanji BAGIAN (分) dibaca secara mandiri.', 'Bagian, menit, atau porsi.') RETURNING id INTO v_bun;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', 'シアトル市', 'seattle-city', 3, 109, 'Kombinasi kata kota Seattle dengan kanji KOTA (市) — Kota Seattle.', 'Kota Seattle.') RETURNING id INTO v_seatorushi;
@@ -661,16 +599,16 @@ BEGIN
     VALUES ('vocabulary', '十台', 'ten-machines', 3, 113, 'Kombinasi SEPULUH (十) unit MESIN (台) — Sepuluh unit mobil.', 'Sepuluh unit.') RETURNING id INTO v_juudai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '一万', 'ten-thousand-number', 3, 114, 'Kombinasi SATU (一) dan SEPULUH RIBU (万) — Angka sepuluh ribu.', 'Angka 10.000.') RETURNING id INTO v_ichiman;
+    VALUES ('vocabulary', '一万', 'sepuluh-ribu', 3, 114, 'Kombinasi SATU (一) dan SEPULUH RIBU (万) — Angka sepuluh ribu.', 'Angka 10.000.') RETURNING id INTO v_ichiman;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '万', 'ten-thousand-noun', 3, 115, 'Kanji SEPULUH RIBU (万) dibaca secara mandiri.', 'Sepuluh ribu.') RETURNING id INTO v_man;
+    VALUES ('vocabulary', '万', 'sepuluh-ribu', 3, 115, 'Kanji SEPULUH RIBU (万) dibaca secara mandiri.', 'Sepuluh ribu.') RETURNING id INTO v_man;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '今月', 'this-month', 3, 116, 'BULAN (月) yang sedang berjalan SEKARANG (今) — Bulan ini.', 'Keterangan waktu bulan ini.') RETURNING id INTO v_kongetsu;
+    VALUES ('vocabulary', '今月', 'bulan-ini', 3, 116, 'BULAN (月) yang sedang berjalan SEKARANG (今) — Bulan ini.', 'Keterangan waktu bulan ini.') RETURNING id INTO v_kongetsu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'これ', 'this-one', 3, 117, 'Kata tunjuk untuk merujuk objek benda yang dekat dengan pembicara.', 'Kata ganti benda "ini".') RETURNING id INTO v_kore;
+    VALUES ('vocabulary', 'これ', 'ini', 3, 117, 'Kata tunjuk untuk merujuk objek benda yang dekat dengan pembicara.', 'Kata ganti benda "ini".') RETURNING id INTO v_kore;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '生まれる', 'to-be-born', 3, 118, 'Kata kerja dari kanji HIDUP/LAHIR (生) — Lahir ke dunia.', 'Kata kerja intransitif.') RETURNING id INTO v_umareleru;
@@ -679,10 +617,10 @@ BEGIN
     VALUES ('vocabulary', '切る', 'to-cut', 3, 119, 'Kata kerja dari kanji MEMOTONG (切) — Aksi memotong kertas atau daging.', 'Kata kerja transitif.') RETURNING id INTO v_kiru;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '今日', 'today', 3, 120, 'HARI (日) yang sedang berjalan SEKARANG (今) — Hari ini.', 'Keterangan waktu hari ini.') RETURNING id INTO v_kyou;
+    VALUES ('vocabulary', '今日', 'hari-ini', 3, 120, 'HARI (日) yang sedang berjalan SEKARANG (今) — Hari ini.', 'Keterangan waktu hari ini.') RETURNING id INTO v_kyou;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'する', 'to-do', 3, 121, 'Kata kerja serbaguna yang berarti melakukan aksi atau aktivitas.', 'Kata kerja transitif/intransitif.') RETURNING id INTO v_suru;
+    VALUES ('vocabulary', 'する', 'melakukan', 3, 121, 'Kata kerja serbaguna yang berarti melakukan aksi atau aktivitas.', 'Kata kerja transitif/intransitif.') RETURNING id INTO v_suru;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '引く', 'to-pull', 3, 122, 'Kata kerja dari kanji MENARIK (引) — Menarik tali atau garis.', 'Kata kerja transitif.') RETURNING id INTO v_hiku;
@@ -697,16 +635,16 @@ BEGIN
     VALUES ('vocabulary', '用いる', 'to-utilize', 3, 125, 'Kata kerja transitif untuk mempergunakan atau memanfaatkan sesuatu.', 'Kata kerja transitif.') RETURNING id INTO v_mochiiyu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '二万', 'twenty-thousand', 3, 126, 'Kombinasi DUA (二) kali SEPULUH RIBU (万) — Dua puluh ribu.', 'Angka 20.000.') RETURNING id INTO v_niman;
+    VALUES ('vocabulary', '二万', 'dua-puluh-ribu', 3, 126, 'Kombinasi DUA (二) kali SEPULUH RIBU (万) — Dua puluh ribu.', 'Angka 20.000.') RETURNING id INTO v_niman;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '二台', 'two-machines', 3, 127, 'Kombinasi DUA (二) unit MESIN (台) — Dua unit mobil.', 'Dua unit.') RETURNING id INTO v_nidai;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'ベッドの下', 'under-the-bed', 3, 128, 'Ungkapan untuk menyatakan letak posisi tepat di bawah tempat tidur.', 'Di bawah tempat tidur.') RETURNING id INTO v_bed_shita;
+    VALUES ('vocabulary', 'ベッドの下', 'di-bawah-tempat-tidur', 3, 128, 'Ungkapan untuk menyatakan letak posisi tepat di bawah tempat tidur.', 'Di bawah tempat tidur.') RETURNING id INTO v_bed_shita;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', 'いつ', 'when', 3, 129, 'Kata tanya keterangan waktu untuk menanyakan "kapan".', 'Kata tanya kapan.') RETURNING id INTO v_itsu;
+    VALUES ('vocabulary', 'いつ', 'kapan', 3, 129, 'Kata tanya keterangan waktu untuk menanyakan "kapan".', 'Kata tanya kapan.') RETURNING id INTO v_itsu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
     VALUES ('vocabulary', '広い', 'wide', 3, 130, 'Kanji LUAS (広) dengan akhiran い membentuk kata sifat luas.', 'Kata sifat yang berarti luas.') RETURNING id INTO v_hiroi;
@@ -715,7 +653,7 @@ BEGIN
     VALUES ('vocabulary', '冬', 'winter-noun', 3, 131, 'Kanji MUSIM DINGIN (冬) dibaca secara mandiri.', 'Kata benda musim dingin.') RETURNING id INTO v_fuyu;
 
   INSERT INTO items (type, character, slug, level, lesson_position, meaning_mnemonic, description)
-    VALUES ('vocabulary', '女の人', 'woman', 3, 132, 'Kombinasi WANITA (女) dan ORANG (人) — Sosok wanita/perempuan.', 'Kata benda wanita dewasa.') RETURNING id INTO v_onnanohito;
+    VALUES ('vocabulary', '女の人', 'wanita', 3, 132, 'Kombinasi WANITA (女) dan ORANG (人) — Sosok wanita/perempuan.', 'Kata benda wanita dewasa.') RETURNING id INTO v_onnanohito;
 
 
   -- Vocabulary meanings
