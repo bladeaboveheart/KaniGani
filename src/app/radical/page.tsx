@@ -792,10 +792,10 @@ export default function RadicalPage() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fade-in"
+            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fade-in max-h-[90vh]"
           >
             {/* Header Banner */}
-            <div className="bg-radical-gradient p-8 text-white flex flex-col items-center justify-center relative">
+            <div className="bg-radical-gradient p-8 text-white flex flex-col items-center justify-center relative shrink-0">
               <button
                 onClick={() => setSelectedItem(null)}
                 className="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
@@ -810,7 +810,7 @@ export default function RadicalPage() {
             </div>
 
             {/* Content Body */}
-            <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left">
+            <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left overflow-y-auto flex-1">
               {/* Unlock Info */}
               <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
                 <div className="flex items-center justify-between">
