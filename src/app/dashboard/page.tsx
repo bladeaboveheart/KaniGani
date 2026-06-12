@@ -169,13 +169,40 @@ export default function Dashboard() {
         }
 
         const userLevel = activeRank ? activeRank.name : 'N5 - Pangkat 1';
-        const now = new Date().toISOString();
 
-        // 1. Fetch user progress
-        const { data: progresses, error: progErr } = await supabase
-          .from('user_progress')
-          .select('item_id, srs_stage, unlocked_at, next_review, items(*)')
-          .eq('user_id', user.id);
+        // 1. Fetch user progress iteratively (due to 1000-row Supabase limit)
+        let progresses: any[] = [];
+        let pageIdx = 0;
+        const pageSize = 1000;
+        let hasMoreProgress = true;
+        let progErr: any = null;
+
+        while (hasMoreProgress) {
+          const from = pageIdx * pageSize;
+          const to = from + pageSize - 1;
+
+          const { data, error } = await supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, unlocked_at, next_review, items(*)')
+            .eq('user_id', user.id)
+            .range(from, to);
+
+          if (error) {
+            progErr = error;
+            break;
+          }
+
+          if (data && data.length > 0) {
+            progresses = [...progresses, ...data];
+            if (data.length < pageSize) {
+              hasMoreProgress = false;
+            } else {
+              pageIdx++;
+            }
+          } else {
+            hasMoreProgress = false;
+          }
+        }
 
         if (progErr) throw progErr;
 
@@ -285,7 +312,9 @@ export default function Dashboard() {
               });
             }
 
-            if (stage >= 1 && stage <= 8 && row.next_review && row.next_review <= now) {
+            const reviewDate = row.next_review ? new Date(row.next_review) : null;
+            const nowTime = new Date();
+            if (stage >= 1 && stage <= 8 && reviewDate && reviewDate <= nowTime) {
               reviewsDue++;
             }
 
