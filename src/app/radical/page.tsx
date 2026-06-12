@@ -508,7 +508,6 @@ export default function RadicalPage() {
       } catch (err) {
         console.error('Error loading kanji prerequisite radicals:', err);
       } finally {
-        setSelectedKanjiRadicals(radicals);
         setLoadingKanjiRadicals(false);
       }
     }
