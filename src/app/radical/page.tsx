@@ -35,6 +35,7 @@ export default function RadicalPage() {
   const [selectedRank, setSelectedRank] = useState<string>('all');
   const [selectedJlpt, setSelectedJlpt] = useState<string>('all');
   const [ranks, setRanks] = useState<any[]>([]);
+  const [rankItemCounts, setRankItemCounts] = useState<Record<string, number>>({});
   const [selectedItem, setSelectedItem] = useState<RadicalItem | null>(null);
   const [selectedKanjiDetail, setSelectedKanjiDetail] = useState<any | null>(null);
   const [selectedKanjiVocabs, setSelectedKanjiVocabs] = useState<any[]>([]);
@@ -100,6 +101,20 @@ export default function RadicalPage() {
           .order('sort_order', { ascending: true });
         if (error) throw error;
         setRanks(data || []);
+
+        const { data: countData, error: countErr } = await supabase
+          .from('items')
+          .select('rank_id')
+          .eq('type', 'radical');
+        if (!countErr && countData) {
+          const counts: Record<string, number> = {};
+          countData.forEach((item: any) => {
+            if (item.rank_id) {
+              counts[item.rank_id] = (counts[item.rank_id] || 0) + 1;
+            }
+          });
+          setRankItemCounts(counts);
+        }
       } catch (err) {
         console.error('Error loading ranks/user level:', err);
       }
@@ -675,8 +690,16 @@ export default function RadicalPage() {
                 if (rankItems.length === 0) return null;
 
                 const rankTotalItems = radicals.filter(item => item.rank_id === rank.id);
+                const totalCount = rankItemCounts[rank.id] ?? rankTotalItems.length;
+                
+                // Hide partially loaded ranks unless searching
+                const isSearching = debouncedSearchQuery.trim() !== '';
+                const isFullyLoaded = rankTotalItems.length >= totalCount;
+                if (!isSearching && !isFullyLoaded) {
+                  return null;
+                }
+
                 const unlockedCount = rankTotalItems.filter(item => item.srs_stage !== undefined && item.srs_stage > 0).length;
-                const totalCount = rankTotalItems.length;
 
                 return (
                   <div key={rank.id} className="space-y-4">
