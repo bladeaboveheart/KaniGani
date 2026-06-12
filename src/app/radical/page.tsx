@@ -456,6 +456,7 @@ export default function RadicalPage() {
               level,
               type,
               rank_id,
+              meaning_mnemonic,
               description,
               item_meanings(*)
             )
@@ -493,6 +494,7 @@ export default function RadicalPage() {
             character: item.character,
             slug: item.slug,
             primary_meaning: primaryMeaning,
+            meaning_mnemonic: item.meaning_mnemonic,
             description: item.description,
             rank_id: item.rank_id,
             level: item.level,
@@ -1045,7 +1047,11 @@ export default function RadicalPage() {
                     {selectedKanjiRadicals.map((rad: any) => (
                       <div
                         key={rad.id}
-                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad transition-all duration-200"
+                        onClick={() => {
+                          setSelectedItem(rad);
+                          setSelectedKanjiDetail(null);
+                        }}
+                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad cursor-pointer transition-all duration-200"
                         title={`Radikal: ${rad.character}`}
                       >
                         <div>

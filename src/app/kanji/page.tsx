@@ -45,6 +45,7 @@ export default function KanjiPage() {
   const [selectedItemRadicals, setSelectedItemRadicals] = useState<any[]>([]);
   const [loadingRadicals, setLoadingRadicals] = useState(false);
   const [selectedVocabDetail, setSelectedVocabDetail] = useState<any | null>(null);
+  const [selectedRadicalDetail, setSelectedRadicalDetail] = useState<any | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
