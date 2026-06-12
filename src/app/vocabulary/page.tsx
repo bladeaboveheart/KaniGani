@@ -48,6 +48,7 @@ export default function VocabularyPage() {
   const [selectedKanjiRadicals, setSelectedKanjiRadicals] = useState<any[]>([]);
   const [loadingKanjiRadicals, setLoadingKanjiRadicals] = useState(false);
   const [loadingKanji, setLoadingKanji] = useState(false);
+  const [selectedRadicalDetail, setSelectedRadicalDetail] = useState<any | null>(null);
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
 
@@ -482,6 +483,7 @@ export default function VocabularyPage() {
               level,
               type,
               rank_id,
+              meaning_mnemonic,
               description,
               item_meanings(*)
             )
@@ -519,6 +521,7 @@ export default function VocabularyPage() {
             character: item.character,
             slug: item.slug,
             primary_meaning: primaryMeaning,
+            meaning_mnemonic: item.meaning_mnemonic,
             description: item.description,
             rank_id: item.rank_id,
             level: item.level,
@@ -1173,7 +1176,10 @@ export default function VocabularyPage() {
                     {selectedKanjiRadicals.map((rad: any) => (
                       <div
                         key={rad.id}
-                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad transition-all duration-200"
+                        onClick={() => {
+                          setSelectedRadicalDetail(rad);
+                        }}
+                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad cursor-pointer transition-all duration-200"
                         title={`Radikal: ${rad.character}`}
                       >
                         <div>
@@ -1230,6 +1236,104 @@ export default function VocabularyPage() {
                 className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
               >
                 Tutup Detail Kanji
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TERTIARY RADICAL DETAIL MODAL DRAWER OVERLAY */}
+      {selectedRadicalDetail && (
+        <div
+          onClick={() => setSelectedRadicalDetail(null)}
+          className="fixed inset-0 z-[70] overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 transition-all duration-300"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fade-in max-h-[90vh]"
+          >
+
+            {/* Header Banner */}
+            <div className="bg-radical-gradient p-8 text-white flex flex-col items-center justify-center relative shrink-0">
+              <button
+                onClick={() => setSelectedRadicalDetail(null)}
+                className="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
+                Radikal Kamus • {ranks.find(r => r.id === selectedRadicalDetail.rank_id)?.name || `Level ${selectedRadicalDetail.level}`}
+              </span>
+              <h1 className="text-7xl font-black select-all">{selectedRadicalDetail.character}</h1>
+              <p className="text-lg font-bold tracking-wide mt-2 uppercase opacity-90">{selectedRadicalDetail.primary_meaning}</p>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left overflow-y-auto flex-1">
+
+              {/* Unlock Info */}
+              <div className="flex flex-col gap-3 p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
+                <div className="flex items-center justify-between">
+                  <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">Status Belajar SRS</span>
+                  <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(selectedRadicalDetail.srs_stage || 0, selectedRadicalDetail.next_review)}`}>
+                    {selectedRadicalDetail.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(selectedRadicalDetail.srs_stage || 0, selectedRadicalDetail.next_review)}
+                  </span>
+                </div>
+                {selectedRadicalDetail.srs_stage === 9 && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Apakah Anda ingin menghidupkan kembali materi ini dan memasukkannya kembali ke antrean review harian?')) return;
+                      try {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        const token = session?.access_token;
+                        if (!token) throw new Error('Silakan login terlebih dahulu');
+                        const res = await fetch('/api/archive/revive', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                          },
+                          body: JSON.stringify({ itemId: selectedRadicalDetail.id })
+                        });
+                        const data = await res.json();
+                        if (data.error) throw new Error(data.error);
+                        alert('Item berhasil dihidupkan kembali!');
+                        window.location.reload();
+                      } catch (err: any) {
+                        alert('Gagal menghidupkan kembali item: ' + err.message);
+                      }
+                    }}
+                    className="w-full mt-1 px-4 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center cursor-pointer shadow-sm hover:shadow"
+                  >
+                    <span>Reset ke Antrean Review</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Mnemonic */}
+              {selectedRadicalDetail.meaning_mnemonic && (
+                <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
+                  <h3 className="text-xxs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai</h3>
+                  <p className="text-teal-900 dark:text-teal-300 font-medium text-xs leading-relaxed">{selectedRadicalDetail.meaning_mnemonic}</p>
+                </div>
+              )}
+
+              {/* Description */}
+              {selectedRadicalDetail.description && (
+                <div className="space-y-1">
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Detail</h3>
+                  <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">{selectedRadicalDetail.description}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-end shrink-0">
+              <button
+                onClick={() => setSelectedRadicalDetail(null)}
+                className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
+              >
+                Tutup Detail Radikal
               </button>
             </div>
           </div>
