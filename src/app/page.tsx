@@ -78,7 +78,7 @@ export default function AuthPage() {
     }
   };
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
@@ -163,50 +163,97 @@ export default function AuthPage() {
           )}
 
           {/* Input Form */}
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-5">
-            {isSignUp ? (
-              // SIGN UP FORM
-              <>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                    Username
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                      <User className="w-5 h-5" />
-                    </span>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Pilih username unik"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+          {isSignUp ? (
+            // SIGN UP FORM
+            <form onSubmit={handleSignUp} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Username
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
+                    <User className="w-5 h-5" />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Pilih username unik"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
                 </div>
+              </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                    Alamat Email
-                  </label>
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                      <Mail className="w-5 h-5" />
-                    </span>
-                    <input
-                      type="email"
-                      required
-                      placeholder="nama@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                    />
-                  </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Alamat Email
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
+                    <Mail className="w-5 h-5" />
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    placeholder="nama@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
                 </div>
-              </>
-            ) : (
-              // SIGN IN FORM
+              </div>
+
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Kata Sandi
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
+                    <Lock className="w-5 h-5" />
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-11 pr-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+              >
+                {loading ? (
+                  <span>Memproses...</span>
+                ) : (
+                  <>
+                    <span>Daftar Sekarang</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            // SIGN IN FORM
+            <form onSubmit={handleSignIn} className="space-y-5">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                   Username atau Email
@@ -225,62 +272,60 @@ export default function AuthPage() {
                   />
                 </div>
               </div>
-            )}
 
-            {/* Password Field (Sign In & Sign Up) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
-                  Kata Sandi
-                </label>
-                {!isSignUp && (
+              {/* Password Field */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                    Kata Sandi
+                  </label>
                   <span className="text-xs text-indigo-500 hover:underline cursor-pointer">
                     Lupa sandi?
                   </span>
-                )}
+                </div>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
+                    <Lock className="w-5 h-5" />
+                  </span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-11 pr-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none transition-colors"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
               </div>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                  <Lock className="w-5 h-5" />
-                </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  required
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
-            >
-              {loading ? (
-                <span>Memproses...</span>
-              ) : (
-                <>
-                  <span>{isSignUp ? 'Daftar Sekarang' : 'Masuk Akun'}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+              >
+                {loading ? (
+                  <span>Memproses...</span>
+                ) : (
+                  <>
+                    <span>Masuk Akun</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           {/* Toggle Sign Up / Sign In */}
           <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-sm">
