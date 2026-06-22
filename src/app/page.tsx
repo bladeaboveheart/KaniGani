@@ -10,10 +10,12 @@ import CrabBackground from '@/components/CrabBackground';
 
 export default function AuthPage() {
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginInput, setLoginInput] = useState(''); // Bisa email atau username
+  const [forgotInput, setForgotInput] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   // States
@@ -115,6 +117,51 @@ export default function AuthPage() {
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg('');
+    setSuccessMsg('');
+    setLoading(true);
+
+    try {
+      let targetEmail = forgotInput.trim();
+      if (!targetEmail) {
+        throw new Error('Username atau Email wajib diisi.');
+      }
+
+      // Cek apakah input berupa email atau username
+      const isEmail = targetEmail.includes('@');
+      if (!isEmail) {
+        // Panggil endpoint /api/auth/check-username untuk mendapatkan email terkait username
+        const res = await fetch('/api/auth/check-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: targetEmail }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Username tidak ditemukan');
+        }
+        targetEmail = data.email;
+      }
+
+      // Panggil supabase.auth.resetPasswordForEmail
+      const { error } = await supabase.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
+      setSuccessMsg('Link pemulihan sandi telah dikirim ke email Anda. Silakan periksa folder masuk atau spam Anda.');
+      setForgotInput('');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Gagal mengirim link pemulihan sandi.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
 
@@ -138,10 +185,16 @@ export default function AuthPage() {
           {/* Title Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-extrabold tracking-tight mb-2">
-              {isSignUp ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
+              {isForgotPassword
+                ? 'Pulihkan Kata Sandi'
+                : isSignUp
+                ? 'Buat Akun Baru'
+                : 'Selamat Datang Kembali'}
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              {isSignUp
+              {isForgotPassword
+                ? 'Masukkan username atau email Anda untuk menerima link pemulihan'
+                : isSignUp
                 ? 'Mulai perjalananmu menguasai Kanji hari ini'
                 : 'Masuk untuk melanjutkan latihan Kanji'}
             </p>
@@ -163,7 +216,45 @@ export default function AuthPage() {
           )}
 
           {/* Input Form */}
-          {isSignUp ? (
+          {isForgotPassword ? (
+            // FORGOT PASSWORD FORM
+            <form onSubmit={handleForgotPassword} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                  Username atau Email
+                </label>
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
+                    <User className="w-5 h-5" />
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Masukkan username atau email Anda"
+                    value={forgotInput}
+                    onChange={(e) => setForgotInput(e.target.value)}
+                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  />
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+              >
+                {loading ? (
+                  <span>Memproses...</span>
+                ) : (
+                  <>
+                    <span>Kirim Link Reset</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : isSignUp ? (
             // SIGN UP FORM
             <form onSubmit={handleSignUp} className="space-y-5">
               <div className="space-y-1.5">
@@ -279,7 +370,14 @@ export default function AuthPage() {
                   <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
                     Kata Sandi
                   </label>
-                  <span className="text-xs text-indigo-500 hover:underline cursor-pointer">
+                  <span
+                    onClick={() => {
+                      setIsForgotPassword(true);
+                      setErrorMsg('');
+                      setSuccessMsg('');
+                    }}
+                    className="text-xs text-indigo-500 hover:underline cursor-pointer"
+                  >
                     Lupa sandi?
                   </span>
                 </div>
@@ -327,23 +425,40 @@ export default function AuthPage() {
             </form>
           )}
 
-          {/* Toggle Sign Up / Sign In */}
+          {/* Toggle Sign Up / Sign In / Forgot Password */}
           <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-sm">
-            <span className="text-slate-500 dark:text-slate-400">
-              {isSignUp ? 'Sudah memiliki akun?' : 'Belum memiliki akun KaniGani?'}
-            </span>{' '}
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrorMsg('');
-                setSuccessMsg('');
-                setPassword('');
-                setShowPassword(false);
-              }}
-              className="font-bold text-indigo-500 hover:underline hover:text-indigo-600 focus:outline-none"
-            >
-              {isSignUp ? 'Masuk di sini' : 'Daftar di sini'}
-            </button>
+            {isForgotPassword ? (
+              <button
+                onClick={() => {
+                  setIsForgotPassword(false);
+                  setIsSignUp(false);
+                  setErrorMsg('');
+                  setSuccessMsg('');
+                  setForgotInput('');
+                }}
+                className="font-bold text-indigo-500 hover:underline hover:text-indigo-600 focus:outline-none"
+              >
+                Kembali ke halaman masuk
+              </button>
+            ) : (
+              <>
+                <span className="text-slate-500 dark:text-slate-400">
+                  {isSignUp ? 'Sudah memiliki akun?' : 'Belum memiliki akun KaniGani?'}
+                </span>{' '}
+                <button
+                  onClick={() => {
+                    setIsSignUp(!isSignUp);
+                    setErrorMsg('');
+                    setSuccessMsg('');
+                    setPassword('');
+                    setShowPassword(false);
+                  }}
+                  className="font-bold text-indigo-500 hover:underline hover:text-indigo-600 focus:outline-none"
+                >
+                  {isSignUp ? 'Masuk di sini' : 'Daftar di sini'}
+                </button>
+              </>
+            )}
           </div>
 
         </div>
