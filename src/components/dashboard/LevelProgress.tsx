@@ -25,16 +25,12 @@ export default function LevelProgress({
     ? Math.round((stats.kanjiPassedInLevel / stats.kanjiTotalInLevel) * 100)
     : 0;
 
-  const targetKanji = Math.ceil(stats.kanjiTotalInLevel * 0.9);
+  const targetKanji = Math.ceil(stats.kanjiTotalInLevel * 0.85);
   const neededKanji = Math.max(0, targetKanji - stats.kanjiPassedInLevel);
 
   const isStringLevel = typeof stats.level === 'string';
   const displayLevelName = stats.level;
   const nextLevelText = isStringLevel ? 'Tingkat Selanjutnya' : `Level ${Number(stats.level) + 1}`;
-
-  // EXP status untuk ujian pangkat
-  const hasExpInfo = stats.currentExp !== undefined && stats.expRequired !== undefined;
-  const expPct = hasExpInfo && stats.expRequired ? Math.round((stats.currentExp! / stats.expRequired!) * 100) : 0;
 
   return (
     <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
@@ -48,8 +44,8 @@ export default function LevelProgress({
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
             {isStringLevel 
-              ? 'Selesaikan seluruh pelajaran (lessons) kanji di pangkat ini untuk naik ke pangkat berikutnya. Di pangkat akhir, kumpulkan EXP untuk membuka Ujian Milestone.'
-              : `KaniGani mensyaratkan kelulusan minimal 90% Kanji Level ${stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.`}
+              ? 'Selesaikan minimal 85% kanji di pangkat ini (mencapai status Kepiting Guru) untuk otomatis naik pangkat. Di pangkat akhir, selesaikan 85% kanji di seluruh tingkatan untuk naik level JLPT.'
+              : `KaniGani mensyaratkan kelulusan minimal 85% Kanji Level ${stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.`}
           </p>
         </div>
         <div className="text-left sm:text-right shrink-0">
@@ -70,45 +66,10 @@ export default function LevelProgress({
         </div>
 
         <div className="flex justify-between items-center text-xxs font-bold text-slate-400 dark:text-slate-500">
-          <span>Progres Kanji: {kanjiPct}%</span>
-          <span>Target Pangkat: 100% Selesai Lesson</span>
+          <span>Progres Kanji Guru: {kanjiPct}%</span>
+          <span>Target Pangkat: 85% Lulus (Guru)</span>
         </div>
       </div>
-
-      {/* EXP Progress Bar (Jika ada informasi EXP) */}
-      {hasExpInfo && (
-        <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800/60">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-xs font-extrabold text-slate-700 dark:text-slate-350 block">EXP Ujian Pangkat</span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 block">EXP hanya didapat dari lesson/review item di pangkat saat ini.</span>
-            </div>
-            <div className="text-right">
-              <span className="text-sm font-black text-amber-500">{stats.currentExp} / {stats.expRequired} EXP</span>
-            </div>
-          </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-amber-400 to-orange-500 h-full rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, expPct)}%` }}
-            ></div>
-          </div>
-          {stats.examUnlocked && (
-            <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-900/40 rounded-3xl text-sm text-amber-800 dark:text-amber-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-bounce">
-              <div className="flex items-center space-x-2.5">
-                <Award className="w-5 h-5 text-amber-500 shrink-0" />
-                <span className="font-bold">Ujian Kenaikan Pangkat JLPT {stats.jlptLevel} Terbuka! Selesaikan ujian untuk naik pangkat.</span>
-              </div>
-              <button
-                onClick={() => router.push(`/placement?mode=exam&level=${stats.jlptLevel}`)}
-                className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold rounded-xl text-xs transition-all shadow-md cursor-pointer shrink-0 self-end sm:self-center"
-              >
-                Ikuti Ujian Milestone
-              </button>
-            </div>
-          )}
-        </div>
-      )}
 
       {stats.kanjiPassedInLevel >= targetKanji ? (
         <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 rounded-2xl text-xs text-emerald-600 dark:text-emerald-400 flex items-center space-x-2 animate-fade-in">

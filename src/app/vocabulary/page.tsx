@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import { getVocabularyReadingType } from '@/lib/japanese';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
-  Lock, CheckCircle2, ChevronRight, Loader2, FileText, Languages, ArrowRight
+  Lock, CheckCircle2, ChevronRight, ChevronDown, Loader2, FileText, Languages, ArrowRight
 } from 'lucide-react';
 
 interface VocabItem {
@@ -43,6 +43,12 @@ export default function VocabularyPage() {
   const [ranks, setRanks] = useState<any[]>([]);
   const [rankItemCounts, setRankItemCounts] = useState<Record<string, number>>({});
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null);
+  const [isKanjisOpen, setIsKanjisOpen] = useState(false);
+
+  useEffect(() => {
+    setIsKanjisOpen(false);
+  }, [selectedItem]);
+
   const [selectedKanjiDetail, setSelectedKanjiDetail] = useState<any | null>(null);
   const [selectedKanjiVocabs, setSelectedKanjiVocabs] = useState<any[]>([]);
   const [loadingKanjiVocabs, setLoadingKanjiVocabs] = useState(false);
@@ -150,6 +156,8 @@ export default function VocabularyPage() {
 
   // Fetch items based on active parameters
   useEffect(() => {
+    let active = true;
+
     async function loadData() {
       try {
         if (page === 0) {
@@ -160,7 +168,9 @@ export default function VocabularyPage() {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          router.push('/');
+          if (active) {
+            router.push('/');
+          }
           return;
         }
 
@@ -179,6 +189,7 @@ export default function VocabularyPage() {
             ranks!inner(*)
           `)
           .eq('type', 'vocabulary')
+          .order('sort_order', { referencedTable: 'ranks', ascending: true })
           .order('lesson_position', { ascending: true })
           .range(from, to);
 
@@ -197,6 +208,8 @@ export default function VocabularyPage() {
 
         const { data: itemsData, error: itemsErr } = await query;
         if (itemsErr) throw itemsErr;
+
+        if (!active) return;
 
         if (!itemsData || itemsData.length < pageSize) {
           setHasMore(false);
@@ -306,25 +319,35 @@ export default function VocabularyPage() {
             };
           });
 
+          if (!active) return;
+
           if (page === 0) {
             setVocabs(combined);
           } else {
             setVocabs(prev => [...prev, ...combined]);
           }
         } else {
+          if (!active) return;
           if (page === 0) {
             setVocabs([]);
           }
         }
       } catch (err) {
-        console.error('Error loading Vocabulary:', err);
+        if (active) {
+          console.error('Error loading Vocabulary:', err);
+        }
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (active) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     }
 
     loadData();
+    return () => {
+      active = false;
+    };
   }, [page, selectedRank, selectedJlpt, debouncedSearchQuery, router]);
 
   // Reset page when parameters change
@@ -997,33 +1020,43 @@ export default function VocabularyPage() {
 
               {/* Kanji Components (Kanji Pembentuk) */}
               {selectedItem.kanjis && selectedItem.kanjis.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                <div className="space-y-1.5 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 animate-fade-in">
+                  <button
+                    onClick={() => setIsKanjisOpen(!isKanjisOpen)}
+                    className="flex items-center space-x-1.5 text-xxs font-bold text-slate-405 dark:text-slate-500 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 select-none cursor-pointer focus:outline-none"
+                  >
                     <Layers className="w-3.5 h-3.5 text-pink-500" />
                     <span>Kanji Pembentuk (Kanji Components)</span>
-                  </h3>
+                    {isKanjisOpen ? (
+                      <ChevronDown className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                    )}
+                  </button>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {selectedItem.kanjis.map((kj: any) => (
-                      <div
-                        key={kj.id}
-                        onClick={() => {
-                          setSelectedKanjiDetail(kj);
-                        }}
-                        className="p-2.5 bg-kanji/5 border border-kanji/15 hover:border-kanji/35 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/kj cursor-pointer transition-all duration-200"
-                        title={`Lihat detail kanji ${kj.character}`}
-                      >
-                        <div>
-                          <span className="text-xl font-black text-kanji group-hover/kj:scale-105 transition-transform duration-200 block leading-tight">
-                            {kj.character}
-                          </span>
-                          <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={kj.primary_meaning}>
-                            {kj.primary_meaning}
-                          </span>
+                  {isKanjisOpen && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 animate-fade-in max-h-[220px] overflow-y-auto pr-1">
+                      {selectedItem.kanjis.map((kj: any) => (
+                        <div
+                          key={kj.id}
+                          onClick={() => {
+                            setSelectedKanjiDetail(kj);
+                          }}
+                          className="p-2.5 bg-kanji/5 border border-kanji/15 hover:border-kanji/35 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/kj cursor-pointer transition-all duration-200"
+                          title={`Lihat detail kanji ${kj.character}`}
+                        >
+                          <div>
+                            <span className="text-xl font-black text-kanji group-hover/kj:scale-105 transition-transform duration-200 block leading-tight">
+                              {kj.character}
+                            </span>
+                            <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={kj.primary_meaning}>
+                              {kj.primary_meaning}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

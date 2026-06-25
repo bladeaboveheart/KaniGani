@@ -62,6 +62,14 @@ export async function POST(request: Request) {
       next_review: nextReview,
     }));
 
+    // 1. Dapatkan rank aktif sebelum update
+    const { data: beforeState } = await userClient
+      .from('user_rank_state')
+      .select('current_rank_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const beforeRankId = beforeState?.current_rank_id;
+
     // Upsert menggunakan client ber-autentikasi user
     const { error } = await userClient.from('user_progress').upsert(updates, {
       onConflict: 'user_id,item_id',
@@ -79,15 +87,40 @@ export async function POST(request: Request) {
       duration_seconds: durationSeconds || 0,
     });
 
-    // Tambah EXP (+20 EXP per item) dan cek kenaikan pangkat general
-    const { addExpBatch, checkAndExecuteGeneralLevelUp } = await import('@/lib/rankProgress');
-    await addExpBatch(userClient, user.id, itemIds, 20);
-    const { levelUpOccurred, newRank } = await checkAndExecuteGeneralLevelUp(userClient, user.id);
+    // 2. Dapatkan rank aktif setelah update (trigger di database kemungkinan telah menaikkan pangkat)
+    const { data: afterState } = await userClient
+      .from('user_rank_state')
+      .select('current_rank_id, ranks(*)')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const afterRankId = afterState?.current_rank_id;
+    const newRankRaw = afterState?.ranks;
+    const newRank = (Array.isArray(newRankRaw) ? newRankRaw[0] : newRankRaw) as any;
+
+    let levelUpOccurred = false;
+    let rankUpOccurred = false;
+
+    if (beforeRankId && afterRankId && beforeRankId !== afterRankId) {
+      const { data: oldRank } = await userClient
+        .from('ranks')
+        .select('jlpt_level')
+        .eq('id', beforeRankId)
+        .maybeSingle();
+
+      if (oldRank && newRank) {
+        if (oldRank.jlpt_level !== newRank.jlpt_level) {
+          levelUpOccurred = true;
+        } else {
+          rankUpOccurred = true;
+        }
+      }
+    }
 
     return NextResponse.json({ 
       success: true, 
       count: itemIds.length,
       levelUpOccurred,
+      rankUpOccurred,
       newRankName: newRank ? newRank.name : null
     });
   } catch (err: any) {

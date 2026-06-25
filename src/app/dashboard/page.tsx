@@ -206,14 +206,15 @@ export default function Dashboard() {
 
         if (progErr) throw progErr;
 
-        // 2. Fetch all items (including rank_id) to get active items
-        const { data: allItems, error: itemsErr } = await supabase
+        // 2. Fetch items belonging to the active rank to avoid 1000-row limits and improve speed
+        const { data: activeRankItems, error: itemsErr } = await supabase
           .from('items')
-          .select('id, level, character, slug, type, rank_id');
+          .select('id, level, character, slug, type, rank_id')
+          .eq('rank_id', activeRank?.id || '');
 
         if (itemsErr) throw itemsErr;
 
-        const allKanji = allItems ? allItems.filter((i: any) => i.type === 'kanji') : [];
+        const currentLevelKanji = activeRankItems ? activeRankItems.filter((i: any) => i.type === 'kanji') : [];
 
         // 2b. Fetch prerequisites for locked checks
         const { data: prereqs, error: prereqErr } = await supabase
@@ -247,7 +248,6 @@ export default function Dashboard() {
         }
 
         // Calculate stats for current active rank
-        const currentLevelKanji = (allKanji && activeRank) ? allKanji.filter((k: any) => k.rank_id === activeRank.id) : [];
         const totalKanji = currentLevelKanji.length;
         const kanjiIds = currentLevelKanji.map(k => k.id);
 
@@ -423,9 +423,6 @@ export default function Dashboard() {
           kanjiPassedInLevel: kanjiPassed,
           kanjiTotalInLevel: totalKanji,
           daysSinceLevelUp,
-          currentExp: rankState?.current_exp || 0,
-          expRequired: activeRank?.exp_required || 1000,
-          examUnlocked: rankState?.exam_unlocked || false,
           hasTakenPlacement: rankState?.has_taken_placement || false,
           jlptLevel: activeRank?.jlpt_level || 'N5'
         });

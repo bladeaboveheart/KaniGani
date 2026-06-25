@@ -17,10 +17,26 @@ import QuizInput from '@/components/quiz/QuizInput';
 import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
+import ProgressionModal from '@/components/ProgressionModal';
 
 export default function ReviewPage() {
   const router = useRouter();
   const { getAndResetSeconds } = useActiveTimer();
+
+  const [progressionInfo, setProgressionInfo] = useState<{
+    isOpen: boolean;
+    type: 'rank' | 'level';
+    newRankName: string;
+  }>({
+    isOpen: false,
+    type: 'rank',
+    newRankName: ''
+  });
+
+  const [pendingProgression, setPendingProgression] = useState<{
+    type: 'rank' | 'level';
+    newRankName: string;
+  } | null>(null);
 
   // Zustand Store
   const {
@@ -46,7 +62,8 @@ export default function ReviewPage() {
     toggleWrapUp,
     initializeSession,
     resetStore,
-    undoActiveCard
+    undoActiveCard,
+    updateItemInSession
   } = useQuizStore();
 
   const [loading, setLoading] = useState(true);
@@ -223,7 +240,7 @@ export default function ReviewPage() {
             wrong: prev.wrong + (wrongCount > 0 ? 1 : 0)
           }));
 
-          await fetch('/api/quiz/submit', {
+          const res = await fetch('/api/quiz/submit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -231,6 +248,20 @@ export default function ReviewPage() {
             },
             body: JSON.stringify({ itemId, wrongCount, durationSeconds })
           });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (data.levelUpOccurred || data.rankUpOccurred) {
+              setPendingProgression(prev => {
+                // Prioritize level-up over rank-up
+                if (prev?.type === 'level') return prev;
+                return {
+                  type: data.levelUpOccurred ? 'level' : 'rank',
+                  newRankName: data.newRankName || 'Pangkat Baru'
+                };
+              });
+            }
+          }
 
         } catch (err) {
           console.error('Error progressively submitting review item:', err);
@@ -274,9 +305,16 @@ export default function ReviewPage() {
     if (!loading && phase === 'quiz' && queue.length === 0 && totalItemsCount > 0) {
       setTimeout(() => {
         setPhase('summary');
+        if (pendingProgression) {
+          setProgressionInfo({
+            isOpen: true,
+            type: pendingProgression.type,
+            newRankName: pendingProgression.newRankName
+          });
+        }
       }, 0);
     }
-  }, [queue, phase, loading, totalItemsCount]);
+  }, [queue, phase, loading, totalItemsCount, pendingProgression]);
 
   if (loading) {
     return (
@@ -452,6 +490,7 @@ export default function ReviewPage() {
                 <QuizInfoDrawer
                   item={activeCard.item}
                   cardType={activeCard.cardType}
+                  onItemEdited={updateItemInSession}
                 />
               )}
 
@@ -489,6 +528,13 @@ export default function ReviewPage() {
         )}
 
       </main>
+
+      <ProgressionModal
+        isOpen={progressionInfo.isOpen}
+        type={progressionInfo.type}
+        newRankName={progressionInfo.newRankName}
+        onClose={() => setProgressionInfo(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

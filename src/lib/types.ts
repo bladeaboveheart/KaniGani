@@ -11,6 +11,7 @@ export interface Item {
   reading_mnemonic?: string;
   description?: string;
   srs_stage?: number;
+  rank_id?: string | null;
   
   // Merged detailed properties
   meanings?: ItemMeaning[];
@@ -75,9 +76,6 @@ export interface DashboardStats {
   kanjiPassedInLevel: number;
   kanjiTotalInLevel: number;
   daysSinceLevelUp?: number;
-  currentExp?: number;
-  expRequired?: number;
-  examUnlocked?: boolean;
   hasTakenPlacement?: boolean;
   jlptLevel?: string;
 }
@@ -93,8 +91,6 @@ export interface Rank {
 export interface UserRankState {
   user_id: string;
   current_rank_id: string;
-  current_exp: number;
-  exam_unlocked: boolean;
   has_taken_placement: boolean;
   ranks?: Rank;
 }

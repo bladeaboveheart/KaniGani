@@ -135,8 +135,6 @@ export async function POST(request: Request) {
       .upsert({
         user_id: user.id,
         current_rank_id: targetRankId,
-        current_exp: 0,
-        exam_unlocked: false,
         has_taken_placement: true,
         updated_at: new Date().toISOString()
       }, { onConflict: 'user_id' });

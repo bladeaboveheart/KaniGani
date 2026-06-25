@@ -82,6 +82,7 @@ interface QuizStore {
   toggleWrapUp: (completedCount?: number) => void;
   resetStore: () => void;
   undoActiveCard: () => void;
+  updateItemInSession: (updatedItem: Item) => void;
 }
 
 export const useQuizStore = create<QuizStore>((set, get) => ({
@@ -103,6 +104,71 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   warningMsg: '',
   showItemInfo: false,
   wrapUpActive: false,
+
+  updateItemInSession: (updatedItem: Item) => {
+    const { queue, activeCard, originalItems } = get();
+
+    // 1. Update originalItems
+    const updatedOriginal = originalItems.map(item => item.id === updatedItem.id ? updatedItem : item);
+
+    // 2. Update activeCard
+    let updatedActiveCard = activeCard;
+    if (activeCard && activeCard.itemId === updatedItem.id) {
+      const mList = updatedItem.meanings || [];
+      const rList = updatedItem.readings || [];
+      const primaryMeaning = mList.find((m: any) => m.primary_meaning)?.meaning || updatedItem.slug || '';
+      const primaryReading = rList.find((r: any) => r.primary_reading)?.reading || null;
+      const acceptedMeanings = mList.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim());
+      const acceptedReadings = rList.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim());
+
+      const newItem = {
+        ...updatedItem,
+        primary_meaning: primaryMeaning,
+        primary_reading: primaryReading,
+        accepted_meanings: acceptedMeanings,
+        accepted_readings: acceptedReadings
+      };
+
+      updatedActiveCard = {
+        ...activeCard,
+        item: newItem,
+        character: updatedItem.character
+      };
+    }
+
+    // 3. Update queue
+    const updatedQueue = queue.map(card => {
+      if (card.itemId === updatedItem.id) {
+        const mList = updatedItem.meanings || [];
+        const rList = updatedItem.readings || [];
+        const primaryMeaning = mList.find((m: any) => m.primary_meaning)?.meaning || updatedItem.slug || '';
+        const primaryReading = rList.find((r: any) => r.primary_reading)?.reading || null;
+        const acceptedMeanings = mList.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim());
+        const acceptedReadings = rList.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim());
+
+        const newItem = {
+          ...updatedItem,
+          primary_meaning: primaryMeaning,
+          primary_reading: primaryReading,
+          accepted_meanings: acceptedMeanings,
+          accepted_readings: acceptedReadings
+        };
+
+        return {
+          ...card,
+          item: newItem,
+          character: updatedItem.character
+        };
+      }
+      return card;
+    });
+
+    set({
+      originalItems: updatedOriginal,
+      activeCard: updatedActiveCard,
+      queue: updatedQueue
+    });
+  },
 
   resetStore: () => {
     set({
@@ -174,30 +240,42 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         readingCorrect: item.type === 'radical' ? true : false,
       };
 
-      if (item.type === 'radical') {
+      const mList = item.meanings || [];
+      const rList = item.readings || [];
+      const enrichedItem: Item = {
+        ...item,
+        accepted_meanings: (item.accepted_meanings && item.accepted_meanings.length > 0)
+          ? item.accepted_meanings
+          : mList.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()),
+        accepted_readings: (item.accepted_readings && item.accepted_readings.length > 0)
+          ? item.accepted_readings
+          : rList.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim())
+      };
+
+      if (enrichedItem.type === 'radical') {
         cards.push({
-          itemId: item.id,
+          itemId: enrichedItem.id,
           type: 'radical',
-          character: item.character,
+          character: enrichedItem.character,
           cardType: 'meaning',
-          item,
+          item: enrichedItem,
           attempts: 0,
         });
       } else {
         cards.push({
-          itemId: item.id,
-          type: item.type,
-          character: item.character,
+          itemId: enrichedItem.id,
+          type: enrichedItem.type,
+          character: enrichedItem.character,
           cardType: 'meaning',
-          item,
+          item: enrichedItem,
           attempts: 0,
         });
         cards.push({
-          itemId: item.id,
-          type: item.type,
-          character: item.character,
+          itemId: enrichedItem.id,
+          type: enrichedItem.type,
+          character: enrichedItem.character,
           cardType: 'reading',
-          item,
+          item: enrichedItem,
           attempts: 0,
         });
       }
@@ -255,7 +333,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     // Pre-determine correctness of the meaning to bypass warnings if correct
     let isCorrectMeaning = false;
     if (activeCard.cardType === 'meaning') {
-      const acceptedMeanings = activeCard.item.accepted_meanings || [];
+      const acceptedMeanings = [
+        ...(activeCard.item.accepted_meanings || []),
+        ...(activeCard.item.meanings?.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()) || [])
+      ];
       const isExactlyCorrect = acceptedMeanings.some(m => m.toLowerCase().trim() === trimmedInput);
       const isTypoCorrect = !isExactlyCorrect && acceptedMeanings.some(m => isAlmostCorrect(trimmedInput, m.toLowerCase().trim()));
       isCorrectMeaning = isExactlyCorrect || isTypoCorrect;
@@ -263,7 +344,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
 
     // 0. JAPANESE READING INPUT WARNING (When they input Romaji/Kana for Meaning)
     if (activeCard.cardType === 'meaning' && !isCorrectMeaning) {
-      const acceptedReadings = activeCard.item.accepted_readings || [];
+      const acceptedReadings = [
+        ...(activeCard.item.accepted_readings || []),
+        ...(activeCard.item.readings?.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim()) || [])
+      ];
       const kanaInput = wanakana.toKana(trimmedInput);
 
       const isReadingInput = acceptedReadings.some(
@@ -298,7 +382,11 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
               .eq('accepted_answer', true);
 
             const acceptedRadicalMeanings = radicalMeanings?.map(m => m.meaning.toLowerCase().trim()) || [];
-            if (acceptedRadicalMeanings.includes(trimmedInput)) {
+            const activeAcceptedMeanings = [
+              ...(activeCard.item.accepted_meanings || []),
+              ...(activeCard.item.meanings?.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()) || [])
+            ];
+            if (acceptedRadicalMeanings.includes(trimmedInput) && !activeAcceptedMeanings.includes(trimmedInput)) {
               set({
                 warningMsg: "Itu adalah arti Radikal. Yang kami minta adalah arti dari Kanjinya!",
               });
@@ -322,7 +410,11 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
               .eq('accepted_answer', true);
 
             const acceptedKanjiMeanings = kanjiMeanings?.map(m => m.meaning.toLowerCase().trim()) || [];
-            if (acceptedKanjiMeanings.includes(trimmedInput)) {
+            const activeAcceptedMeanings = [
+              ...(activeCard.item.accepted_meanings || []),
+              ...(activeCard.item.meanings?.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()) || [])
+            ];
+            if (acceptedKanjiMeanings.includes(trimmedInput) && !activeAcceptedMeanings.includes(trimmedInput)) {
               set({
                 warningMsg: "Itu adalah arti Kanji. Yang kami minta adalah arti dari Radikalnya!",
               });
@@ -365,7 +457,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     let closestMeaning = '';
 
     if (activeCard.cardType === 'meaning') {
-      const acceptedMeanings = activeCard.item.accepted_meanings || [];
+      const acceptedMeanings = [
+        ...(activeCard.item.accepted_meanings || []),
+        ...(activeCard.item.meanings?.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()) || [])
+      ];
 
       // Cek kecocokan persis
       isCorrectAns = acceptedMeanings.some(m => m.toLowerCase().trim() === trimmedInput);
@@ -380,7 +475,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         }
       }
     } else {
-      const acceptedReadings = activeCard.item.accepted_readings || [];
+      const acceptedReadings = [
+        ...(activeCard.item.accepted_readings || []),
+        ...(activeCard.item.readings?.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim()) || [])
+      ];
       isCorrectAns = acceptedReadings.some(r => r.toLowerCase().trim() === trimmedInput);
     }
 
@@ -429,10 +527,16 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       let nowCorrect = false;
 
       if (activeCard.cardType === 'meaning') {
-        const acceptedMeanings = activeCard.item.accepted_meanings || [];
+        const acceptedMeanings = [
+          ...(activeCard.item.accepted_meanings || []),
+          ...(activeCard.item.meanings?.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()) || [])
+        ];
         nowCorrect = acceptedMeanings.some(m => m.toLowerCase().trim() === trimmedInput);
       } else {
-        const acceptedReadings = activeCard.item.accepted_readings || [];
+        const acceptedReadings = [
+          ...(activeCard.item.accepted_readings || []),
+          ...(activeCard.item.readings?.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim()) || [])
+        ];
         nowCorrect = acceptedReadings.some(r => r.toLowerCase().trim() === trimmedInput);
       }
 

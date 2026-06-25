@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const [saveLoading, setSaveLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  // Stats states
   const [stats, setStats] = useState({
     totalStudied: 0,
     apprentice: 0,
@@ -30,8 +29,6 @@ export default function SettingsPage() {
     burned: 0,
     level: 'N5 - Pangkat 1' as string | number,
     joinedDate: '',
-    currentExp: 0,
-    expRequired: 1000,
     hasTakenPlacement: false
   });
 
@@ -121,8 +118,6 @@ export default function SettingsPage() {
         burned,
         level: rankState?.ranks ? rankState.ranks.name : 'N5 - Pangkat 1',
         joinedDate: joinedString,
-        currentExp: rankState?.current_exp || 0,
-        expRequired: rankState?.ranks ? rankState.ranks.exp_required : 1000,
         hasTakenPlacement: rankState?.has_taken_placement || false
       });
 

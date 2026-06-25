@@ -1,19 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Languages, FileText, Layers, ChevronRight, Loader2, Save } from 'lucide-react';
 import * as wanakana from 'wanakana';
 import { supabase } from '@/lib/supabase';
 
 // Type definitions
-interface MeaningInput {
+export interface MeaningInput {
   id?: string;
   meaning: string;
   primary_meaning: boolean;
   accepted_answer: boolean;
 }
 
-interface ReadingInput {
+export interface ReadingInput {
   id?: string;
   reading: string;
   reading_type: 'onyomi' | 'kunyomi' | 'nanori' | null;
@@ -21,13 +22,13 @@ interface ReadingInput {
   accepted_answer: boolean;
 }
 
-interface SentenceInput {
+export interface SentenceInput {
   id?: string;
   japanese: string;
   indonesian: string;
 }
 
-interface ItemInput {
+export interface ItemInput {
   id?: string;
   type: 'radical' | 'kanji' | 'vocabulary';
   character: string;
@@ -63,7 +64,13 @@ export default function ItemEditorModal({
   formLoading,
   ranks
 }: ItemEditorModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites'>('basic');
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
   const [prereqCandidates, setPrereqCandidates] = useState<any[]>([]);
   const [loadingPrereqs, setLoadingPrereqs] = useState(false);
 
@@ -96,7 +103,7 @@ export default function ItemEditorModal({
     }
   }, [isOpen, formItem.type]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   // Change type triggers updates to meaning/reading structure defaults
   const handleTypeChange = (type: 'radical' | 'kanji' | 'vocabulary') => {
@@ -234,7 +241,7 @@ export default function ItemEditorModal({
     });
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 transition-all duration-300">
       <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
 
@@ -799,6 +806,7 @@ export default function ItemEditorModal({
         </div>
 
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

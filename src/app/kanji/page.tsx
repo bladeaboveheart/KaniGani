@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import { getVocabularyReadingType } from '@/lib/japanese';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
-  Lock, CheckCircle2, ChevronRight, Loader2, Languages, ArrowRight
+  Lock, CheckCircle2, ChevronRight, ChevronDown, Loader2, Languages, ArrowRight
 } from 'lucide-react';
 
 interface KanjiItem {
@@ -41,6 +41,14 @@ export default function KanjiPage() {
   const [ranks, setRanks] = useState<any[]>([]);
   const [rankItemCounts, setRankItemCounts] = useState<Record<string, number>>({});
   const [selectedItem, setSelectedItem] = useState<KanjiItem | null>(null);
+  const [isCompositionOpen, setIsCompositionOpen] = useState(false);
+  const [isVocabUsageOpen, setIsVocabUsageOpen] = useState(false);
+
+  useEffect(() => {
+    setIsCompositionOpen(false);
+    setIsVocabUsageOpen(false);
+  }, [selectedItem]);
+
   const [selectedItemVocabs, setSelectedItemVocabs] = useState<any[]>([]);
   const [loadingVocabs, setLoadingVocabs] = useState(false);
   const [selectedItemRadicals, setSelectedItemRadicals] = useState<any[]>([]);
@@ -145,6 +153,8 @@ export default function KanjiPage() {
 
   // Fetch items based on active parameters
   useEffect(() => {
+    let active = true;
+
     async function loadData() {
       try {
         if (page === 0) {
@@ -155,7 +165,9 @@ export default function KanjiPage() {
 
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
-          router.push('/');
+          if (active) {
+            router.push('/');
+          }
           return;
         }
 
@@ -173,6 +185,7 @@ export default function KanjiPage() {
             ranks!inner(*)
           `)
           .eq('type', 'kanji')
+          .order('sort_order', { referencedTable: 'ranks', ascending: true })
           .order('lesson_position', { ascending: true })
           .range(from, to);
 
@@ -192,7 +205,9 @@ export default function KanjiPage() {
         const { data: itemsData, error: itemsErr } = await query;
         if (itemsErr) throw itemsErr;
 
-        if (!itemsData || itemsData.length < pageSize) {
+        if (!active) return;
+
+        if (itemsData && itemsData.length < pageSize) {
           setHasMore(false);
         } else {
           setHasMore(true);
@@ -240,25 +255,35 @@ export default function KanjiPage() {
             };
           });
 
+          if (!active) return;
+
           if (page === 0) {
             setKanjis(combined);
           } else {
             setKanjis(prev => [...prev, ...combined]);
           }
         } else {
+          if (!active) return;
           if (page === 0) {
             setKanjis([]);
           }
         }
       } catch (err) {
-        console.error('Error loading Kanji:', err);
+        if (active) {
+          console.error('Error loading Kanji:', err);
+        }
       } finally {
-        setLoading(false);
-        setLoadingMore(false);
+        if (active) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     }
 
     loadData();
+    return () => {
+      active = false;
+    };
   }, [page, selectedRank, selectedJlpt, debouncedSearchQuery, router]);
 
   // Reset page when parameters change
@@ -906,64 +931,89 @@ export default function KanjiPage() {
 
               {/* Radical Combination (Kombinasi Radikal) */}
               {selectedItemRadicals && selectedItemRadicals.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                <div className="space-y-1.5 pt-4 border-t border-slate-200/50 dark:border-slate-800/50 animate-fade-in">
+                  <button
+                    onClick={() => setIsCompositionOpen(!isCompositionOpen)}
+                    className="flex items-center space-x-1.5 text-xxs font-bold text-slate-405 dark:text-slate-500 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 select-none cursor-pointer focus:outline-none"
+                  >
                     <Layers className="w-3.5 h-3.5 text-radical" />
                     <span>Kombinasi Radikal (Radical Combination)</span>
-                  </h3>
+                    {isCompositionOpen ? (
+                      <ChevronDown className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                    ) : (
+                      <ChevronRight className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                    )}
+                  </button>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {selectedItemRadicals.map((rad: any) => (
-                      <div
-                        key={rad.id}
-                        onClick={() => {
-                          setSelectedRadicalDetail(rad);
-                        }}
-                        className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad cursor-pointer transition-all duration-200"
-                        title={`Radikal: ${rad.character}`}
-                      >
-                        <div>
-                          <span className="text-xl font-black text-radical group-hover/rad:scale-105 transition-transform duration-200 block leading-tight">
-                            {rad.character}
-                          </span>
-                          <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={rad.primary_meaning}>
-                            {rad.primary_meaning}
-                          </span>
+                  {isCompositionOpen && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 animate-fade-in max-h-[220px] overflow-y-auto pr-1">
+                      {selectedItemRadicals.map((rad: any) => (
+                        <div
+                          key={rad.id}
+                          onClick={() => {
+                            setSelectedRadicalDetail(rad);
+                          }}
+                          className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/rad cursor-pointer transition-all duration-200"
+                          title={`Radikal: ${rad.character}`}
+                        >
+                          <div>
+                            <span className="text-xl font-black text-radical group-hover/rad:scale-105 transition-transform duration-200 block leading-tight">
+                              {rad.character}
+                            </span>
+                            <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5" title={rad.primary_meaning}>
+                              {rad.primary_meaning}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Related Vocabularies Section */}
-              <div className="space-y-3 pt-2">
-                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Kosakata yang Menggunakan Kanji Ini</h3>
-                {loadingVocabs ? (
-                  <div className="flex items-center space-x-2 py-4 text-xs text-slate-400">
-                    <Loader2 className="w-4 h-4 animate-spin text-kanji" />
-                    <span>Mendapatkan kosakata terkait...</span>
-                  </div>
-                ) : selectedItemVocabs.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedItemVocabs.map((vocab) => (
-                      <div
-                        key={vocab.id}
-                        onClick={() => {
-                          setSelectedVocabDetail(vocab);
-                        }}
-                        className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-850 hover:border-vocab/40 dark:hover:border-vocab/30 rounded-2xl cursor-pointer hover:shadow-xs transition-all duration-200 flex flex-col justify-between"
-                      >
-                        <span className="font-japanese font-bold text-base text-slate-800 dark:text-slate-100">{vocab.character}</span>
-                        <div className="flex flex-col mt-1 space-y-0.5 leading-none">
-                          <span className="text-[10px] text-vocab font-bold">{vocab.primary_reading}</span>
-                          <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate font-medium">{vocab.primary_meaning}</span>
-                        </div>
+              <div className="space-y-1.5 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+                <button
+                  onClick={() => setIsVocabUsageOpen(!isVocabUsageOpen)}
+                  className="flex items-center space-x-1.5 text-xxs font-bold text-slate-405 dark:text-slate-500 uppercase tracking-widest hover:text-slate-600 dark:hover:text-slate-300 select-none cursor-pointer focus:outline-none"
+                >
+                  <BookOpen className="w-3.5 h-3.5 text-vocab" />
+                  <span>Kosakata yang Menggunakan Kanji Ini</span>
+                  {isVocabUsageOpen ? (
+                    <ChevronDown className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                  ) : (
+                    <ChevronRight className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                  )}
+                </button>
+                {isVocabUsageOpen && (
+                  <div className="mt-2 animate-fade-in pr-1">
+                    {loadingVocabs ? (
+                      <div className="flex items-center space-x-2 py-4 text-xs text-slate-400">
+                        <Loader2 className="w-4 h-4 animate-spin text-kanji" />
+                        <span>Mendapatkan kosakata terkait...</span>
                       </div>
-                    ))}
+                    ) : selectedItemVocabs.length > 0 ? (
+                      <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1">
+                        {selectedItemVocabs.map((vocab) => (
+                          <div
+                            key={vocab.id}
+                            onClick={() => {
+                              setSelectedVocabDetail(vocab);
+                            }}
+                            className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200/60 dark:border-slate-855 hover:border-vocab/40 dark:hover:border-vocab/30 rounded-2xl cursor-pointer hover:shadow-xs transition-all duration-200 flex flex-col justify-between"
+                          >
+                            <span className="font-japanese font-bold text-base text-slate-800 dark:text-slate-100">{vocab.character}</span>
+                            <div className="flex flex-col mt-1 space-y-0.5 leading-none">
+                              <span className="text-[10px] text-vocab font-bold">{vocab.primary_reading}</span>
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 capitalize truncate font-medium">{vocab.primary_meaning}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-slate-400 italic py-2">Tidak ada kosakata terkait untuk kanji ini.</p>
+                    )}
                   </div>
-                ) : (
-                  <p className="text-xs text-slate-400 italic py-2">Tidak ada kosakata terkait untuk kanji ini.</p>
                 )}
               </div>
             </div>
