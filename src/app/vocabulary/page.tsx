@@ -294,6 +294,14 @@ export default function VocabularyPage() {
             const itemReadings = item.item_readings || [];
             const itemSentences = item.item_context_sentences || [];
             const foundKanjis = kanjisMap.get(item.id) || [];
+            // Sort kanjis to match their order in the vocabulary characters string
+            foundKanjis.sort((a: any, b: any) => {
+              const idxA = item.character.indexOf(a.character);
+              const idxB = item.character.indexOf(b.character);
+              if (idxA === -1) return 1;
+              if (idxB === -1) return -1;
+              return idxA - idxB;
+            });
 
             const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'vocabulary';
             const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
@@ -465,6 +473,14 @@ export default function VocabularyPage() {
           const primaryMeaning = item.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'vocabulary';
           const primaryReading = item.item_readings?.find((r: any) => r.primary_reading)?.reading || '';
           const foundKanjis = kanjisMap.get(item.id) || [];
+          // Sort kanjis to match their order in the vocabulary characters string
+          foundKanjis.sort((a: any, b: any) => {
+            const idxA = item.character.indexOf(a.character);
+            const idxB = item.character.indexOf(b.character);
+            if (idxA === -1) return 1;
+            if (idxB === -1) return -1;
+            return idxA - idxB;
+          });
 
           return {
             id: item.id,
