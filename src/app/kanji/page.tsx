@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FormattedText from '@/components/FormattedText';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
   Lock, CheckCircle2, ChevronRight, Loader2, Languages
@@ -459,7 +460,7 @@ export default function KanjiPage() {
               {selectedItem.meaning_mnemonic && (
                 <div className="p-4 bg-pink-500/5 dark:bg-pink-500/10 border border-pink-500/10 dark:border-pink-900/30 rounded-2xl">
                   <h3 className="text-xxs font-bold text-pink-700 dark:text-pink-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Arti)</h3>
-                  <p className="text-slate-700 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedItem.meaning_mnemonic}</p>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium text-xs leading-relaxed"><FormattedText text={selectedItem.meaning_mnemonic} /></p>
                 </div>
               )}
 
@@ -467,15 +468,15 @@ export default function KanjiPage() {
               {selectedItem.reading_mnemonic && (
                 <div className="p-4 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 dark:border-indigo-900/30 rounded-2xl">
                   <h3 className="text-xxs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Cara Baca)</h3>
-                  <p className="text-slate-700 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedItem.reading_mnemonic}</p>
+                  <p className="text-slate-700 dark:text-slate-300 font-medium text-xs leading-relaxed"><FormattedText text={selectedItem.reading_mnemonic} /></p>
                 </div>
               )}
 
               {/* Description */}
               {selectedItem.description && (
                 <div className="space-y-1">
-                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Tambahan</h3>
-                  <p className="text-slate-600 dark:text-slate-350 text-xs leading-relaxed">{selectedItem.description}</p>
+                  <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Detail</h3>
+                  <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed"><FormattedText text={selectedItem.description} /></p>
                 </div>
               )}
             </div>

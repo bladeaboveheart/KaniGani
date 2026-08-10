@@ -106,7 +106,7 @@ export default function LevelProgress({
                     cardClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800";
                     statusLabel = "Terkunci";
                     if (kanji.unlearnedPrereqs.length > 0) {
-                      tooltipText = "belum belajar radikalnya: " + kanji.unlearnedPrereqs.map((r: any) => r.character).join(", ");
+                      tooltipText = "belum belajar radikalnya: " + kanji.unlearnedPrereqs.map((r: any) => (r.character && r.character.startsWith('/') ? (r.slug || 'radikal') : r.character)).join(", ");
                     } else {
                       tooltipText = "belum belajar radikalnya";
                     }

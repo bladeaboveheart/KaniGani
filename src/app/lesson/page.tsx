@@ -3,6 +3,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import CharacterDisplay from '@/components/CharacterDisplay';
+import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
@@ -510,7 +512,9 @@ export default function LessonPage() {
                 </div>
               </div>
 
-              <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{currentItem.character}</h1>
+              <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
+                <CharacterDisplay character={currentItem.character} slug={currentItem.slug} imgClassName="w-20 h-20" />
+              </h1>
               <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.slug}</p>
             </div>
 
@@ -555,14 +559,14 @@ export default function LessonPage() {
                   {currentItem.description && (
                     <div>
                       <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Deskripsi Detail</h3>
-                      <p className="text-slate-600 dark:text-slate-350 mt-1">{currentItem.description}</p>
+                      <p className="text-slate-600 dark:text-slate-350 mt-1"><FormattedText text={currentItem.description} /></p>
                     </div>
                   )}
 
                   {currentItem.meaning_mnemonic && (
                     <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
                       <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
-                      <p className="text-teal-900 dark:text-teal-300 mt-1.5">{currentItem.meaning_mnemonic}</p>
+                      <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic} /></p>
                     </div>
                   )}
                 </div>
@@ -601,7 +605,7 @@ export default function LessonPage() {
                   {currentItem.reading_mnemonic && (
                     <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
                       <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Bacaan)</h3>
-                      <p className="text-indigo-900 dark:text-indigo-300 mt-1.5">{currentItem.reading_mnemonic}</p>
+                      <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={currentItem.reading_mnemonic} /></p>
                     </div>
                   )}
 
@@ -746,7 +750,9 @@ export default function LessonPage() {
                   devMode={devMode}
                   setDevMode={setDevMode}
                 />
-                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{activeCard.character}</h1>
+                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
+                  <CharacterDisplay character={activeCard.character} slug={activeCard.item.slug} imgClassName="w-20 h-20" />
+                </h1>
               </div>
 
               {/* Prompt Label KaniGani style */}

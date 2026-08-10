@@ -1,6 +1,8 @@
 'use client';
 
-import { X, Info, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
+import { X, Layers, CheckSquare, Square, Sparkles, Filter, Info, BookOpen, ChevronRight } from 'lucide-react';
+import CharacterDisplay from '@/components/CharacterDisplay';
 
 interface LessonPickerModalProps {
   availableLessons: any[];
@@ -176,7 +178,9 @@ export default function LessonPickerModal({
                                     : 'bg-[#00a0f0]/15 text-[#00a0f0] border-2 border-dashed border-[#00a0f0]/30 hover:bg-[#00a0f0]/30 hover:text-[#00a0f0] cursor-pointer font-bold'
                                     }`}
                                 >
-                                  <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
+                                  <span className="text-xl font-black font-japanese leading-none mb-1 flex items-center justify-center">
+                                    <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-5 h-5" />
+                                  </span>
                                   <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
                                 </button>
                               );

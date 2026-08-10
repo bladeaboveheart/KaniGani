@@ -1,6 +1,7 @@
 'use client';
 
 import { Item } from '@/lib/types';
+import FormattedText from '@/components/FormattedText';
 
 interface QuizInfoDrawerProps {
   item: Item | null;
@@ -27,14 +28,14 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
         {item.meaning_mnemonic && (
           <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
             <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic (Arti)</h5>
-            <p className="text-teal-900 dark:text-teal-100 mt-1.5">{item.meaning_mnemonic}</p>
+            <p className="text-teal-900 dark:text-teal-100 mt-1.5"><FormattedText text={item.meaning_mnemonic} /></p>
           </div>
         )}
 
         {item.description && (
           <div className="p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
             <h5 className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-widest block select-none">Deskripsi Detail</h5>
-            <p className="text-slate-700 dark:text-slate-200 mt-1.5">{item.description}</p>
+            <p className="text-slate-700 dark:text-slate-200 mt-1.5"><FormattedText text={item.description} /></p>
           </div>
         )}
       </div>
@@ -123,7 +124,7 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
           {item.reading_mnemonic && (
             <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
               <h5 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic (Cara Baca)</h5>
-              <p className="text-indigo-900 dark:text-indigo-300 mt-1.5">{item.reading_mnemonic}</p>
+              <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={item.reading_mnemonic} /></p>
             </div>
           )}
 

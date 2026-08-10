@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import CharacterDisplay from '@/components/CharacterDisplay';
+import FormattedText from '@/components/FormattedText';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
   Lock, CheckCircle2, ChevronRight, Loader2, ArrowRight
@@ -321,8 +323,8 @@ export default function RadicalPage() {
                           className={`pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group h-28 select-none whitespace-nowrap ${cardStyles}`}
                         >
                           {/* Character with Solid Border */}
-                          <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
-                            {item.character}
+                          <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                            <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-7 h-7" />
                           </div>
 
                           {/* Meanings */}
@@ -379,7 +381,9 @@ export default function RadicalPage() {
               <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
                 Radikal Kamus • Level {selectedItem.level}
               </span>
-              <h1 className="text-7xl font-black select-all">{selectedItem.character}</h1>
+              <h1 className="text-7xl font-black select-all flex items-center justify-center">
+                <CharacterDisplay character={selectedItem.character} slug={selectedItem.slug} imgClassName="w-20 h-20" />
+              </h1>
               <p className="text-lg font-bold tracking-wide mt-2 uppercase opacity-90">{selectedItem.slug}</p>
             </div>
 
@@ -397,7 +401,7 @@ export default function RadicalPage() {
               {selectedItem.meaning_mnemonic && (
                 <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
                   <h3 className="text-xxs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai</h3>
-                  <p className="text-teal-900 dark:text-teal-300 font-medium text-xs leading-relaxed">{selectedItem.meaning_mnemonic}</p>
+                  <p className="text-teal-900 dark:text-teal-300 font-medium text-xs leading-relaxed"><FormattedText text={selectedItem.meaning_mnemonic} /></p>
                 </div>
               )}
 
@@ -405,7 +409,7 @@ export default function RadicalPage() {
               {selectedItem.description && (
                 <div className="space-y-1">
                   <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Detail</h3>
-                  <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">{selectedItem.description}</p>
+                  <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed"><FormattedText text={selectedItem.description} /></p>
                 </div>
               )}
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import CharacterDisplay from '@/components/CharacterDisplay';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
@@ -403,7 +404,9 @@ export default function ReviewPage() {
                   devMode={devMode}
                   setDevMode={setDevMode}
                 />
-                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{activeCard.character}</h1>
+                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
+                  <CharacterDisplay character={activeCard.character} slug={activeCard.item.slug} imgClassName="w-20 h-20" />
+                </h1>
               </div>
 
               {/* Prompt Label */}

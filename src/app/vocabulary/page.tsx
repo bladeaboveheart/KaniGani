@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import FormattedText from '@/components/FormattedText';
 import {
   Search, BookOpen, Layers, X, HelpCircle, Sparkles,
   Lock, CheckCircle2, ChevronRight, Loader2, FileText
@@ -23,7 +24,7 @@ interface VocabItem {
   next_review?: string | null;
   meanings: any[];
   readings: any[];
-  sentences: any[];
+  sentences?: any[];
   primary_meaning: string;
   primary_reading: string;
   kanjis?: any[];
@@ -36,6 +37,20 @@ export default function VocabularyPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLevel, setSelectedLevel] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<VocabItem | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // Read search param on load for deep linking
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const query = params.get('search');
+      if (query) {
+        setTimeout(() => {
+          setSearchQuery(decodeURIComponent(query));
+        }, 0);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     async function loadData() {
@@ -46,70 +61,53 @@ export default function VocabularyPage() {
           return;
         }
 
-        // 1. Fetch all vocabulary items
-        const { data: itemsData, error: itemsErr } = await supabase
-          .from('items')
-          .select('*')
-          .eq('type', 'vocabulary')
-          .order('level', { ascending: true })
-          .order('lesson_position', { ascending: true });
-
-        if (itemsErr) throw itemsErr;
-
-        const itemIds = (itemsData || []).map(i => i.id);
-
-        // 2. Fetch all readings, meanings, context sentences, progress & prerequisites
-        const [readingsRes, meaningsRes, sentencesRes, progRes, prereqsRes] = await Promise.all([
-          supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
-          supabase.from('user_progress').select('item_id, srs_stage, unlocked_at, next_review').eq('user_id', user.id),
-          supabase.from('item_prerequisites').select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+        // Fetch vocabulary items & user progress in parallel using relational queries (bypassing Supabase 1000 row cap)
+        const [chunk1Res, chunk2Res, progRes] = await Promise.all([
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(0, 999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(1000, 1999),
+          supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, unlocked_at, next_review')
+            .eq('user_id', user.id)
         ]);
 
-        if (readingsRes.error) throw readingsRes.error;
-        if (meaningsRes.error) throw meaningsRes.error;
-        if (sentencesRes.error) throw sentencesRes.error;
+        if (chunk1Res.error) throw chunk1Res.error;
+        if (chunk2Res.error) throw chunk2Res.error;
         if (progRes.error) throw progRes.error;
-        if (prereqsRes.error) throw prereqsRes.error;
 
-        // Group prerequisite kanjis by vocabulary item id
-        const kanjisMap = new Map<string, any[]>();
-        if (prereqsRes.data) {
-          prereqsRes.data.forEach((row: any) => {
-            const reqItem = row.items;
-            if (reqItem && reqItem.type === 'kanji') {
-              const vocabId = row.item_id;
-              if (!kanjisMap.has(vocabId)) {
-                kanjisMap.set(vocabId, []);
-              }
-              kanjisMap.get(vocabId)!.push({
-                id: reqItem.id,
-                character: reqItem.character,
-                slug: reqItem.slug || 'kanji',
-                level: reqItem.level
-              });
-            }
-          });
-        }
-
-        // Map progresses
+        const rawItems = [...(chunk1Res.data || []), ...(chunk2Res.data || [])];
         const progressMap = new Map(progRes.data?.map(p => [p.item_id, p]) || []);
 
-        const readings = readingsRes.data || [];
-        const meanings = meaningsRes.data || [];
-        const sentences = sentencesRes.data || [];
-
-        // Combine items with progress and details
-        const combined: VocabItem[] = (itemsData || []).map(item => {
+        const combined: VocabItem[] = rawItems.map((item: any) => {
           const progress = progressMap.get(item.id);
-          const itemMeanings = meanings.filter(m => m.item_id === item.id);
-          const itemReadings = readings.filter(r => r.item_id === item.id);
-          const itemSentences = sentences.filter(s => s.item_id === item.id);
-          const foundKanjis = kanjisMap.get(item.id) || [];
+          const itemMeanings = item.item_meanings || [];
+          const itemReadings = item.item_readings || [];
 
-          const primaryMeaning = itemMeanings.find(m => m.primary_meaning)?.meaning || item.slug || 'vocabulary';
-          const primaryReading = itemReadings.find(r => r.primary_reading)?.reading || '';
+          const primaryMeaningObj = itemMeanings.find((m: any) => m.primary_meaning);
+          const primaryReadingObj = itemReadings.find((r: any) => r.primary_reading);
+
+          const primaryMeaning = primaryMeaningObj ? primaryMeaningObj.meaning : (item.slug || 'vocabulary');
+          const primaryReading = primaryReadingObj ? primaryReadingObj.reading : '';
 
           return {
             id: item.id,
@@ -124,10 +122,8 @@ export default function VocabularyPage() {
             next_review: progress ? progress.next_review : null,
             meanings: itemMeanings,
             readings: itemReadings,
-            sentences: itemSentences,
             primary_meaning: primaryMeaning,
-            primary_reading: primaryReading,
-            kanjis: foundKanjis
+            primary_reading: primaryReading
           };
         });
 
@@ -141,6 +137,47 @@ export default function VocabularyPage() {
 
     loadData();
   }, [router]);
+
+  // On-demand detail modal fetch for sentences and prerequisite kanjis
+  const handleSelectItem = async (item: VocabItem) => {
+    setSelectedItem(item);
+
+    if (item.sentences === undefined || item.kanjis === undefined) {
+      setDetailLoading(true);
+      try {
+        const [sentencesRes, prereqsRes] = await Promise.all([
+          supabase.from('item_context_sentences').select('*').eq('item_id', item.id),
+          supabase
+            .from('item_prerequisites')
+            .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+            .eq('item_id', item.id)
+        ]);
+
+        const foundKanjis = (prereqsRes.data || [])
+          .map((row: any) => row.items)
+          .filter((reqItem: any) => reqItem && reqItem.type === 'kanji')
+          .map((reqItem: any) => ({
+            id: reqItem.id,
+            character: reqItem.character,
+            slug: reqItem.slug || 'kanji',
+            level: reqItem.level
+          }));
+
+        const updatedItem = {
+          ...item,
+          sentences: sentencesRes.data || [],
+          kanjis: foundKanjis
+        };
+
+        setSelectedItem(updatedItem);
+        setVocabs(prev => prev.map(v => v.id === item.id ? updatedItem : v));
+      } catch (err) {
+        console.error('Error loading detail sentences/kanjis:', err);
+      } finally {
+        setDetailLoading(false);
+      }
+    }
+  };
 
   const getSrsLabel = (stage: number) => {
     if (stage === 0) return 'Terkunci';
@@ -173,7 +210,8 @@ export default function VocabularyPage() {
       return (
         item.character.toLowerCase().includes(q) ||
         item.primary_meaning.toLowerCase().includes(q) ||
-        item.primary_reading.toLowerCase().includes(q)
+        item.primary_reading.toLowerCase().includes(q) ||
+        item.slug.toLowerCase().includes(q)
       );
     }
     return true;
@@ -201,16 +239,16 @@ export default function VocabularyPage() {
         {/* Banner Title */}
         <section className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-6 sm:p-8 rounded-3xl shadow-lg relative overflow-hidden">
           <div className="absolute right-0 bottom-0 translate-x-8 translate-y-8 opacity-10">
-            <FileText className="w-56 h-56" />
+            <BookOpen className="w-56 h-56" />
           </div>
           <div className="relative z-10 space-y-1">
             <div className="flex items-center space-x-1.5 text-purple-200">
               <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />
               <span className="text-xs font-bold uppercase tracking-widest">KaniGani Pustaka</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kamus Kosakata (Vocabulary)</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Kamus Kosakata</h2>
             <p className="text-xs sm:text-sm text-purple-100 max-w-2xl leading-relaxed">
-              Kosakata menggabungkan huruf Kanji dan Kana untuk membentuk kata bahasa Jepang yang siap digunakan dalam percakapan sehari-hari. Pelajari arti kontekstualnya beserta contoh kalimat!
+              Pelajari kosakata bahasa Jepang (tango) yang disusun dari gabungan huruf Kanji yang telah Anda kuasai. Kosakata akan menguji pemahaman makna serta bacaan kontekstual dalam kalimat.
             </p>
           </div>
         </section>
@@ -221,7 +259,7 @@ export default function VocabularyPage() {
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari kosakata berdasarkan kata, arti, atau cara baca..."
+              placeholder="Cari kosakata berdasarkan kanji, arti, atau bacaan..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-vocab focus:border-transparent transition-all"
@@ -251,7 +289,7 @@ export default function VocabularyPage() {
           <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
             Legenda Status Belajar
           </span>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xxs font-bold text-slate-555 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xxs font-bold text-slate-550 dark:text-slate-400">
             {/* Locked */}
             <div className="flex items-center space-x-2">
               <div className="w-6 h-6 rounded-md border border-dashed border-vocab/30 bg-hatched-vocab flex items-center justify-center font-japanese font-black text-xxs text-vocab/60">
@@ -316,38 +354,38 @@ export default function VocabularyPage() {
                       if (isLocked) {
                         cardStyles = "bg-hatched-vocab border-dashed border-vocab/30 dark:border-vocab/20 hover:border-vocab/45";
                         charBorderStyles = "border-solid border-vocab/30 text-vocab/55";
-                        primaryReadingStyles = "text-slate-455 dark:text-slate-500 font-bold block text-[10px]";
-                        primaryMeaningStyles = "text-slate-500 dark:text-slate-400 font-bold block text-xs capitalize";
+                        primaryReadingStyles = "text-xxs font-semibold text-slate-400 dark:text-slate-500 block truncate max-w-full";
+                        primaryMeaningStyles = "text-xxs font-bold text-slate-500 dark:text-slate-400 capitalize block truncate max-w-full";
                       } else if (isInLessons) {
                         cardStyles = "bg-vocab/5 border-solid border-vocab/20 dark:bg-vocab/10 hover:border-vocab/40 hover:shadow-vocab/5";
                         charBorderStyles = "border-solid border-vocab text-vocab";
-                        primaryReadingStyles = "text-vocab/70 dark:text-vocab/80 font-bold block text-[10px]";
-                        primaryMeaningStyles = "text-slate-755 dark:text-slate-200 font-black block text-xs capitalize";
+                        primaryReadingStyles = "text-xxs font-bold text-slate-500 dark:text-slate-400 block truncate max-w-full";
+                        primaryMeaningStyles = "text-xxs font-black text-slate-750 dark:text-slate-200 capitalize block truncate max-w-full";
                       } else if (isInReviews) {
                         cardStyles = "bg-vocab border-solid border-vocab/80 text-white shadow-3xs hover:shadow-2xs hover:bg-vocab-hover";
                         charBorderStyles = "border-solid border-white/60 text-white";
-                        primaryReadingStyles = "text-white/80 font-bold block text-[10px]";
-                        primaryMeaningStyles = "text-white font-black block text-xs capitalize";
+                        primaryReadingStyles = "text-xxs font-bold text-white/80 block truncate max-w-full";
+                        primaryMeaningStyles = "text-xxs font-black text-white capitalize block truncate max-w-full";
                       } else { // Burned
                         cardStyles = "bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs";
                         charBorderStyles = "border-solid border-white/60 text-white";
-                        primaryReadingStyles = "text-white/80 font-bold block text-[10px]";
-                        primaryMeaningStyles = "text-white font-black block text-xs capitalize";
+                        primaryReadingStyles = "text-xxs font-bold text-white/80 block truncate max-w-full";
+                        primaryMeaningStyles = "text-xxs font-black text-white capitalize block truncate max-w-full";
                       }
 
                       return (
                         <div
                           key={item.id}
-                          onClick={() => setSelectedItem(item)}
-                          className={`pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group h-28 select-none whitespace-nowrap ${cardStyles}`}
+                          onClick={() => handleSelectItem(item)}
+                          className={`pt-3 pb-2 px-3 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group h-28 w-28 select-none ${cardStyles}`}
                         >
                           {/* Character with Solid Border */}
-                          <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                          <div className={`px-2 py-0.5 border rounded-xl font-japanese font-black text-xl mb-0.5 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
                             {item.character}
                           </div>
 
                           {/* Readings & Meanings stack */}
-                          <div className="flex flex-col items-center leading-none mt-1 space-y-0.5">
+                          <div className="flex flex-col items-center leading-none mt-0.5 space-y-0.5 w-full">
                             <span className={primaryReadingStyles}>
                               {isLocked ? "Locked" : item.primary_reading}
                             </span>
@@ -431,7 +469,7 @@ export default function VocabularyPage() {
               {selectedItem.meaning_mnemonic && (
                 <div className="p-4 bg-vocab/5 dark:bg-vocab/10 border border-vocab/10 dark:border-vocab/30 rounded-2xl">
                   <h3 className="text-xxs font-bold text-vocab uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Arti)</h3>
-                  <p className="text-slate-750 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedItem.meaning_mnemonic}</p>
+                  <p className="text-slate-755 dark:text-slate-300 font-medium text-xs leading-relaxed"><FormattedText text={selectedItem.meaning_mnemonic} /></p>
                 </div>
               )}
 
@@ -439,12 +477,20 @@ export default function VocabularyPage() {
               {selectedItem.reading_mnemonic && (
                 <div className="p-4 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-500/10 dark:border-indigo-900/30 rounded-2xl">
                   <h3 className="text-xxs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block mb-1">Mnemonic Jembatan Keledai (Cara Baca)</h3>
-                  <p className="text-slate-750 dark:text-slate-300 font-medium text-xs leading-relaxed">{selectedItem.reading_mnemonic}</p>
+                  <p className="text-slate-755 dark:text-slate-300 font-medium text-xs leading-relaxed"><FormattedText text={selectedItem.reading_mnemonic} /></p>
+                </div>
+              )}
+
+              {/* Detail Loading Indicator for sentences/kanjis */}
+              {detailLoading && (
+                <div className="flex items-center justify-center py-4 space-x-2 text-slate-400 text-xs font-semibold">
+                  <Loader2 className="w-4 h-4 animate-spin text-vocab" />
+                  <span>Memuat rincian kalimat kontekstual & kanji pembentuk...</span>
                 </div>
               )}
 
               {/* Kanji Components (Kanji Pembentuk) */}
-              {selectedItem.kanjis && selectedItem.kanjis.length > 0 && (
+              {!detailLoading && selectedItem.kanjis && selectedItem.kanjis.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
                   <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
                     <Layers className="w-3.5 h-3.5 text-pink-500" />
@@ -480,7 +526,7 @@ export default function VocabularyPage() {
               )}
 
               {/* Context sentences */}
-              {selectedItem.sentences && selectedItem.sentences.length > 0 && (
+              {!detailLoading && selectedItem.sentences && selectedItem.sentences.length > 0 && (
                 <div className="space-y-3">
                   <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Contoh Kalimat Kontekstual</h3>
                   <div className="space-y-4">
@@ -498,7 +544,7 @@ export default function VocabularyPage() {
               {selectedItem.description && (
                 <div className="space-y-1">
                   <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Deskripsi Tambahan</h3>
-                  <p className="text-slate-600 dark:text-slate-350 text-xs leading-relaxed">{selectedItem.description}</p>
+                  <p className="text-slate-600 dark:text-slate-350 text-xs leading-relaxed"><FormattedText text={selectedItem.description} /></p>
                 </div>
               )}
             </div>
@@ -507,7 +553,7 @@ export default function VocabularyPage() {
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-end shrink-0">
               <button
                 onClick={() => setSelectedItem(null)}
-                className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
+                className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Tutup Detail
               </button>
