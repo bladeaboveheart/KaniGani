@@ -76,43 +76,69 @@ export default function KanjiPage() {
           return;
         }
 
-        // 1. Fetch all kanji items
-        const { data: itemsData, error: itemsErr } = await supabase
-          .from('items')
-          .select('*')
-          .eq('type', 'kanji')
-          .order('level', { ascending: true })
-          .order('lesson_position', { ascending: true });
-
-        if (itemsErr) throw itemsErr;
-
-        const itemIds = (itemsData || []).map(i => i.id);
-
-        // 2. Fetch all readings & meanings for these Kanjis
-        const [readingsRes, meaningsRes, progRes] = await Promise.all([
-          supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('user_progress').select('item_id, srs_stage, unlocked_at, next_review').eq('user_id', user.id)
+        // 1. Fetch all kanji items in chunks using embedded joins (avoids large .in() limits)
+        const [chunk1Res, chunk2Res, chunk3Res, progRes] = await Promise.all([
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(item_id, meaning, primary_meaning),
+              item_readings(item_id, reading, primary_reading)
+            `)
+            .eq('type', 'kanji')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(0, 999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(item_id, meaning, primary_meaning),
+              item_readings(item_id, reading, primary_reading)
+            `)
+            .eq('type', 'kanji')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(1000, 1999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(item_id, meaning, primary_meaning),
+              item_readings(item_id, reading, primary_reading)
+            `)
+            .eq('type', 'kanji')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(2000, 2999),
+          supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, unlocked_at, next_review')
+            .eq('user_id', user.id)
         ]);
 
-        if (readingsRes.error) throw readingsRes.error;
-        if (meaningsRes.error) throw meaningsRes.error;
+        if (chunk1Res.error) throw chunk1Res.error;
+        if (chunk2Res.error) throw chunk2Res.error;
+        if (chunk3Res.error) throw chunk3Res.error;
         if (progRes.error) throw progRes.error;
 
-        // Map progresses for easy search
+        const rawItems = [
+          ...(chunk1Res.data || []),
+          ...(chunk2Res.data || []),
+          ...(chunk3Res.data || [])
+        ];
+
+        // Map progresses for easy lookup
         const progressMap = new Map(progRes.data?.map(p => [p.item_id, p]) || []);
 
-        const readings = readingsRes.data || [];
-        const meanings = meaningsRes.data || [];
-
-        // Combine items with progress and details
-        const combined: KanjiItem[] = (itemsData || []).map(item => {
+        // Combine items with progress and embedded details
+        const combined: KanjiItem[] = rawItems.map((item: any) => {
           const progress = progressMap.get(item.id);
-          const itemMeanings = meanings.filter(m => m.item_id === item.id);
-          const itemReadings = readings.filter(r => r.item_id === item.id);
+          const itemMeanings = item.item_meanings || [];
+          const itemReadings = item.item_readings || [];
 
-          const primaryMeaning = itemMeanings.find(m => m.primary_meaning)?.meaning || item.slug || 'kanji';
-          const primaryReading = itemReadings.find(r => r.primary_reading)?.reading || '';
+          const primaryMeaning = itemMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'kanji';
+          const primaryReading = itemReadings.find((r: any) => r.primary_reading)?.reading || '';
 
           return {
             id: item.id,

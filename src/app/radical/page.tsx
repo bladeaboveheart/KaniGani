@@ -55,15 +55,29 @@ export default function RadicalPage() {
           return;
         }
 
-        // 1. Fetch all radical items
-        const { data: itemsData, error: itemsErr } = await supabase
-          .from('items')
-          .select('*')
-          .eq('type', 'radical')
-          .order('level', { ascending: true })
-          .order('lesson_position', { ascending: true });
+        // 1. Fetch all radical items in chunks to avoid Supabase row limits
+        const [radChunk1, radChunk2] = await Promise.all([
+          supabase
+            .from('items')
+            .select('*')
+            .eq('type', 'radical')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(0, 999),
+          supabase
+            .from('items')
+            .select('*')
+            .eq('type', 'radical')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(1000, 1999)
+        ]);
 
-        if (itemsErr) throw itemsErr;
+        if (radChunk1.error) throw radChunk1.error;
+        if (radChunk2.error) throw radChunk2.error;
+
+        const itemsData = [...(radChunk1.data || []), ...(radChunk2.data || [])];
+
 
         // 2. Fetch user progress
         const { data: progData, error: progErr } = await supabase

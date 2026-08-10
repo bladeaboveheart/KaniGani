@@ -61,8 +61,8 @@ export default function VocabularyPage() {
           return;
         }
 
-        // Fetch vocabulary items & user progress in parallel using relational queries (bypassing Supabase 1000 row cap)
-        const [chunk1Res, chunk2Res, progRes] = await Promise.all([
+        // Fetch vocabulary items & user progress in parallel (6 chunks to handle 6000 items across level 1-60)
+        const [chunk1Res, chunk2Res, chunk3Res, chunk4Res, chunk5Res, chunk6Res, progRes] = await Promise.all([
           supabase
             .from('items')
             .select(`
@@ -86,6 +86,50 @@ export default function VocabularyPage() {
             .order('lesson_position', { ascending: true })
             .range(1000, 1999),
           supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(2000, 2999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(3000, 3999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(4000, 4999),
+          supabase
+            .from('items')
+            .select(`
+              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            `)
+            .eq('type', 'vocabulary')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .range(5000, 5999),
+          supabase
             .from('user_progress')
             .select('item_id, srs_stage, unlocked_at, next_review')
             .eq('user_id', user.id)
@@ -93,9 +137,20 @@ export default function VocabularyPage() {
 
         if (chunk1Res.error) throw chunk1Res.error;
         if (chunk2Res.error) throw chunk2Res.error;
+        if (chunk3Res.error) throw chunk3Res.error;
+        if (chunk4Res.error) throw chunk4Res.error;
+        if (chunk5Res.error) throw chunk5Res.error;
+        if (chunk6Res.error) throw chunk6Res.error;
         if (progRes.error) throw progRes.error;
 
-        const rawItems = [...(chunk1Res.data || []), ...(chunk2Res.data || [])];
+        const rawItems = [
+          ...(chunk1Res.data || []),
+          ...(chunk2Res.data || []),
+          ...(chunk3Res.data || []),
+          ...(chunk4Res.data || []),
+          ...(chunk5Res.data || []),
+          ...(chunk6Res.data || [])
+        ];
         const progressMap = new Map(progRes.data?.map(p => [p.item_id, p]) || []);
 
         const combined: VocabItem[] = rawItems.map((item: any) => {
