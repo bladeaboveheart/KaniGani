@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, Filter, Database, Edit2, Trash2 } from 'lucide-react';
+import { CharacterDisplay } from '@/components/CharacterDisplay';
 
 interface KamusManagerProps {
   items: any[];
@@ -14,9 +15,8 @@ interface KamusManagerProps {
   setSearchQuery: (q: string) => void;
   filterType: 'all' | 'radical' | 'kanji' | 'vocabulary';
   setFilterType: (t: 'all' | 'radical' | 'kanji' | 'vocabulary') => void;
-  filterRank: string;
-  setFilterRank: (r: string) => void;
-  ranks: any[];
+  filterLevel: string;
+  setFilterLevel: (r: string) => void;
   loadDatabase: () => void;
   openEditModal: (item: any) => void;
   handleDeleteItem: (id: string) => void;
@@ -31,23 +31,27 @@ export default function KamusManager({
   setSearchQuery,
   filterType,
   setFilterType,
-  filterRank,
-  setFilterRank,
-  ranks,
-  loadDatabase,
+  filterLevel,
+  setFilterLevel,
   openEditModal,
   handleDeleteItem,
   deleteConfirmId,
   setDeleteConfirmId
 }: KamusManagerProps) {
-  // Filtering & Search
   const filteredItems = items.filter(item => {
     if (filterType !== 'all' && item.type !== filterType) return false;
-    if (filterRank !== 'all' && item.rank_id !== filterRank) return false;
+    if (filterLevel !== 'all') {
+      if (filterLevel.includes('-')) {
+        const [min, max] = filterLevel.split('-').map(Number);
+        if (item.level < min || item.level > max) return false;
+      } else if (item.level !== Number(filterLevel)) {
+        return false;
+      }
+    }
 
     if (searchQuery.trim() !== '') {
       const query = searchQuery.toLowerCase().trim();
-      const matchChar = item.character.toLowerCase().includes(query);
+      const matchChar = (item.character || '').toLowerCase().includes(query);
       const matchSlug = (item.slug || '').toLowerCase().includes(query);
       const matchMeanings = item.item_meanings?.some((m: any) => m.meaning.toLowerCase().includes(query));
 
@@ -56,6 +60,8 @@ export default function KamusManager({
 
     return true;
   });
+
+  const levelsPresent = Array.from(new Set(filteredItems.map(i => i.level || 1))).sort((a, b) => a - b);
 
   return (
     <div className="space-y-6">
@@ -92,14 +98,14 @@ export default function KamusManager({
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto select-none">
           <div className="flex items-center space-x-1.5 px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl">
             <Filter className="w-4 h-4 text-slate-400" />
-            <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Filter</span>
+            <span className="text-xxs font-bold text-slate-400 uppercase tracking-wider">Filter Tipe</span>
           </div>
 
           {/* Type Filter */}
           <select
             value={filterType}
             onChange={(e: any) => setFilterType(e.target.value)}
-            className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
           >
             <option value="all">Semua Tipe</option>
             <option value="radical">Radikal</option>
@@ -109,13 +115,19 @@ export default function KamusManager({
 
           {/* Level Filter */}
           <select
-            value={filterRank}
-            onChange={(e) => setFilterRank(e.target.value)}
-            className="py-2.5 px-4 bg-slate-55 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            value={filterLevel}
+            onChange={(e) => setFilterLevel(e.target.value)}
+            className="py-2.5 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
           >
-            <option value="all">Semua Pangkat</option>
-            {ranks.map(r => (
-              <option key={r.id} value={r.id}>{r.name}</option>
+            <option value="all">Semua Level (1-60)</option>
+            <option value="1-10">Level 1-10 (Pleasant)</option>
+            <option value="11-20">Level 11-20 (Painful)</option>
+            <option value="21-30">Level 21-30 (Death)</option>
+            <option value="31-40">Level 31-40 (Hell)</option>
+            <option value="41-50">Level 41-50 (Paradise)</option>
+            <option value="51-60">Level 51-60 (Reality)</option>
+            {Array.from({ length: 60 }, (_, i) => i + 1).map(lvl => (
+              <option key={lvl} value={lvl}>Level {lvl}</option>
             ))}
           </select>
         </div>
@@ -124,26 +136,21 @@ export default function KamusManager({
       {/* DYNAMIC DATABASE ITEMS GRID */}
       {filteredItems.length > 0 ? (
         <div className="space-y-8 animate-fade-in">
-          {filterRank === 'all' && filterType === 'all' && searchQuery.trim() === '' && items.length >= 200 && (
-            <div className="bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 p-4 rounded-2xl text-xs font-semibold select-none flex items-center justify-between">
-              <span>Menampilkan 200 item pertama untuk mengoptimalkan kinerja. Gunakan filter pangkat atau pencarian untuk mencari item tertentu.</span>
-            </div>
-          )}
-          {ranks.map((rank) => {
-            const rankItems = filteredItems.filter(item => item.rank_id === rank.id);
-            if (rankItems.length === 0) return null;
+          {levelsPresent.map((lvl) => {
+            const levelItems = filteredItems.filter(item => (item.level || 1) === lvl);
+            if (levelItems.length === 0) return null;
 
             return (
-              <div key={rank.id} className="space-y-4">
+              <div key={lvl} className="space-y-4">
                 {/* Level Header Panel */}
                 <div className="bg-white dark:bg-slate-900 px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs flex items-baseline space-x-2 shrink-0 select-none">
-                  <span className="text-base font-extrabold text-slate-800 dark:text-slate-100">{rank.name}</span>
-                  <span className="text-xxs font-bold text-slate-400 dark:text-slate-555">({rankItems.length} item)</span>
+                  <span className="text-base font-extrabold text-slate-800 dark:text-slate-100">Level {lvl}</span>
+                  <span className="text-xxs font-bold text-slate-400 dark:text-slate-555">({levelItems.length} item)</span>
                 </div>
 
                 {/* Grid of level items */}
                 <div className="flex flex-wrap gap-3 justify-start">
-                  {rankItems.map((item) => {
+                  {levelItems.map((item) => {
                     const meanings = item.item_meanings || [];
                     const readings = item.item_readings || [];
                     const primaryMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || 'item';
@@ -173,11 +180,11 @@ export default function KamusManager({
                     return (
                       <div
                         key={item.id}
-                        className={`group relative pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center transition-all duration-300 hover:-translate-y-0.5 h-28 select-none whitespace-nowrap overflow-hidden ${cardStyles}`}
+                        className={`group relative pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center transition-all duration-300 hover:-translate-y-0.5 h-28 select-none whitespace-nowrap overflow-hidden min-w-[5.5rem] ${cardStyles}`}
                       >
                         {/* Character with Solid Border */}
-                        <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
-                          {item.character}
+                        <div className={`px-3 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
+                          <CharacterDisplay item={item} />
                         </div>
 
                         {/* Readings & Meanings stack */}
@@ -244,7 +251,7 @@ export default function KamusManager({
           <Database className="w-12 h-12 mx-auto opacity-30 animate-pulse" />
           <h3 className="font-bold text-sm">Tidak Ada Item Ditemukan</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Coba sesuaikan kata kunci pencarian Anda atau ubah filter penyaringan radikal/kanji/kosakata.
+            Coba sesuaikan kata kunci pencarian Anda atau ubah filter level radikal/kanji/kosakata.
           </p>
         </section>
       )}

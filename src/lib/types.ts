@@ -10,6 +10,7 @@ export interface Item {
   meaning_mnemonic?: string;
   reading_mnemonic?: string;
   description?: string;
+  svg_filename?: string;
   srs_stage?: number;
   rank_id?: string | null;
   

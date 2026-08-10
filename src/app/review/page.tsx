@@ -18,6 +18,7 @@ import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import ProgressionModal from '@/components/ProgressionModal';
+import { CharacterDisplay } from '@/components/CharacterDisplay';
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -441,7 +442,7 @@ export default function ReviewPage() {
                   devMode={devMode}
                   setDevMode={setDevMode}
                 />
-                <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6">{activeCard.character}</h1>
+                <CharacterDisplay item={activeCard} className="text-7xl font-black tracking-tight select-text text-center mt-6 block mx-auto" size={80} />
               </div>
 
               {/* Prompt Label */}

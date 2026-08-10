@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Award, AlertCircle, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
 import { DashboardStats } from '@/lib/types';
+import { CharacterDisplay } from '@/components/CharacterDisplay';
 
 interface LevelProgressProps {
   stats: DashboardStats | null;
@@ -25,12 +26,11 @@ export default function LevelProgress({
     ? Math.round((stats.kanjiPassedInLevel / stats.kanjiTotalInLevel) * 100)
     : 0;
 
-  const targetKanji = Math.ceil(stats.kanjiTotalInLevel * 0.85);
+  const targetKanji = Math.ceil(stats.kanjiTotalInLevel * 0.90);
   const neededKanji = Math.max(0, targetKanji - stats.kanjiPassedInLevel);
 
-  const isStringLevel = typeof stats.level === 'string';
-  const displayLevelName = stats.level;
-  const nextLevelText = isStringLevel ? 'Tingkat Selanjutnya' : `Level ${Number(stats.level) + 1}`;
+  const displayLevelName = `Level ${stats.level}`;
+  const nextLevelText = `Level ${Number(stats.level) + 1}`;
 
   return (
     <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
@@ -39,17 +39,15 @@ export default function LevelProgress({
           <div className="flex items-center space-x-2">
             <Award className="w-5 h-5 text-indigo-500" />
             <h3 className="font-extrabold text-lg tracking-tight">
-              {isStringLevel ? `Status Pangkat: ${displayLevelName}` : `Kapan Saya Naik Level ${Number(stats.level) + 1}?`}
+              {`Kapan Saya Naik ke Level ${Number(stats.level) + 1}?`}
             </h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-            {isStringLevel 
-              ? 'Selesaikan minimal 85% kanji di pangkat ini (mencapai status Kepiting Guru) untuk otomatis naik pangkat. Di pangkat akhir, selesaikan 85% kanji di seluruh tingkatan untuk naik level JLPT.'
-              : `KaniGani mensyaratkan kelulusan minimal 85% Kanji Level ${stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.`}
+            {`KaniGani WaniKani System: Selesaikan minimal 90% Kanji Level ${stats.level} ke status Kepiting Guru (Tahap 5) untuk naik ke Level ${Number(stats.level) + 1}.`}
           </p>
         </div>
         <div className="text-left sm:text-right shrink-0">
-          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Kanji Lulus Pangkat</span>
+          <span className="text-xs font-semibold text-slate-400 dark:text-slate-500 block">Kanji Lulus Level {stats.level}</span>
           <span className="text-xl font-black text-indigo-500">
             {stats.kanjiPassedInLevel} / {stats.kanjiTotalInLevel}
           </span>
@@ -140,9 +138,7 @@ export default function LevelProgress({
                       className="group relative flex flex-col items-center justify-center transition-all duration-200 hover:scale-105 select-none cursor-help"
                     >
                       <div className={`w-full flex flex-col items-center justify-center py-2 px-1 rounded-lg ${cardClass}`}>
-                        <span className="text-xl font-black font-japanese tracking-normal leading-none mb-1">
-                          {kanji.character}
-                        </span>
+                        <CharacterDisplay item={kanji} className="text-xl font-black font-japanese tracking-normal leading-none mb-1" />
                         <span className="text-[9px] uppercase font-bold tracking-wider truncate max-w-full text-center opacity-85 px-0.5">
                           {kanji.slug}
                         </span>

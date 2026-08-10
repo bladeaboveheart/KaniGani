@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Plus, Trash2, Languages, FileText, Layers, ChevronRight, Loader2, Save } from 'lucide-react';
+import { CharacterDisplay } from '@/components/CharacterDisplay';
 import * as wanakana from 'wanakana';
 import { supabase } from '@/lib/supabase';
 
@@ -34,6 +35,7 @@ export interface ItemInput {
   character: string;
   slug: string;
   level: number;
+  svg_filename?: string;
   rank_id?: string | null;
   lesson_position: number;
   meaning_mnemonic: string;
@@ -86,7 +88,7 @@ export default function ItemEditorModal({
           if (targetType) {
             const { data, error } = await supabase
               .from('items')
-              .select('id, character, slug, rank_id, level')
+              .select('id, character, slug, svg_filename, level')
               .eq('type', targetType);
             if (error) throw error;
             setPrereqCandidates(data || []);
@@ -399,29 +401,15 @@ export default function ItemEditorModal({
               </div>
  
               {/* Level selection */}
-              <div>
-                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tingkatan Level (1 - 10)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="10"
+              <div className="sm:col-span-2">
+                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Level WaniKani (1 - 60)</label>
+                <select
                   value={formItem.level}
                   onChange={(e) => setFormItem(prev => ({ ...prev, level: Number(e.target.value) }))}
-                  className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Rank selection */}
-              <div>
-                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Pangkat (Ranks)</label>
-                <select
-                  value={formItem.rank_id || ''}
-                  onChange={(e) => setFormItem(prev => ({ ...prev, rank_id: e.target.value || null }))}
-                  className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 dark:text-slate-100"
                 >
-                  <option value="">Pilih Pangkat</option>
-                  {ranks.map(r => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
+                  {Array.from({ length: 60 }, (_, i) => i + 1).map(lvl => (
+                    <option key={lvl} value={lvl}>Level {lvl}</option>
                   ))}
                 </select>
               </div>
@@ -750,13 +738,13 @@ export default function ItemEditorModal({
                           }`}
                       >
                         <div className="flex flex-col">
-                          <span className="text-xl font-black">{item.character}</span>
+                          <span className="text-xl font-black"><CharacterDisplay item={item} /></span>
                           <span className="text-4xs uppercase tracking-wider truncate max-w-[80px] font-semibold mt-0.5 text-slate-500 dark:text-slate-400">
                             {item.slug || 'item'}
                           </span>
                         </div>
                         <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-505">
-                          {ranks.find(r => r.id === item.rank_id)?.name || `Lvl ${item.level}`}
+                          {`Lvl ${item.level}`}
                         </span>
                       </div>
                     );

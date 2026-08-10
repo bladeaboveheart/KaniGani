@@ -1,6 +1,7 @@
 'use client';
 
 import { X, Info, ChevronRight } from 'lucide-react';
+import { CharacterDisplay } from '@/components/CharacterDisplay';
 
 interface LessonPickerModalProps {
   availableLessons: any[];
@@ -176,7 +177,7 @@ export default function LessonPickerModal({
                                     : 'bg-[#00a0f0]/15 text-[#00a0f0] border-2 border-dashed border-[#00a0f0]/30 hover:bg-[#00a0f0]/30 hover:text-[#00a0f0] cursor-pointer font-bold'
                                     }`}
                                 >
-                                  <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
+                                  <CharacterDisplay item={item} className="text-xl font-black font-japanese leading-none mb-1" />
                                   <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
                                 </button>
                               );
@@ -209,7 +210,7 @@ export default function LessonPickerModal({
                                     : 'bg-[#f03e64]/15 text-[#f03e64] border-2 border-dashed border-[#f03e64]/30 hover:bg-[#f03e64]/30 hover:text-[#f03e64] cursor-pointer font-bold'
                                     }`}
                                 >
-                                  <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
+                                  <CharacterDisplay item={item} className="text-xl font-black font-japanese leading-none mb-1" />
                                   <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
                                 </button>
                               );
@@ -242,7 +243,7 @@ export default function LessonPickerModal({
                                     : 'bg-[#a000f0]/15 text-[#a000f0] border-2 border-dashed border-[#a000f0]/30 hover:bg-[#a000f0]/30 hover:text-[#a000f0] cursor-pointer font-bold'
                                     }`}
                                 >
-                                  <span className="text-xl font-black font-japanese leading-none mb-1">{item.character}</span>
+                                  <CharacterDisplay item={item} className="text-xl font-black font-japanese leading-none mb-1" />
                                   <span className="text-[8px] font-extrabold uppercase tracking-wider opacity-85 max-w-[4rem] truncate">{item.slug}</span>
                                 </button>
                               );
