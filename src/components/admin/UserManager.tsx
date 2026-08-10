@@ -89,7 +89,7 @@ export default function UserManager({
                     className="py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xxs font-extrabold rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
                   >
                     <option value="dynamic">Otomatis (Dinamis)</option>
-                    {Array.from({ length: 10 }, (_, idx) => (
+                    {Array.from({ length: 60 }, (_, idx) => (
                       <option key={idx + 1} value={idx + 1}>Set Level {idx + 1}</option>
                     ))}
                   </select>

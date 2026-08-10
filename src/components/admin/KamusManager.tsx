@@ -55,7 +55,7 @@ export default function KamusManager({
     return true;
   });
 
-  const levelList = Array.from({ length: 10 }, (_, i) => String(i + 1));
+  const levelList = Array.from({ length: 60 }, (_, i) => String(i + 1));
 
   return (
     <div className="space-y-6">

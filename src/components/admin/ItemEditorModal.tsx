@@ -360,11 +360,11 @@ export default function ItemEditorModal({
  
               {/* Level selection */}
               <div>
-                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tingkatan Level (1 - 10)</label>
+                <label className="text-xxs font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Tingkatan Level (1 - 60)</label>
                 <input
                   type="number"
                   min="1"
-                  max="10"
+                  max="60"
                   value={formItem.level}
                   onChange={(e) => setFormItem(prev => ({ ...prev, level: Number(e.target.value) }))}
                   className="w-full py-3 px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"

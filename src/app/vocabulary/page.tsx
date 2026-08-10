@@ -217,7 +217,7 @@ export default function VocabularyPage() {
     return true;
   });
 
-  const levelList = Array.from({ length: 10 }, (_, i) => String(i + 1));
+  const levelList = Array.from({ length: 60 }, (_, i) => String(i + 1));
 
   if (loading) {
     return (
