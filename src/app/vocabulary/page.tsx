@@ -61,102 +61,96 @@ export default function VocabularyPage() {
           return;
         }
 
-        // Fetch vocabulary items & user progress in parallel (6 chunks to handle 6000 items across level 1-60)
-        const [chunk1Res, chunk2Res, chunk3Res, chunk4Res, chunk5Res, chunk6Res, progRes] = await Promise.all([
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
+        // ── Step 1: fetch vocabulary items by level range (no embedded joins) ──
+        const itemSelect = 'id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description';
+        const itemQuery = (lo: number, hi: number) =>
+          supabase.from('items').select(itemSelect)
             .eq('type', 'vocabulary')
+            .gte('level', lo).lte('level', hi)
             .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(0, 999),
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
-            .eq('type', 'vocabulary')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(1000, 1999),
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
-            .eq('type', 'vocabulary')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(2000, 2999),
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
-            .eq('type', 'vocabulary')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(3000, 3999),
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
-            .eq('type', 'vocabulary')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(4000, 4999),
-          supabase
-            .from('items')
-            .select(`
-              id, character, slug, level, lesson_position, meaning_mnemonic, reading_mnemonic, description,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            `)
-            .eq('type', 'vocabulary')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .range(5000, 5999),
-          supabase
-            .from('user_progress')
+            .order('lesson_position', { ascending: true });
+
+        // ── Step 2: fetch meanings & readings for vocab items via inner join filter ──
+        // Uses `items!inner(type)` to filter without needing a large .in(ids) list
+        const meaningQuery = (lo: number, hi: number) =>
+          supabase.from('item_meanings')
+            .select('item_id, meaning, primary_meaning, items!inner(type)')
+            .eq('items.type', 'vocabulary')
+            .range(lo, hi);
+
+        const readingQuery = (lo: number, hi: number) =>
+          supabase.from('item_readings')
+            .select('item_id, reading, primary_reading, items!inner(type)')
+            .eq('items.type', 'vocabulary')
+            .range(lo, hi);
+
+        const [
+          items1, items2, items3, items4, items5, items6,
+          means1, means2, means3,
+          reads1, reads2, reads3,
+          progRes
+        ] = await Promise.all([
+          // Items: 6 chunks × 10 levels each (covers level 1–60)
+          itemQuery(1, 10), itemQuery(11, 20), itemQuery(21, 30),
+          itemQuery(31, 40), itemQuery(41, 50), itemQuery(51, 60),
+          // Meanings: 3 chunks × 5000 rows each (covers ~15,000 meaning rows)
+          meaningQuery(0, 4999), meaningQuery(5000, 9999), meaningQuery(10000, 14999),
+          // Readings: 3 chunks × 5000 rows each
+          readingQuery(0, 4999), readingQuery(5000, 9999), readingQuery(10000, 14999),
+          // User progress
+          supabase.from('user_progress')
             .select('item_id, srs_stage, unlocked_at, next_review')
             .eq('user_id', user.id)
         ]);
 
-        if (chunk1Res.error) throw chunk1Res.error;
-        if (chunk2Res.error) throw chunk2Res.error;
-        if (chunk3Res.error) throw chunk3Res.error;
-        if (chunk4Res.error) throw chunk4Res.error;
-        if (chunk5Res.error) throw chunk5Res.error;
-        if (chunk6Res.error) throw chunk6Res.error;
-        if (progRes.error) throw progRes.error;
+        // Check for errors with descriptive messages
+        if (items1.error) throw new Error(`items L1-10: ${items1.error.message}`);
+        if (items2.error) throw new Error(`items L11-20: ${items2.error.message}`);
+        if (items3.error) throw new Error(`items L21-30: ${items3.error.message}`);
+        if (items4.error) throw new Error(`items L31-40: ${items4.error.message}`);
+        if (items5.error) throw new Error(`items L41-50: ${items5.error.message}`);
+        if (items6.error) throw new Error(`items L51-60: ${items6.error.message}`);
+        if (means1.error) throw new Error(`meanings 0-4999: ${means1.error.message}`);
+        if (means2.error) throw new Error(`meanings 5000-9999: ${means2.error.message}`);
+        if (means3.error) throw new Error(`meanings 10000-14999: ${means3.error.message}`);
+        if (reads1.error) throw new Error(`readings 0-4999: ${reads1.error.message}`);
+        if (reads2.error) throw new Error(`readings 5000-9999: ${reads2.error.message}`);
+        if (reads3.error) throw new Error(`readings 10000-14999: ${reads3.error.message}`);
+        if (progRes.error) throw new Error(`progress: ${progRes.error.message}`);
 
         const rawItems = [
-          ...(chunk1Res.data || []),
-          ...(chunk2Res.data || []),
-          ...(chunk3Res.data || []),
-          ...(chunk4Res.data || []),
-          ...(chunk5Res.data || []),
-          ...(chunk6Res.data || [])
+          ...(items1.data || []), ...(items2.data || []), ...(items3.data || []),
+          ...(items4.data || []), ...(items5.data || []), ...(items6.data || [])
         ];
+
+        const allMeanings = [
+          ...(means1.data || []), ...(means2.data || []), ...(means3.data || [])
+        ];
+        const allReadings = [
+          ...(reads1.data || []), ...(reads2.data || []), ...(reads3.data || [])
+        ];
+
+        // Build lookup Maps keyed by item_id for O(1) access
+        const meaningsMap = new Map<string, any[]>();
+        allMeanings.forEach((m: any) => {
+          const arr = meaningsMap.get(m.item_id) ?? [];
+          arr.push({ meaning: m.meaning, primary_meaning: m.primary_meaning });
+          meaningsMap.set(m.item_id, arr);
+        });
+
+        const readingsMap = new Map<string, any[]>();
+        allReadings.forEach((r: any) => {
+          const arr = readingsMap.get(r.item_id) ?? [];
+          arr.push({ reading: r.reading, primary_reading: r.primary_reading });
+          readingsMap.set(r.item_id, arr);
+        });
+
         const progressMap = new Map(progRes.data?.map(p => [p.item_id, p]) || []);
 
         const combined: VocabItem[] = rawItems.map((item: any) => {
           const progress = progressMap.get(item.id);
-          const itemMeanings = item.item_meanings || [];
-          const itemReadings = item.item_readings || [];
+          const itemMeanings = meaningsMap.get(item.id) || [];
+          const itemReadings = readingsMap.get(item.id) || [];
 
           const primaryMeaningObj = itemMeanings.find((m: any) => m.primary_meaning);
           const primaryReadingObj = itemReadings.find((r: any) => r.primary_reading);
