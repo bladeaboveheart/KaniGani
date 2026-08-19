@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
@@ -58,22 +59,10 @@ export default function SettingsPage() {
       setNewUsername(currentUsername);
 
       // 2. Fetch user progress statistics & all Kanji to calculate dynamic user level
-      const [progressRes, kanjiRes] = await Promise.all([
-        supabase
-          .from('user_progress')
-          .select('item_id, srs_stage, next_review')
-          .eq('user_id', user.id),
-        supabase
-          .from('items')
-          .select('id, level')
-          .eq('type', 'kanji')
+      const [progresses, allKanji] = await Promise.all([
+        fetchAllUserProgress(user.id, 'item_id, srs_stage, next_review'),
+        fetchAllKanjiItems('id, level')
       ]);
-
-      if (progressRes.error) throw progressRes.error;
-      if (kanjiRes.error) throw kanjiRes.error;
-
-      const progresses = progressRes.data || [];
-      const allKanji = kanjiRes.data || [];
 
       let apprentice = 0;
       let guru = 0;
@@ -84,14 +73,14 @@ export default function SettingsPage() {
 
       progresses.forEach((row: any) => {
         const stage = row.srs_stage;
-        const isStudied = stage > 1 || (stage === 1 && row.next_review);
-        if (isStudied) {
+        if (stage >= 1 && stage <= 4) apprentice++;
+        else if (stage >= 5 && stage <= 6) guru++;
+        else if (stage === 7) master++;
+        else if (stage === 8) enlightened++;
+        else if (stage === 9) burned++;
+
+        if (stage > 1 || (stage === 1 && row.next_review)) {
           totalStudied++;
-          if (stage >= 1 && stage <= 4) apprentice++;
-          else if (stage === 5 || stage === 6) guru++;
-          else if (stage === 7) master++;
-          else if (stage === 8) enlightened++;
-          else if (stage === 9) burned++;
         }
       });
 
@@ -105,7 +94,7 @@ export default function SettingsPage() {
       if (profile && profile.level !== null && profile.level !== undefined) {
         userLevel = profile.level;
       } else {
-        while (userLevel <= 10) {
+        while (userLevel <= 60) {
           const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
           if (levelKanjiItems.length === 0) break;
 

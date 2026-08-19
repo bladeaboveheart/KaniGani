@@ -7,17 +7,17 @@ import CharacterDisplay from '@/components/CharacterDisplay';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
+import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
-import {
-  Flame, Award, Inbox, Clock, Home, Zap
-} from 'lucide-react';
+import { Flame } from 'lucide-react';
 
-// Import Modular Quiz Components
+// Modular Quiz Components
 import QuizHeader from '@/components/quiz/QuizHeader';
 import QuizInput from '@/components/quiz/QuizInput';
 import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
+import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 
 export default function ReviewPage() {
   const router = useRouter();
@@ -33,13 +33,11 @@ export default function ReviewPage() {
     showFeedback,
     incorrectActive,
     wrongCounts,
-    itemProgress,
     wrapUpActive,
     isAlmostCorrect,
     closestAcceptedMeaning,
     warningMsg,
     showItemInfo,
-    sessionTotalCards,
     setUserInput,
     submitAnswer,
     proceedNext,
@@ -61,6 +59,13 @@ export default function ReviewPage() {
   const [accuracyStats, setAccuracyStats] = useState({ correct: 0, wrong: 0 });
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Keyboard shortcut handler
+  useQuizShortcuts({
+    onToggleInfo: toggleItemInfo,
+    onAdvance: () => handleProceedNext(),
+    isAnswerSubmitted,
+  });
 
   // Fetch reviews due
   useEffect(() => {
@@ -198,7 +203,7 @@ export default function ReviewPage() {
     const itemId = activeCard.itemId;
     proceedNext();
 
-    // Refocus input to ensure virtual keyboard stays open
+    // Refocus input
     setTimeout(() => {
       inputRef.current?.focus();
     }, 20);
@@ -218,7 +223,6 @@ export default function ReviewPage() {
           const token = session?.access_token;
           const wrongCount = state.wrongCounts[itemId] || 0;
 
-          // Track accuracy stats
           setAccuracyStats(prev => ({
             correct: prev.correct + (wrongCount === 0 ? 1 : 0),
             wrong: prev.wrong + (wrongCount > 0 ? 1 : 0)
@@ -252,23 +256,6 @@ export default function ReviewPage() {
       }
     }
   }, [phase, activeCard, isAnswerSubmitted, incorrectActive]);
-
-  // Hotkey 'f' to toggle detail info drawer after submit
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'f' || e.key === 'F') && isAnswerSubmitted && phase === 'quiz') {
-        const isInputActive = document.activeElement?.tagName === 'INPUT';
-        const isInputReadOnly = document.activeElement?.hasAttribute('readonly');
-        if (!isInputActive || isInputReadOnly) {
-          e.preventDefault();
-          toggleItemInfo();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isAnswerSubmitted, toggleItemInfo, phase]);
-
 
   // Finish review session
   useEffect(() => {
@@ -354,7 +341,6 @@ export default function ReviewPage() {
     );
   };
 
-  const remainingCards = queue.length;
   const remainingItemsCount = Array.from(new Set(queue.map(c => c.itemId))).length;
   const accuracyPct = accuracyStats.correct + accuracyStats.wrong > 0
     ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
@@ -364,7 +350,6 @@ export default function ReviewPage() {
     <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 transition-colors duration-300">
       <CrabBackground />
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
-
         {/* PHASE 1: QUIZ REVIEW SESSION */}
         {phase === 'quiz' && activeCard && (() => {
           const currentStage = activeCard.item.srs_stage || 1;
@@ -387,7 +372,6 @@ export default function ReviewPage() {
 
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
-
               {/* Header Colorful Character with Integrated Navbar */}
               <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
                 <QuizHeader
@@ -457,40 +441,20 @@ export default function ReviewPage() {
                   cardType={activeCard.cardType}
                 />
               )}
-
             </div>
           );
         })()}
 
         {/* PHASE 2: SUMMARY REVIEW COMPLETED */}
         {phase === 'summary' && (
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-8 text-center space-y-6 animate-fade-in my-12 select-none">
-            <Award className="w-16 h-16 mx-auto text-pink-500 animate-bounce" />
-            <h2 className="text-2xl font-black">Review Selesai! 🎉</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Hebat! Anda telah menyelesaikan semua sesi kuis review yang jatuh tempo dengan sukses.
-            </p>
-
-            <div className="bg-slate-50 dark:bg-slate-955 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-4">
-              <div className="flex flex-col justify-between items-center h-16 text-center select-none">
-                <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Total Item</span>
-                <span className="text-xl font-black text-slate-800 dark:text-slate-200">{submittedItemIds.length}</span>
-              </div>
-              <div className="flex flex-col justify-between items-center h-16 text-center select-none">
-                <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Akurasi Rata-rata</span>
-                <span className="text-xl font-black text-pink-500">{accuracyPct}%</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full py-3 bg-pink-500 text-white font-bold rounded-2xl shadow-md hover:bg-pink-600 transition-colors cursor-pointer"
-            >
-              Kembali ke Dashboard
-            </button>
-          </div>
+          <QuizSummaryView
+            type="review"
+            items={[]}
+            totalCompleted={submittedItemIds.length}
+            accuracyPct={accuracyPct}
+            onFinish={() => router.push('/dashboard')}
+          />
         )}
-
       </main>
     </div>
   );

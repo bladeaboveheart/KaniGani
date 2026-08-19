@@ -8,17 +8,19 @@ import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
+import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
 import {
   ArrowLeft, ArrowRight, BookOpen, Award, Home
 } from 'lucide-react';
 
-// Import Shared Modular Quiz Components
+// Modular Quiz Components
 import QuizHeader from '@/components/quiz/QuizHeader';
 import QuizInput from '@/components/quiz/QuizInput';
 import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
+import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -56,6 +58,13 @@ export default function LessonPage() {
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
+
+  // Keyboard shortcut hook
+  useQuizShortcuts({
+    onToggleInfo: toggleItemInfo,
+    onAdvance: () => proceedNext(),
+    isAnswerSubmitted: phase === 'quiz' && isAnswerSubmitted,
+  });
 
   // Read global dev mode setting
   useEffect(() => {
@@ -257,22 +266,6 @@ export default function LessonPage() {
     }
   }, [phase, activeCard, isAnswerSubmitted, incorrectActive]);
 
-  // Hotkey 'f' to toggle detail drawer
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.key === 'f' || e.key === 'F') && isAnswerSubmitted && phase === 'quiz') {
-        const isInputActive = document.activeElement?.tagName === 'INPUT';
-        const isInputReadOnly = document.activeElement?.hasAttribute('readonly');
-        if (!isInputActive || isInputReadOnly) {
-          e.preventDefault();
-          toggleItemInfo();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [isAnswerSubmitted, toggleItemInfo, phase]);
-
   // Keyboard controls for learn phase
   useEffect(() => {
     const handleLearnKeyDown = (e: KeyboardEvent) => {
@@ -435,12 +428,6 @@ export default function LessonPage() {
     return 'bg-vocab border-vocab/20 glow-vocab';
   };
 
-  const getItemBadgeName = (type: string) => {
-    if (type === 'radical') return 'Radikal';
-    if (type === 'kanji') return 'Kanji';
-    return 'Kosakata';
-  };
-
   const renderKaniGaniPrompt = () => {
     if (!activeCard) return null;
     const isMeaning = activeCard.cardType === 'meaning';
@@ -482,15 +469,11 @@ export default function LessonPage() {
       <CrabBackground />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
-
         {/* PHASE 1: LEARN (INTRO STUDY SLIDES) */}
         {phase === 'learn' && currentItem && (
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
-
             {/* Header Colorful Character Card */}
             <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
-
-              {/* Integrated Header Bar Inside the Card */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
@@ -522,10 +505,11 @@ export default function LessonPage() {
             <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 select-none">
               <button
                 onClick={() => setActiveTab('info')}
-                className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${activeTab === 'info'
-                  ? 'border-teal-500 text-teal-500'
-                  : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
+                className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
+                  activeTab === 'info'
+                    ? 'border-teal-500 text-teal-500'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
               >
                 Arti & Deskripsi
               </button>
@@ -533,10 +517,11 @@ export default function LessonPage() {
               {currentItem.type !== 'radical' && (
                 <button
                   onClick={() => setActiveTab('mnemonic')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${activeTab === 'mnemonic'
-                    ? 'border-teal-500 text-teal-500'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                    }`}
+                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
+                    activeTab === 'mnemonic'
+                      ? 'border-teal-500 text-teal-500'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
                 >
                   Cara Baca
                 </button>
@@ -545,7 +530,6 @@ export default function LessonPage() {
 
             {/* Tab Explanation Details */}
             <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text">
-
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-4 animate-fade-in">
@@ -630,23 +614,22 @@ export default function LessonPage() {
                   )}
                 </div>
               )}
-
             </div>
 
             {/* Slide Navigation Buttons */}
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0 select-none">
-
               {/* Progress dots - Mobile Only */}
               <div className="flex space-x-1.5 sm:hidden">
                 {currentBatch.map((_, idx) => (
                   <div
                     key={idx}
-                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === itemIndex
-                      ? 'bg-teal-500 scale-125'
-                      : idx < itemIndex
+                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                      idx === itemIndex
+                        ? 'bg-teal-500 scale-125'
+                        : idx < itemIndex
                         ? 'bg-teal-300 dark:bg-teal-800'
                         : 'bg-slate-200 dark:bg-slate-850'
-                      }`}
+                    }`}
                   ></div>
                 ))}
               </div>
@@ -676,12 +659,13 @@ export default function LessonPage() {
                   {currentBatch.map((_, idx) => (
                     <div
                       key={idx}
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${idx === itemIndex
-                        ? 'bg-teal-500 scale-125'
-                        : idx < itemIndex
+                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                        idx === itemIndex
+                          ? 'bg-teal-500 scale-125'
+                          : idx < itemIndex
                           ? 'bg-teal-300 dark:bg-teal-800'
                           : 'bg-slate-200 dark:bg-slate-850'
-                        }`}
+                      }`}
                     ></div>
                   ))}
                 </div>
@@ -708,7 +692,6 @@ export default function LessonPage() {
                 )}
               </div>
             </div>
-
           </div>
         )}
 
@@ -734,8 +717,7 @@ export default function LessonPage() {
 
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-start">
-
-              {/* Header quiz card with colors */}
+              {/* Header quiz card */}
               <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
                 <QuizHeader
                   onExit={() => {
@@ -755,7 +737,7 @@ export default function LessonPage() {
                 </h1>
               </div>
 
-              {/* Prompt Label KaniGani style */}
+              {/* Prompt Label */}
               <div className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-350 tracking-wider uppercase select-none">
                 {renderKaniGaniPrompt()}
               </div>
@@ -776,14 +758,14 @@ export default function LessonPage() {
 
               {/* Action buttons (Undo, Info) */}
               <QuizActionButtons
-                onUndo={proceedNext} // for lessons wrong correction, proceedNext acts as the main trigger
+                onUndo={proceedNext}
                 isUndoDisabled={!isAnswerSubmitted}
                 onToggleInfo={toggleItemInfo}
                 infoActive={showItemInfo}
                 isInfoDisabled={!isAnswerSubmitted}
                 showUndo={false}
               />
- 
+
               {/* Answer Feedbacks */}
               <QuizFeedback
                 showFeedback={showFeedback}
@@ -796,7 +778,7 @@ export default function LessonPage() {
                 cardType={activeCard.cardType}
                 showSrs={false}
               />
- 
+
               {/* Collapsible Info Drawer */}
               {showItemInfo && (
                 <QuizInfoDrawer
@@ -804,58 +786,25 @@ export default function LessonPage() {
                   cardType={activeCard.cardType}
                 />
               )}
- 
             </div>
           );
         })()}
 
         {/* PHASE 3: BATCH COMPLETED SUMMARY */}
         {phase === 'summary' && (
-          <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-8 text-center space-y-6 animate-fade-in my-12 select-none">
-            <Award className="w-16 h-16 mx-auto text-teal-500 animate-bounce" />
-            <h2 className="text-2xl font-black">Batch Selesai! 🎉</h2>
-            <p className="text-sm text-slate-550 dark:text-slate-400">
-              Selamat! Anda telah menyelesaikan pelajaran baru untuk batch ini. Semua item ini telah terdaftar di SRS dan siap diulas pada jadwal berikutnya.
-            </p>
-
-            <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-150 dark:border-slate-850">
-              <span className="text-3xs uppercase tracking-widest text-slate-400 block font-bold">Item yang Baru Dipelajari</span>
-              <div className="flex flex-wrap gap-2 justify-center mt-3">
-                {currentBatch.map((item, idx) => (
-                  <span
-                    key={idx}
-                    className={`min-w-10 h-10 px-3 flex items-center justify-center rounded-xl font-black text-lg text-white whitespace-nowrap ${getItemColorClass(item.type)}`}
-                  >
-                    {item.character}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {lessons.length > currentBatch.length ? (
-                <button
-                  onClick={handleNextBatch}
-                  className="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-colors cursor-pointer"
-                >
-                  Lanjut Batch Berikutnya ({lessons.length - currentBatch.length} item sisa)
-                </button>
-              ) : null}
-
-              <button
-                onClick={() => {
-                  localStorage.removeItem('custom-lesson-queue');
-                  localStorage.removeItem('custom-lesson-interleave');
-                  router.push('/dashboard');
-                }}
-                className="w-full py-3 bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-extrabold rounded-2xl transition-colors cursor-pointer"
-              >
-                Selesai & Ke Dashboard
-              </button>
-            </div>
-          </div>
+          <QuizSummaryView
+            type="lesson"
+            items={currentBatch}
+            hasNextBatch={lessons.length > currentBatch.length}
+            remainingLessonsCount={lessons.length - currentBatch.length}
+            onNextBatch={handleNextBatch}
+            onFinish={() => {
+              localStorage.removeItem('custom-lesson-queue');
+              localStorage.removeItem('custom-lesson-interleave');
+              router.push('/dashboard');
+            }}
+          />
         )}
-
       </main>
     </div>
   );

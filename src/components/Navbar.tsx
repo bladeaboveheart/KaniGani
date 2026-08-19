@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
 import ThemeToggle from './ThemeToggle';
 import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical } from 'lucide-react';
 
@@ -108,19 +109,10 @@ export default function Navbar() {
             setLevel(profile.level);
           } else {
             // 2. Dapatkan level saat ini secara dinamis (dari progres kanji lulus >= 90%)
-            const [progressRes, kanjiRes] = await Promise.all([
-              supabase
-                .from('user_progress')
-                .select('item_id, srs_stage')
-                .eq('user_id', user.id),
-              supabase
-                .from('items')
-                .select('id, level')
-                .eq('type', 'kanji')
+            const [progresses, allKanji] = await Promise.all([
+              fetchAllUserProgress(user.id, 'item_id, srs_stage'),
+              fetchAllKanjiItems('id, level')
             ]);
-
-            const progresses = progressRes.data || [];
-            const allKanji = kanjiRes.data || [];
 
             const progressGuruSet = new Set(
               progresses
@@ -129,7 +121,7 @@ export default function Navbar() {
             );
 
             let userLevel = 1;
-            while (userLevel <= 10) {
+            while (userLevel <= 60) {
               const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
               if (levelKanjiItems.length === 0) break;
 
