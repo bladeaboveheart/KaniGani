@@ -1,42 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import {
+  calculatePenalty,
+  getNextReviewDate,
+  calculateUserLevel,
+} from '@/lib/levelLogic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const SRS_INTERVALS: Record<number, number> = {
-  1: 4 * 60,         // 4 jam
-  2: 8 * 60,         // 8 jam
-  3: 24 * 60,        // 24 jam (1 hari)
-  4: 2 * 24 * 60,    // 48 jam (2 hari)
-  5: 7 * 24 * 60,    // 7 hari (1 minggu)
-  6: 14 * 24 * 60,   // 14 hari (2 minggu)
-  7: 30 * 24 * 60,   // 30 hari (1 bulan)
-  8: 120 * 24 * 60,  // 120 hari (4 bulan)
-};
-
-function getNextReviewDate(stage: number): string | null {
-  if (stage >= 9) return null;
-  const intervalMinutes = SRS_INTERVALS[stage];
-  if (!intervalMinutes) return null;
-  const next = new Date();
-  next.setMinutes(next.getMinutes() + intervalMinutes);
-  return next.toISOString();
-}
-
-// Rumus Penalti SRS:
-// Stage Baru = Stage Awal - (ceil(wrongCount / 2) * Faktor Penalti)
-// Jika Stage Awal < 5: Faktor = 1
-// Jika Stage Awal >= 5: Faktor = 2
-// Batas minimum = 1
-function calculatePenalty(currentStage: number, wrongCount: number): number {
-  if (wrongCount <= 0) {
-    return Math.min(9, currentStage + 1);
-  }
-  const penaltyFactor = currentStage >= 5 ? 2 : 1;
-  const penalty = Math.ceil(wrongCount / 2) * penaltyFactor;
-  return Math.max(1, currentStage - penalty);
-}
 
 // Fungsi mendapatkan level dinamis pengguna berdasarkan progres Kanji (lulus minimal 90% Kanji level L-1 untuk mencapai level L)
 async function getUserLevel(userClient: any, userId: string): Promise<number> {
@@ -47,16 +18,14 @@ async function getUserLevel(userClient: any, userId: string): Promise<number> {
     .eq('id', userId)
     .maybeSingle();
 
-  if (profile && profile.level !== null && profile.level !== undefined) {
-    return profile.level;
-  }
-
   const { data: allKanji, error: kanjiError } = await userClient
     .from('items')
     .select('id, level')
     .eq('type', 'kanji');
 
-  if (kanjiError || !allKanji) return 1;
+  if (kanjiError || !allKanji) {
+    return profile?.level || 1;
+  }
 
   const { data: progressList, error: progressError } = await userClient
     .from('user_progress')
@@ -64,28 +33,13 @@ async function getUserLevel(userClient: any, userId: string): Promise<number> {
     .eq('user_id', userId)
     .gte('srs_stage', 5);
 
-  if (progressError || !progressList) return 1;
-
-  const passedKanjiIds = new Set(progressList.map((p: any) => p.item_id));
-
-  let currentLevel = 1;
-  while (currentLevel <= 10) {
-    const levelKanji = allKanji.filter((k: any) => k.level === currentLevel);
-    if (levelKanji.length === 0) {
-      break; // Tidak ada level lebih tinggi lagi
-    }
-
-    const passedCount = levelKanji.filter((k: any) => passedKanjiIds.has(k.id)).length;
-    const passRatio = passedCount / levelKanji.length;
-
-    if (passRatio >= 0.9) {
-      currentLevel++;
-    } else {
-      break;
-    }
+  if (progressError || !progressList) {
+    return profile?.level || 1;
   }
 
-  return currentLevel;
+  const passedKanjiIds = new Set<string>(progressList.map((p: any) => String(p.item_id)));
+
+  return calculateUserLevel(allKanji, passedKanjiIds, profile?.level);
 }
 
 // Fungsi membuka Radikal dan materi prasyarat yang terpenuhi saat pengguna naik level

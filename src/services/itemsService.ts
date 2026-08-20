@@ -55,6 +55,8 @@ export async function fetchAllItemPrerequisites(): Promise<any[]> {
       supabase
         .from('item_prerequisites')
         .select('item_id, requires_item_id, items!item_id(id, character, slug, level, type)')
+        .order('item_id', { ascending: true })
+        .order('requires_item_id', { ascending: true })
         .range(from, to)
     )
   );

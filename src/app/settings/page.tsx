@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
+import { calculateUserLevel } from '@/lib/levelLogic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
@@ -90,23 +91,7 @@ export default function SettingsPage() {
           .map((p: any) => p.item_id)
       );
 
-      let userLevel = 1;
-      if (profile && profile.level !== null && profile.level !== undefined) {
-        userLevel = profile.level;
-      } else {
-        while (userLevel <= 60) {
-          const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
-          if (levelKanjiItems.length === 0) break;
-
-          const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-          const ratio = passed / levelKanjiItems.length;
-          if (ratio >= 0.9) {
-            userLevel++;
-          } else {
-            break;
-          }
-        }
-      }
+      const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
 
       // Format Joined Date
       const joinedAt = new Date(profile?.created_at || user.created_at);

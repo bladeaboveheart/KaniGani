@@ -7,7 +7,8 @@ import { UserProgress } from '@/lib/types';
  */
 export async function fetchAllUserProgress(
   userId: string,
-  selectQuery: string = 'item_id, srs_stage, unlocked_at, next_review'
+  selectQuery: string = 'item_id, srs_stage, unlocked_at, next_review',
+  activeOnly: boolean = true
 ): Promise<UserProgress[]> {
   const chunkRanges = [
     [0, 999],
@@ -16,24 +17,37 @@ export async function fetchAllUserProgress(
     [3000, 3999],
     [4000, 4999],
     [5000, 5999],
-    [6000, 6999],
-    [7000, 7999],
-    [8000, 8999],
-    [9000, 9999],
   ];
 
-  const results = await Promise.all(
-    chunkRanges.map(([from, to]) =>
-      supabase
-        .from('user_progress')
-        .select(selectQuery as any)
-        .eq('user_id', userId)
-        .range(from, to)
+  let baseQuery = supabase
+    .from('user_progress')
+    .select(selectQuery as any)
+    .eq('user_id', userId)
+    .order('item_id', { ascending: true });
+
+  if (activeOnly) {
+    baseQuery = baseQuery.gt('srs_stage', 0);
+  }
+
+  // Fast single fetch for normal datasets (< 1000 active items)
+  const firstChunk = await baseQuery.range(0, 999);
+  if (firstChunk.error) throw firstChunk.error;
+  const firstData = (firstChunk.data as unknown as UserProgress[]) || [];
+
+  if (firstData.length < 1000) {
+    return firstData;
+  }
+
+  // If there are 1000+ items, fetch remaining in parallel
+  const remainingRanges = chunkRanges.slice(1);
+  const remainingResults = await Promise.all(
+    remainingRanges.map(([from, to]) =>
+      baseQuery.range(from, to)
     )
   );
 
-  const allRows: UserProgress[] = [];
-  for (const res of results) {
+  const allRows: UserProgress[] = [...firstData];
+  for (const res of remainingResults) {
     if (res.error) throw res.error;
     if (res.data && res.data.length > 0) {
       allRows.push(...(res.data as unknown as UserProgress[]));

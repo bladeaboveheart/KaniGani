@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
+import { calculateUserLevel } from '@/lib/levelLogic';
 import ThemeToggle from './ThemeToggle';
 import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical } from 'lucide-react';
 
@@ -120,19 +121,7 @@ export default function Navbar() {
                 .map((p: any) => p.item_id)
             );
 
-            let userLevel = 1;
-            while (userLevel <= 60) {
-              const levelKanjiItems = allKanji.filter((k: any) => k.level === userLevel);
-              if (levelKanjiItems.length === 0) break;
-
-              const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-              const ratio = passed / levelKanjiItems.length;
-              if (ratio >= 0.9) {
-                userLevel++;
-              } else {
-                break;
-              }
-            }
+            const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
             setLevel(userLevel);
           }
         }

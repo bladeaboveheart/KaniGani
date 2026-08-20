@@ -8,6 +8,7 @@ import { fetchAllUserProgress, resetAllUserProgress } from '@/services/progressS
 import { fetchItemsByType, fetchAllItemPrerequisites } from '@/services/itemsService';
 import { fetchActivityLogs, fetchLeaderboard, LeaderboardEntry } from '@/services/statsService';
 import { getUserProfile } from '@/services/profileService';
+import { calculateUserLevel } from '@/lib/levelLogic';
 
 export interface DashboardKanjiItem {
   id: string;
@@ -53,7 +54,7 @@ export function useDashboardData() {
 
       // 1. Fetch user progress, all kanji, and prerequisites in parallel
       const [progresses, allKanji, prereqs] = await Promise.all([
-        fetchAllUserProgress(user.id, 'item_id, srs_stage, unlocked_at, next_review, items(*)'),
+        fetchAllUserProgress(user.id, 'item_id, srs_stage, unlocked_at, next_review, items(id, character, slug, level, type, lesson_position)'),
         fetchItemsByType('kanji'),
         fetchAllItemPrerequisites(),
       ]);
@@ -64,40 +65,30 @@ export function useDashboardData() {
           .map((p: any) => p.item_id)
       );
 
-      let userLevel = 1;
-      if (profile && profile.level !== null && profile.level !== undefined) {
-        userLevel = profile.level;
-      } else {
-        while (userLevel <= 60) {
-          const levelKanjiItems = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
-          if (levelKanjiItems.length === 0) break;
+      const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
 
-          const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-          const ratio = passed / levelKanjiItems.length;
-          if (ratio >= 0.9) {
-            userLevel++;
-          } else {
-            break;
-          }
-        }
-      }
+      // Self-healing check: ensure all radicals with level <= userLevel are unlocked (srs_stage >= 1)
+      const unlockedItemIds = new Set((progresses || []).map((p: any) => p.item_id));
+      const { data: levelRadicals } = await supabase
+        .from('items')
+        .select('id, level, type')
+        .eq('type', 'radical')
+        .lte('level', userLevel);
 
-      // Self-healing check: unlock level <= userLevel radicals that are accidentally locked (srs_stage = 0)
-      const lockedRadicalsToUnlock = progresses ? progresses.filter((row: any) => {
-        const item = (row as any).items;
-        return item && item.type === 'radical' && item.level <= userLevel && row.srs_stage === 0;
-      }) : [];
+      const lockedRadicalsToUnlock = (levelRadicals || []).filter(
+        (rad: any) => !unlockedItemIds.has(rad.id)
+      );
 
       if (lockedRadicalsToUnlock.length > 0) {
-        const idsToUnlock = lockedRadicalsToUnlock.map((row: any) => row.item_id);
+        const idsToUnlock = lockedRadicalsToUnlock.map((row: any) => row.id);
         const { error: healError } = await supabase
           .from('user_progress')
-          .update({
+          .upsert(idsToUnlock.map(id => ({
+            user_id: user.id,
+            item_id: id,
             srs_stage: 1,
             unlocked_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id)
-          .in('item_id', idsToUnlock);
+          })));
 
         if (!healError) {
           console.log('Successfully self-healed unlocked missing radicals:', idsToUnlock);

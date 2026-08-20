@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { calculateUserLevel } from '@/lib/levelLogic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
@@ -140,20 +141,7 @@ export default function AdminPage() {
           .map((p: any) => p.item_id)
       );
 
-      let uLevel = 1;
-      while (uLevel <= 60) {
-        const levelKanjiItems = allKanji.filter((k: any) => k.level === uLevel);
-        if (levelKanjiItems.length === 0) break;
-
-        const passed = levelKanjiItems.filter((k: any) => progressGuruSet.has(k.id)).length;
-        const ratio = passed / levelKanjiItems.length;
-        if (ratio >= 0.9) {
-          uLevel++;
-        } else {
-          break;
-        }
-      }
-      return Math.min(60, uLevel);
+      return calculateUserLevel(allKanji || [], progressGuruSet);
     } catch (e) {
       console.error('Error checking user level:', e);
       return 1;
@@ -195,7 +183,6 @@ export default function AdminPage() {
 
         if (error) throw error;
         if (data) setItems(data);
-      } else {
         // Fetch all items across levels in parallel chunks (bypassing 1000 row cap)
         const selectQuery = `
           *,
@@ -204,20 +191,36 @@ export default function AdminPage() {
           item_context_sentences(*),
           item_prerequisites!item_id(requires_item_id)
         `;
-        const [c1, c2, c3, c4] = await Promise.all([
-          supabase.from('items').select(selectQuery).order('level').order('lesson_position').range(0, 999),
-          supabase.from('items').select(selectQuery).order('level').order('lesson_position').range(1000, 1999),
-          supabase.from('items').select(selectQuery).order('level').order('lesson_position').range(2000, 2999),
-          supabase.from('items').select(selectQuery).order('level').order('lesson_position').range(3000, 3999),
-        ]);
-
-        if (c1.error) throw c1.error;
-        const allData = [
-          ...(c1.data || []),
-          ...(c2.data || []),
-          ...(c3.data || []),
-          ...(c4.data || [])
+        const chunkRanges = [
+          [0, 999],
+          [1000, 1999],
+          [2000, 2999],
+          [3000, 3999],
+          [4000, 4999],
+          [5000, 5999],
+          [6000, 6999],
+          [7000, 7999],
+          [8000, 8999],
+          [9000, 9999],
         ];
+        const results = await Promise.all(
+          chunkRanges.map(([from, to]) =>
+            supabase
+              .from('items')
+              .select(selectQuery)
+              .order('level', { ascending: true })
+              .order('lesson_position', { ascending: true })
+              .range(from, to)
+          )
+        );
+
+        const allData: any[] = [];
+        for (const res of results) {
+          if (res.error) throw res.error;
+          if (res.data && res.data.length > 0) {
+            allData.push(...res.data);
+          }
+        }
         setItems(allData);
       }
     } catch (err) {
