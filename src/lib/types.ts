@@ -22,6 +22,9 @@ export interface Item {
   primary_reading?: string | null;
   accepted_meanings?: string[];
   accepted_readings?: string[];
+
+  // Related items
+  kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string }>;
 }
 
 export interface ItemMeaning {

@@ -96,17 +96,40 @@ export default function ReviewPage() {
 
         const rawItems = data.map((row: any) => row.items).filter(Boolean);
         const itemIds = rawItems.map((i: any) => i.id);
+        const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
 
-        // Fetch detail meanings, readings, sentences
-        const [meaningsRes, readingsRes, sentencesRes] = await Promise.all([
+        // Fetch detail meanings, readings, sentences, and radical kanji relations
+        const [meaningsRes, readingsRes, sentencesRes, prereqsRes] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
+          radicalIds.length > 0
+            ? supabase
+                .from('item_prerequisites')
+                .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                .in('requires_item_id', radicalIds)
+            : Promise.resolve({ data: [] }),
         ]);
 
         const meanings = meaningsRes.data || [];
         const readings = readingsRes.data || [];
         const sentences = sentencesRes.data || [];
+        const prereqs = prereqsRes.data || [];
+
+        // Map radical kanji dependencies (strictly Kanji items only)
+        const kanjisMap = new Map<string, any[]>();
+        prereqs.forEach((row: any) => {
+          const reqId = row.requires_item_id;
+          const kanjiItem = row.items;
+          if (kanjiItem && kanjiItem.type === 'kanji') {
+            if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
+            kanjisMap.get(reqId)!.push(kanjiItem);
+          }
+        });
+
+        kanjisMap.forEach((list) => {
+          list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+        });
 
         // Combine details
         const itemsWithDetails: Item[] = rawItems.map((item: any) => {
@@ -130,6 +153,7 @@ export default function ReviewPage() {
             primary_reading: primaryReading,
             accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
             accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
+            kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : undefined,
           };
         });
 

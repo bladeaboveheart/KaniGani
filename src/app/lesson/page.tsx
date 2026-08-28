@@ -11,7 +11,7 @@ import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
 import {
-  ArrowLeft, ArrowRight, BookOpen, Award, Home
+  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 // Modular Quiz Components
@@ -54,7 +54,13 @@ export default function LessonPage() {
   const [phase, setPhase] = useState<'learn' | 'quiz' | 'summary'>('learn');
   const [currentBatch, setCurrentBatch] = useState<Item[]>([]);
   const [itemIndex, setItemIndex] = useState(0); // Index item in active batch
-  const [activeTab, setActiveTab] = useState<'info' | 'mnemonic'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'kanjis'>('info');
+  const [showAllKanjis, setShowAllKanjis] = useState(false);
+
+  // Reset showAllKanjis when switching item in batch
+  useEffect(() => {
+    setShowAllKanjis(false);
+  }, [itemIndex]);
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
@@ -136,17 +142,40 @@ export default function LessonPage() {
 
         const rawItems = data.map((row: any) => row.items).filter(Boolean);
         const itemIds = rawItems.map((i: any) => i.id);
+        const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
 
-        // Fetch detail meanings, readings, sentences
-        const [meaningsRes, readingsRes, sentencesRes] = await Promise.all([
+        // Fetch detail meanings, readings, sentences, and radical kanji relations
+        const [meaningsRes, readingsRes, sentencesRes, prereqsRes] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
+          radicalIds.length > 0
+            ? supabase
+                .from('item_prerequisites')
+                .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                .in('requires_item_id', radicalIds)
+            : Promise.resolve({ data: [] }),
         ]);
 
         const meanings = meaningsRes.data || [];
         const readings = readingsRes.data || [];
         const sentences = sentencesRes.data || [];
+        const prereqs = prereqsRes.data || [];
+
+        // Map radical kanji dependencies (strictly Kanji items only)
+        const kanjisMap = new Map<string, any[]>();
+        prereqs.forEach((row: any) => {
+          const reqId = row.requires_item_id;
+          const kanjiItem = row.items;
+          if (kanjiItem && kanjiItem.type === 'kanji') {
+            if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
+            kanjisMap.get(reqId)!.push(kanjiItem);
+          }
+        });
+
+        kanjisMap.forEach((list) => {
+          list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+        });
 
         // Combine details
         const itemsWithDetails: Item[] = rawItems.map((item: any) => {
@@ -170,6 +199,7 @@ export default function LessonPage() {
             primary_reading: primaryReading,
             accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
             accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
+            kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : undefined,
           };
         });
 
@@ -178,7 +208,7 @@ export default function LessonPage() {
         itemsWithDetails.sort((a, b) => {
           const levelDiff = a.level - b.level;
           if (levelDiff !== 0) return levelDiff;
-          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[b.type] ?? 3);
+          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[a.type] ?? 3);
           if (typeDiff !== 0) return typeDiff;
           return a.lesson_position - b.lesson_position;
         });
@@ -276,28 +306,24 @@ export default function LessonPage() {
 
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        const hasMnemonic = currentItem && currentItem.type !== 'radical';
-
-        if (hasMnemonic && activeTab !== 'info') {
+        if (activeTab !== 'info') {
           setActiveTab('info');
         } else {
           if (itemIndex > 0) {
             const prevIdx = itemIndex - 1;
             setItemIndex(prevIdx);
             const prevItem = currentBatch[prevIdx];
-            if (prevItem && prevItem.type !== 'radical') {
-              setActiveTab('mnemonic');
+            if (prevItem && prevItem.type === 'radical') {
+              setActiveTab('kanjis');
             } else {
-              setActiveTab('info');
+              setActiveTab('mnemonic');
             }
           }
         }
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        const hasMnemonic = currentItem && currentItem.type !== 'radical';
-
-        if (hasMnemonic && activeTab === 'info') {
-          setActiveTab('mnemonic');
+        if (activeTab === 'info') {
+          setActiveTab(currentItem?.type === 'radical' ? 'kanjis' : 'mnemonic');
         } else {
           if (itemIndex < currentBatch.length - 1) {
             setItemIndex((prev) => prev + 1);
@@ -448,19 +474,16 @@ export default function LessonPage() {
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type;
       return expectedType === 'onyomi' ? (
-        <span className="select-text">Bacaan Onyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Onyomi</span></span>
       ) : (
-        <span className="select-text">Bacaan Kunyomi <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kunyomi</span></span>
       );
     }
 
-    if (isMeaning) {
-      return (
-        <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
-      );
-    }
-    return (
-      <span className="select-text">Cara Baca <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
+    return isMeaning ? (
+      <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
+    ) : (
+      <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
     );
   };
 
@@ -469,7 +492,7 @@ export default function LessonPage() {
       <CrabBackground />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
-        {/* PHASE 1: LEARN (INTRO STUDY SLIDES) */}
+        {/* PHASE 1: BATCH LEARN SLIDES */}
         {phase === 'learn' && currentItem && (
           <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
             {/* Header Colorful Character Card */}
@@ -514,7 +537,18 @@ export default function LessonPage() {
                 Arti & Deskripsi
               </button>
 
-              {currentItem.type !== 'radical' && (
+              {currentItem.type === 'radical' ? (
+                <button
+                  onClick={() => setActiveTab('kanjis')}
+                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
+                    activeTab === 'kanjis'
+                      ? 'border-teal-500 text-teal-500'
+                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
+                  }`}
+                >
+                  Ditemukan di Kanji
+                </button>
+              ) : (
                 <button
                   onClick={() => setActiveTab('mnemonic')}
                   className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
@@ -556,7 +590,75 @@ export default function LessonPage() {
                 </div>
               )}
 
-              {/* TAB 2: READINGS & MNEMONICS */}
+              {/* TAB: RADICAL RELATED KANJIS */}
+              {activeTab === 'kanjis' && currentItem.type === 'radical' && (() => {
+                const allKanjis = currentItem.kanjis || [];
+                const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
+                const hasMore = allKanjis.length > 8;
+
+                return (
+                  <div className="space-y-4 animate-fade-in">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        Kanji yang Mengandung Radikal Ini
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                        Mempelajari radikal ini akan membantumu mengingat kanji-kanji berikut dengan lebih mudah:
+                      </p>
+                    </div>
+
+                    {allKanjis.length > 0 ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                          {displayedKanjis.map((kj) => (
+                            <div
+                              key={kj.id}
+                              className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
+                            >
+                              <div>
+                                <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
+                                  {kj.character}
+                                </span>
+                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
+                                  {kj.slug}
+                                </span>
+                              </div>
+                              {kj.level && (
+                                <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
+                                  Lvl {kj.level}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {hasMore && (
+                          <button
+                            type="button"
+                            onClick={() => setShowAllKanjis(!showAllKanjis)}
+                            className="w-full py-2.5 px-4 bg-kanji/10 hover:bg-kanji/20 dark:bg-kanji/15 dark:hover:bg-kanji/25 text-kanji font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
+                          >
+                            <span>
+                              {showAllKanjis
+                                ? 'Tampilkan Lebih Sedikit'
+                                : `Muat Lebih Banyak (+${allKanjis.length - 8} Kanji)`}
+                            </span>
+                            {showAllKanjis ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 text-center">
+                        <p className="text-slate-400 text-xs italic select-none">
+                          Belum ada data relasi kanji untuk radikal ini.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* TAB 2: READINGS & MNEMONICS (KANJI / VOCAB) */}
               {activeTab === 'mnemonic' && currentItem.type !== 'radical' && (
                 <div className="space-y-4 animate-fade-in">
                   <div>
@@ -637,15 +739,19 @@ export default function LessonPage() {
               {/* Navigation Controls Row */}
               <div className="flex items-center justify-between w-full">
                 <button
-                  disabled={itemIndex === 0}
+                  disabled={itemIndex === 0 && activeTab === 'info'}
                   onClick={() => {
-                    const prevIdx = itemIndex - 1;
-                    setItemIndex(prevIdx);
-                    const prevItem = currentBatch[prevIdx];
-                    if (prevItem && prevItem.type !== 'radical') {
-                      setActiveTab('mnemonic');
-                    } else {
+                    if (activeTab !== 'info') {
                       setActiveTab('info');
+                    } else if (itemIndex > 0) {
+                      const prevIdx = itemIndex - 1;
+                      setItemIndex(prevIdx);
+                      const prevItem = currentBatch[prevIdx];
+                      if (prevItem && prevItem.type === 'radical') {
+                        setActiveTab('kanjis');
+                      } else {
+                        setActiveTab('mnemonic');
+                      }
                     }
                   }}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0 cursor-pointer"
@@ -670,24 +776,28 @@ export default function LessonPage() {
                   ))}
                 </div>
 
-                {itemIndex < currentBatch.length - 1 ? (
-                  <button
-                    onClick={() => {
-                      setItemIndex(itemIndex + 1);
-                      setActiveTab('info');
-                    }}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
-                  >
-                    <span>Berikutnya</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                ) : (
+                {itemIndex === currentBatch.length - 1 && activeTab !== 'info' ? (
                   <button
                     onClick={startQuiz}
                     className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
                   >
                     <span>Mulai Kuis</span>
                     <Award className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      if (activeTab === 'info') {
+                        setActiveTab(currentItem.type === 'radical' ? 'kanjis' : 'mnemonic');
+                      } else {
+                        setItemIndex(itemIndex + 1);
+                        setActiveTab('info');
+                      }
+                    }}
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
+                  >
+                    <span>Berikutnya</span>
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 )}
               </div>

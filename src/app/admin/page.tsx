@@ -50,6 +50,7 @@ interface ItemInput {
   readings: ReadingInput[];
   context_sentences: SentenceInput[];
   prerequisites: string[];
+  found_in_kanjis?: string[];
 }
 
 export default function AdminPage() {
@@ -83,7 +84,8 @@ export default function AdminPage() {
     meanings: [{ meaning: '', primary_meaning: true, accepted_answer: true }],
     readings: [],
     context_sentences: [],
-    prerequisites: []
+    prerequisites: [],
+    found_in_kanjis: []
   };
 
   const [formItem, setFormItem] = useState<ItemInput>(initialFormState);
@@ -148,6 +150,22 @@ export default function AdminPage() {
     }
   };
 
+  const [referenceItems, setReferenceItems] = useState<any[]>([]);
+
+  const loadReferenceItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('items')
+        .select('id, character, slug, level, type')
+        .in('type', ['radical', 'kanji'])
+        .order('level', { ascending: true });
+      if (error) throw error;
+      if (data) setReferenceItems(data);
+    } catch (err) {
+      console.error('Error loading reference items:', err);
+    }
+  };
+
   const loadDatabase = async (selectedLvl?: string) => {
     setLoading(true);
     try {
@@ -167,65 +185,33 @@ export default function AdminPage() {
 
       const currentLvl = (typeof selectedLvl === 'string') ? selectedLvl : filterLevel;
 
-      if (currentLvl !== 'all') {
-        const { data, error } = await supabase
-          .from('items')
-          .select(`
-            *,
-            item_meanings(*),
-            item_readings(*),
-            item_context_sentences(*),
-            item_prerequisites!item_id(requires_item_id)
-          `)
-          .eq('level', Number(currentLvl))
-          .order('level', { ascending: true })
-          .order('lesson_position', { ascending: true });
-
-        if (error) throw error;
-        if (data) setItems(data);
-        // Fetch all items across levels in parallel chunks (bypassing 1000 row cap)
-        const selectQuery = `
+      let query = supabase
+        .from('items')
+        .select(`
           *,
           item_meanings(*),
           item_readings(*),
           item_context_sentences(*),
           item_prerequisites!item_id(requires_item_id)
-        `;
-        const chunkRanges = [
-          [0, 999],
-          [1000, 1999],
-          [2000, 2999],
-          [3000, 3999],
-          [4000, 4999],
-          [5000, 5999],
-          [6000, 6999],
-          [7000, 7999],
-          [8000, 8999],
-          [9000, 9999],
-        ];
-        const results = await Promise.all(
-          chunkRanges.map(([from, to]) =>
-            supabase
-              .from('items')
-              .select(selectQuery)
-              .order('level', { ascending: true })
-              .order('lesson_position', { ascending: true })
-              .range(from, to)
-          )
-        );
+        `)
+        .order('level', { ascending: true })
+        .order('lesson_position', { ascending: true });
 
-        const allData: any[] = [];
-        for (const res of results) {
-          if (res.error) throw res.error;
-          if (res.data && res.data.length > 0) {
-            allData.push(...res.data);
-          }
-        }
-        setItems(allData);
+      if (currentLvl !== 'all') {
+        query = query.eq('level', Number(currentLvl));
+      } else {
+        query = query.limit(1000);
       }
-    } catch (err) {
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setItems(data || []);
+
+      // Load lightweight reference items for modal prerequisites and kanji relations
+      loadReferenceItems();
+    } catch (err: any) {
       console.error('Error loading database items:', err);
-      alert('Gagal mengambil data dari Supabase.');
+      alert('Gagal mengambil data dari Supabase: ' + (err?.message || String(err)));
     } finally {
       setLoading(false);
     }
@@ -284,7 +270,24 @@ export default function AdminPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item: any) => {
+  const openEditModal = async (item: any) => {
+    let foundInKanjis: string[] = [];
+    if (item.type === 'radical' && item.id) {
+      try {
+        const { data: depData } = await supabase
+          .from('item_prerequisites')
+          .select('item_id, items!item_id(type)')
+          .eq('requires_item_id', item.id);
+        if (depData) {
+          foundInKanjis = depData
+            .filter((d: any) => d.items?.type === 'kanji')
+            .map((d: any) => d.item_id);
+        }
+      } catch (err) {
+        console.error('Error fetching radical dependents:', err);
+      }
+    }
+
     setFormItem({
       id: item.id,
       type: item.type,
@@ -321,7 +324,8 @@ export default function AdminPage() {
         : [],
       prerequisites: item.item_prerequisites && item.item_prerequisites.length > 0
         ? item.item_prerequisites.map((p: any) => p.requires_item_id)
-        : []
+        : [],
+      found_in_kanjis: foundInKanjis
     });
     setIsModalOpen(true);
   };
@@ -384,17 +388,21 @@ export default function AdminPage() {
 
         if (itemErr) throw itemErr;
 
-        const [delM, delR, delS, delP] = await Promise.all([
+        const delPromises = [
           supabase.from('item_meanings').delete().eq('item_id', itemId),
           supabase.from('item_readings').delete().eq('item_id', itemId),
           supabase.from('item_context_sentences').delete().eq('item_id', itemId),
           supabase.from('item_prerequisites').delete().eq('item_id', itemId),
-        ]);
+        ];
 
-        if (delM.error) throw delM.error;
-        if (delR.error) throw delR.error;
-        if (delS.error) throw delS.error;
-        if (delP.error) throw delP.error;
+        if (formItem.type === 'radical') {
+          delPromises.push(supabase.from('item_prerequisites').delete().eq('requires_item_id', itemId));
+        }
+
+        const delResults = await Promise.all(delPromises);
+        for (const res of delResults) {
+          if (res.error) throw res.error;
+        }
 
       } else {
         const { data: newItem, error: itemErr } = await supabase
@@ -463,6 +471,15 @@ export default function AdminPage() {
           const prereqsToInsert = formItem.prerequisites.map(reqId => ({
             item_id: itemId,
             requires_item_id: reqId
+          }));
+          const { error: pErr } = await supabase.from('item_prerequisites').insert(prereqsToInsert);
+          if (pErr) throw pErr;
+        }
+
+        if (formItem.type === 'radical' && formItem.found_in_kanjis && formItem.found_in_kanjis.length > 0) {
+          const prereqsToInsert = formItem.found_in_kanjis.map(kanjiId => ({
+            item_id: kanjiId,
+            requires_item_id: itemId
           }));
           const { error: pErr } = await supabase.from('item_prerequisites').insert(prereqsToInsert);
           if (pErr) throw pErr;
@@ -639,7 +656,7 @@ export default function AdminPage() {
         setFormItem={setFormItem}
         handleSaveItem={handleSaveItem}
         formLoading={formLoading}
-        items={items}
+        items={referenceItems.length > 0 ? referenceItems : items}
       />
     </div>
   );

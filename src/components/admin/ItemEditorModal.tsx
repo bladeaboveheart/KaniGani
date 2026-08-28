@@ -40,6 +40,7 @@ interface ItemInput {
   readings: ReadingInput[];
   context_sentences: SentenceInput[];
   prerequisites: string[];
+  found_in_kanjis?: string[];
 }
 
 interface ItemEditorModalProps {
@@ -61,7 +62,11 @@ export default function ItemEditorModal({
   formLoading,
   items
 }: ItemEditorModalProps) {
-  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites'>('basic');
+  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites' | 'found_in_kanjis'>('basic');
+  const [kanjiSearchQuery, setKanjiSearchQuery] = useState('');
+  const [kanjiFilterLevel, setKanjiFilterLevel] = useState<string>('all');
+  const [prereqSearchQuery, setPrereqSearchQuery] = useState('');
+  const [prereqFilterLevel, setPrereqFilterLevel] = useState<string>('all');
 
   if (!isOpen) return null;
 
@@ -93,7 +98,8 @@ export default function ItemEditorModal({
         type,
         readings,
         context_sentences: sentences,
-        prerequisites: []
+        prerequisites: [],
+        found_in_kanjis: []
       };
     });
   };
@@ -308,6 +314,21 @@ export default function ItemEditorModal({
               <span>Prasyarat</span>
               <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
                 {formItem.prerequisites.length}
+              </span>
+            </button>
+          )}
+
+          {formItem.type === 'radical' && (
+            <button
+              onClick={() => setActiveFormTab('found_in_kanjis')}
+              className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors cursor-pointer flex items-center space-x-1.5 ${activeFormTab === 'found_in_kanjis'
+                ? 'border-kanji text-kanji bg-white dark:bg-slate-900/50'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+            >
+              <span>Ditemukan di Kanji</span>
+              <span className="px-1.5 py-0.5 bg-kanji/10 text-kanji rounded-md text-3xs font-extrabold">
+                {(formItem.found_in_kanjis || []).length}
               </span>
             </button>
           )}
@@ -649,27 +670,67 @@ export default function ItemEditorModal({
           )}
 
           {/* TAB 6: DYNAMIC LIST OF PREREQUISITES */}
-          {activeFormTab === 'prerequisites' && formItem.type !== 'radical' && (
-            <div className="space-y-4 animate-fade-in">
-              <div>
-                <h4 className="font-extrabold text-sm flex items-center space-x-1.5 select-none">
-                  <Layers className="w-4 h-4 text-indigo-505" />
-                  <span>Item Prasyarat (Prerequisites)</span>
-                </h4>
-                <p className="text-4xs text-slate-400 leading-normal select-none">
-                  Tentukan item radikal atau kanji apa saja pembentuk item ini yang wajib dipelajari (mencapai status Guru) terlebih dahulu.
-                  {formItem.type === 'kanji' ? ' (Pilih Radikal pembentuk)' : ' (Pilih Kanji pembentuk)'}
-                </p>
-              </div>
+          {activeFormTab === 'prerequisites' && formItem.type !== 'radical' && (() => {
+            const isSearching = prereqSearchQuery.trim() !== '' || prereqFilterLevel !== 'all';
+            const candidateItems = items.filter(i => {
+              if (formItem.type === 'kanji') return i.type === 'radical';
+              if (formItem.type === 'vocabulary') return i.type === 'kanji';
+              return false;
+            });
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-2">
-                {items
-                  .filter(i => {
-                    if (formItem.type === 'kanji') return i.type === 'radical';
-                    if (formItem.type === 'vocabulary') return i.type === 'kanji';
-                    return false;
-                  })
-                  .map((item) => {
+            let displayList = candidateItems;
+            if (!isSearching) {
+              displayList = candidateItems.filter(i => formItem.prerequisites.includes(i.id));
+            } else {
+              displayList = candidateItems.filter(i => {
+                const matchesSearch = !prereqSearchQuery.trim() ||
+                  i.character.toLowerCase().includes(prereqSearchQuery.trim().toLowerCase()) ||
+                  (i.slug && i.slug.toLowerCase().includes(prereqSearchQuery.trim().toLowerCase()));
+                const matchesLevel = prereqFilterLevel === 'all' || String(i.level) === prereqFilterLevel;
+                return matchesSearch && matchesLevel;
+              }).slice(0, 60);
+            }
+
+            return (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-extrabold text-sm flex items-center space-x-1.5 select-none">
+                      <Layers className="w-4 h-4 text-indigo-505" />
+                      <span>Item Prasyarat (Prerequisites)</span>
+                    </h4>
+                    <p className="text-4xs text-slate-400 leading-normal select-none">
+                      {!isSearching
+                        ? 'Menampilkan item yang sedang terpilih. Gunakan kolom cari untuk menambah prasyarat baru.'
+                        : 'Hasil pencarian item prasyarat (maks 60 item):'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <input
+                      type="text"
+                      placeholder="Cari karakter / slug..."
+                      value={prereqSearchQuery}
+                      onChange={(e) => setPrereqSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-indigo-500 w-36 sm:w-44"
+                    />
+                    <select
+                      value={prereqFilterLevel}
+                      onChange={(e) => setPrereqFilterLevel(e.target.value)}
+                      className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      <option value="all">Semua Level</option>
+                      {Array.from({ length: 60 }, (_, i) => i + 1).map((lvl) => (
+                        <option key={lvl} value={String(lvl)}>
+                          Level {lvl}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                  {displayList.map((item) => {
                     const isChecked = formItem.prerequisites.includes(item.id);
                     return (
                       <div
@@ -685,8 +746,8 @@ export default function ItemEditorModal({
                         }}
                         className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-200 select-none ${isChecked
                           ? formItem.type === 'kanji'
-                            ? 'bg-radical/10 border-radical text-radical'
-                            : 'bg-kanji/10 border-kanji text-kanji'
+                            ? 'bg-radical/10 border-radical text-radical shadow-sm'
+                            : 'bg-kanji/10 border-kanji text-kanji shadow-sm'
                           : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 opacity-60 hover:opacity-100 text-slate-700 dark:text-slate-350'
                           }`}
                       >
@@ -702,9 +763,125 @@ export default function ItemEditorModal({
                       </div>
                     );
                   })}
+                </div>
+
+                {displayList.length === 0 && (
+                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-xs text-slate-400">
+                      {!isSearching
+                        ? 'Belum ada prasyarat yang dipilih. Cari karakter/slug di atas untuk memilih.'
+                        : 'Tidak ada item yang cocok dengan pencarian / filter level.'}
+                    </p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
+
+          {/* TAB 7: FOUND IN KANJI (RADICAL RELATIONS) */}
+          {activeFormTab === 'found_in_kanjis' && formItem.type === 'radical' && (() => {
+            const selectedKanjiIds = formItem.found_in_kanjis || [];
+            const kanjiItems = items.filter(i => i.type === 'kanji');
+            const isSearching = kanjiSearchQuery.trim() !== '' || kanjiFilterLevel !== 'all';
+
+            let displayList = kanjiItems;
+            if (!isSearching) {
+              displayList = kanjiItems.filter(kj => selectedKanjiIds.includes(kj.id));
+            } else {
+              displayList = kanjiItems.filter(kj => {
+                const matchesSearch = !kanjiSearchQuery.trim() ||
+                  kj.character.toLowerCase().includes(kanjiSearchQuery.trim().toLowerCase()) ||
+                  (kj.slug && kj.slug.toLowerCase().includes(kanjiSearchQuery.trim().toLowerCase()));
+                const matchesLevel = kanjiFilterLevel === 'all' || String(kj.level) === kanjiFilterLevel;
+                return matchesSearch && matchesLevel;
+              }).slice(0, 60);
+            }
+
+            return (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-extrabold text-sm flex items-center space-x-1.5 select-none">
+                      <Layers className="w-4 h-4 text-kanji" />
+                      <span>Kanji yang Menggunakan Radikal Ini</span>
+                    </h4>
+                    <p className="text-4xs text-slate-400 leading-normal select-none">
+                      {!isSearching
+                        ? 'Menampilkan kanji yang sedang aktif. Gunakan kolom cari untuk menambah kanji baru.'
+                        : 'Hasil pencarian kanji (maks 60 item):'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <input
+                      type="text"
+                      placeholder="Cari kanji / slug..."
+                      value={kanjiSearchQuery}
+                      onChange={(e) => setKanjiSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-kanji w-36 sm:w-44"
+                    />
+                    <select
+                      value={kanjiFilterLevel}
+                      onChange={(e) => setKanjiFilterLevel(e.target.value)}
+                      className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-kanji cursor-pointer"
+                    >
+                      <option value="all">Semua Level</option>
+                      {Array.from({ length: 60 }, (_, i) => i + 1).map((lvl) => (
+                        <option key={lvl} value={String(lvl)}>
+                          Level {lvl}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                  {displayList.map((item) => {
+                    const isChecked = selectedKanjiIds.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setFormItem(prev => {
+                            const current = prev.found_in_kanjis || [];
+                            const exists = current.includes(item.id);
+                            const updated = exists
+                              ? current.filter(id => id !== item.id)
+                              : [...current, item.id];
+                            return { ...prev, found_in_kanjis: updated };
+                          });
+                        }}
+                        className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-200 select-none ${isChecked
+                          ? 'bg-kanji/10 border-kanji text-kanji shadow-sm'
+                          : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 opacity-60 hover:opacity-100 text-slate-700 dark:text-slate-350'
+                          }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-2xl font-black font-japanese leading-tight">{item.character}</span>
+                          <span className="text-4xs uppercase tracking-wider truncate max-w-[80px] font-semibold mt-0.5 text-slate-500 dark:text-slate-400">
+                            {item.slug || 'kanji'}
+                          </span>
+                        </div>
+                        <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/15 rounded text-kanji">
+                          Lvl {item.level}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {displayList.length === 0 && (
+                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-xs text-slate-400">
+                      {!isSearching
+                        ? 'Belum ada kanji yang terhubung. Gunakan kolom pencarian di atas untuk mencari dan menghubungkan kanji.'
+                        : 'Tidak ada kanji yang cocok dengan pencarian / filter level.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
         </div>
 

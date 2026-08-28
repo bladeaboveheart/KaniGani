@@ -1,7 +1,9 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Item } from '@/lib/types';
 import FormattedText from '@/components/FormattedText';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface QuizInfoDrawerProps {
   item: Item | null;
@@ -9,12 +11,22 @@ interface QuizInfoDrawerProps {
 }
 
 export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDrawerProps) {
+  const [showAllKanjis, setShowAllKanjis] = useState(false);
+
+  useEffect(() => {
+    setShowAllKanjis(false);
+  }, [item?.id]);
+
   if (!item) return null;
 
   const readings = item.readings || [];
   const onyomiList = readings.filter(r => r.reading_type === 'onyomi');
   const kunyomiList = readings.filter(r => r.reading_type === 'kunyomi');
   const nanoriList = readings.filter(r => r.reading_type === 'nanori');
+
+  const allKanjis = item.kanjis || [];
+  const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
+  const hasMoreKanjis = allKanjis.length > 8;
 
   return (
     <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 animate-fade-in space-y-6 text-sm leading-relaxed text-left select-text">
@@ -141,6 +153,52 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
                 ))}
               </div>
             </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Radical Relations: Found in Kanji */}
+      {item.type === 'radical' && allKanjis.length > 0 && (
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 space-y-3">
+          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+            Ditemukan di Kanji
+          </h4>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {displayedKanjis.map((kj) => (
+              <div
+                key={kj.id}
+                className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
+              >
+                <div>
+                  <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
+                    {kj.character}
+                  </span>
+                  <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
+                    {kj.slug}
+                  </span>
+                </div>
+                {kj.level && (
+                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
+                    Lvl {kj.level}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {hasMoreKanjis && (
+            <button
+              type="button"
+              onClick={() => setShowAllKanjis(!showAllKanjis)}
+              className="w-full py-2.5 px-4 bg-kanji/10 hover:bg-kanji/20 dark:bg-kanji/15 dark:hover:bg-kanji/25 text-kanji font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
+            >
+              <span>
+                {showAllKanjis
+                  ? 'Tampilkan Lebih Sedikit'
+                  : `Muat Lebih Banyak (+${allKanjis.length - 8} Kanji)`}
+              </span>
+              {showAllKanjis ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
           )}
         </div>
       )}
