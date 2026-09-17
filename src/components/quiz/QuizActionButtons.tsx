@@ -94,7 +94,7 @@ export default function QuizActionButtons({
       <button
         type="button"
         disabled={isInfoDisabled}
-        onClick={onToggleInfo}
+        onClick={() => onToggleInfo()}
         title="Tampilkan Info Detail (F)"
         className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xxs transition-all duration-200 active:scale-90 cursor-pointer ${infoActive
           ? 'bg-indigo-600 border-indigo-600 text-white shadow-md shadow-indigo-500/10'

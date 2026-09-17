@@ -161,7 +161,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-semibold text-sm">Menyiapkan Dashboard KaniGani Anda...</p>
+          <p className="font-semibold text-sm">Menyiapkan Beranda...</p>
         </div>
       </div>
     );
@@ -182,7 +182,7 @@ export default function Dashboard() {
           }`}
         >
           <Zap className="w-4 h-4" />
-          <span>{devModeToast ? 'Dev Mode ON ⚡' : 'Dev Mode OFF'}</span>
+          <span>{devModeToast ? 'Developer Mode ON ⚡' : 'Developer Mode OFF'}</span>
         </div>
       )}
 
@@ -192,7 +192,7 @@ export default function Dashboard() {
           <div>
             <div className="flex items-center space-x-2 select-none">
               <Sparkles className="w-5 h-5 text-amber-500 animate-spin" style={{ animationDuration: '6s' }} />
-              <span className="text-xs font-bold uppercase tracking-widest text-indigo-500">KaniGani Beranda</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-indigo-500">Beranda</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
               Selamat Belajar, <span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">{username}</span>!

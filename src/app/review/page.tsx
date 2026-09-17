@@ -218,6 +218,15 @@ export default function ReviewPage() {
           inputRef.current?.focus();
         }, 20);
       }
+    } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      toggleItemInfo();
+    } else if (isAnswerSubmitted && e.key === ' ') {
+      e.preventDefault();
+      handleProceedNext();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 20);
     }
   };
 

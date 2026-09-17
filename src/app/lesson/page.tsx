@@ -56,11 +56,13 @@ export default function LessonPage() {
   const [itemIndex, setItemIndex] = useState(0); // Index item in active batch
   const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'kanjis'>('info');
   const [showAllKanjis, setShowAllKanjis] = useState(false);
+  const [prevItemIndex, setPrevItemIndex] = useState(0);
 
   // Reset showAllKanjis when switching item in batch
-  useEffect(() => {
+  if (itemIndex !== prevItemIndex) {
+    setPrevItemIndex(itemIndex);
     setShowAllKanjis(false);
-  }, [itemIndex]);
+  }
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
@@ -280,6 +282,15 @@ export default function LessonPage() {
           inputRef.current?.focus();
         }, 20);
       }
+    } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      toggleItemInfo();
+    } else if (isAnswerSubmitted && e.key === ' ') {
+      e.preventDefault();
+      proceedNext();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 20);
     }
   };
 

@@ -232,7 +232,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   },
 
   toggleItemInfo: (force?: boolean) => {
-    set((state) => ({ showItemInfo: force !== undefined ? force : !state.showItemInfo }));
+    set((state) => ({
+      showItemInfo: typeof force === 'boolean' ? force : !state.showItemInfo
+    }));
   },
 
   submitAnswer: async () => {

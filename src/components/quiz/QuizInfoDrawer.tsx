@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Item } from '@/lib/types';
 import FormattedText from '@/components/FormattedText';
 import { ChevronDown, ChevronUp } from 'lucide-react';
@@ -12,10 +12,12 @@ interface QuizInfoDrawerProps {
 
 export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
+  const [prevItemId, setPrevItemId] = useState(item?.id);
 
-  useEffect(() => {
+  if (item?.id !== prevItemId) {
+    setPrevItemId(item?.id);
     setShowAllKanjis(false);
-  }, [item?.id]);
+  }
 
   if (!item) return null;
 
