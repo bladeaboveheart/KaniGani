@@ -43,19 +43,19 @@ export default function QuizSummaryView({
         </h2>
         <p className="text-sm text-slate-550 dark:text-slate-400">
           {isLesson
-            ? 'Selamat! Anda telah menyelesaikan pelajaran baru untuk batch ini. Semua item ini telah terdaftar di SRS dan siap diulas pada jadwal berikutnya.'
-            : 'Hebat! Anda telah menyelesaikan semua sesi kuis review yang jatuh tempo dengan sukses.'}
+            ? 'Anda telah menyelesaikan pelajaran baru untuk batch ini. Semua item ini telah terdaftar di SRS dan siap diulas pada jadwal berikutnya.'
+            : 'Anda telah menyelesaikan semua sesi kuis review dengan sukses.'}
         </p>
       </div>
 
       {/* Review Mode Stats */}
       {!isLesson && accuracyPct !== undefined && (
-        <div className="bg-slate-50 dark:bg-slate-955 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-4">
+        <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-4">
           <div className="flex flex-col justify-between items-center h-16 text-center select-none">
             <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
               Total Item
             </span>
-            <span className="text-xl font-black text-slate-800 dark:text-slate-200">
+            <span className="text-xl font-black text-slate-400 dark:text-slate-200">
               {totalCompleted ?? items.length}
             </span>
           </div>

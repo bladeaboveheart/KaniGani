@@ -313,7 +313,7 @@ export default function ReviewPage() {
 
   if (totalItemsCount === 0 && phase !== 'summary') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-955 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
         <CrabBackground />
         <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <Flame className="w-16 h-16 mx-auto text-pink-500 animate-bounce" />
