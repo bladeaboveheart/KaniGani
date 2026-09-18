@@ -11,6 +11,7 @@ export interface Item {
   reading_mnemonic?: string;
   description?: string;
   srs_stage?: number;
+  wanikani_id?: number;
   
   // Merged detailed properties
   meanings?: ItemMeaning[];
@@ -78,4 +79,14 @@ export interface DashboardStats {
   kanjiPassedInLevel: number;
   kanjiTotalInLevel: number;
   daysSinceLevelUp?: number;
+}
+
+export interface UserIntegration {
+  user_id: string;
+  wanikani_api_key?: string;
+  wanikani_username?: string;
+  wanikani_level?: number;
+  last_synced_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }

@@ -7,13 +7,16 @@ import { calculateUserLevel } from '@/lib/levelLogic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  Plus, Database, ShieldAlert, Sparkles, RefreshCw, Loader2, User, ArrowLeft
+  Plus, Database, ShieldAlert, Sparkles, RefreshCw, Loader2, User, ArrowLeft,
+  TrendingUp, Activity
 } from 'lucide-react';
 
 // Import Modular Components
 import KamusManager from '@/components/admin/KamusManager';
 import UserManager from '@/components/admin/UserManager';
 import ItemEditorModal from '@/components/admin/ItemEditorModal';
+import ProgressInspector from '@/components/admin/ProgressInspector';
+import DatabaseHealthCard from '@/components/admin/DatabaseHealthCard';
 
 interface MeaningInput {
   id?: string;
@@ -91,10 +94,12 @@ export default function AdminPage() {
   const [formItem, setFormItem] = useState<ItemInput>(initialFormState);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const [adminTab, setAdminTab] = useState<'kamus' | 'users'>('kamus');
+  const [adminTab, setAdminTab] = useState<'kamus' | 'progress' | 'users' | 'health'>('kamus');
   const [users, setUsers] = useState<any[]>([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [currentAuthUserId, setCurrentAuthUserId] = useState<string>('');
+  const [inspectUserId, setInspectUserId] = useState<string>('');
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -105,6 +110,8 @@ export default function AdminPage() {
           return;
         }
 
+        setCurrentAuthUserId(user.id);
+        setInspectUserId(user.id);
         const isDev = localStorage.getItem('kanigani-dev-mode') === 'true';
         setDevMode(isDev);
       } catch (err) {
@@ -561,23 +568,26 @@ export default function AdminPage() {
             {/* ADMIN TOP TITLE SECTION */}
             <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
               <div className="space-y-1">
-                <div className="flex items-center space-x-2 text-emerald-500">
+                <div className="flex items-center space-x-2 text-indigo-500">
                   <Database className="w-5 h-5 animate-pulse" />
-                  <span className="text-xs font-bold uppercase tracking-widest">KaniGani Database Manager</span>
+                  <span className="text-xs font-bold uppercase tracking-widest">KaniGani Database Studio</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                  CRUD <span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Kamus Pembelajaran</span>
+                  Database <span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">Management & Studio</span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Tambahkan, perbarui, dan sesuaikan data radikal, kanji, serta kosakata langsung di database relasional.
+                  Kelola kamus subjek, inspeksi progres & SRS pengguna, sinkronisasi akun, dan pantau status kesehatan database.
                 </p>
               </div>
 
               <div className="flex items-center gap-3 shrink-0 select-none">
                 <button
-                  onClick={() => loadDatabase()}
+                  onClick={() => {
+                    loadDatabase();
+                    loadUsers();
+                  }}
                   className="p-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-2xl transition-colors cursor-pointer"
-                  title="Refresh Database"
+                  title="Muat Ulang Database"
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
@@ -591,41 +601,54 @@ export default function AdminPage() {
               </div>
             </section>
 
-            {/* TAB SELECTOR (KAMUS VS USERS) */}
-            <div className="flex space-x-3 p-1.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-fit shadow-xs select-none">
+            {/* TAB SELECTOR (KAMUS, PROGRESS, USERS, HEALTH) */}
+            <div className="flex flex-wrap gap-2 p-1.5 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-200/50 dark:border-slate-800/50 w-full sm:w-fit shadow-xs select-none">
               <button
                 onClick={() => setAdminTab('kamus')}
-                className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'kamus'
+                className={`flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'kamus'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
               >
                 <Database className="w-4 h-4" />
-                <span>Pengelola Kamus</span>
+                <span>📚 Kamus & Subjek</span>
+              </button>
+
+              <button
+                onClick={() => setAdminTab('progress')}
+                className={`flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'progress'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                <span>📈 Progres Pengguna</span>
               </button>
 
               <button
                 onClick={() => setAdminTab('users')}
-                className={`flex items-center space-x-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'users'
+                className={`flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'users'
                   ? 'bg-indigo-600 text-white shadow-md'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                   }`}
               >
                 <User className="w-4 h-4" />
-                <span>Manajer Level Pengguna</span>
+                <span>👥 Pengguna & Akun</span>
+              </button>
+
+              <button
+                onClick={() => setAdminTab('health')}
+                className={`flex items-center space-x-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${adminTab === 'health'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+              >
+                <Activity className="w-4 h-4" />
+                <span>🩺 Status Database</span>
               </button>
             </div>
 
-            {adminTab === 'users' ? (
-              <UserManager
-                users={users}
-                userSearchQuery={userSearchQuery}
-                setUserSearchQuery={setUserSearchQuery}
-                handleSetUserLevel={handleSetUserLevel}
-                updatingUserId={updatingUserId}
-                loadUsers={loadUsers}
-              />
-            ) : (
+            {adminTab === 'kamus' && (
               <KamusManager
                 items={items}
                 stats={stats}
@@ -641,6 +664,32 @@ export default function AdminPage() {
                 deleteConfirmId={deleteConfirmId}
                 setDeleteConfirmId={setDeleteConfirmId}
               />
+            )}
+
+            {adminTab === 'progress' && (
+              <ProgressInspector
+                users={users}
+                currentUserId={inspectUserId || currentAuthUserId}
+              />
+            )}
+
+            {adminTab === 'users' && (
+              <UserManager
+                users={users}
+                userSearchQuery={userSearchQuery}
+                setUserSearchQuery={setUserSearchQuery}
+                handleSetUserLevel={handleSetUserLevel}
+                updatingUserId={updatingUserId}
+                loadUsers={loadUsers}
+                onInspectUser={(userId) => {
+                  setInspectUserId(userId);
+                  setAdminTab('progress');
+                }}
+              />
+            )}
+
+            {adminTab === 'health' && (
+              <DatabaseHealthCard />
             )}
           </>
         )}

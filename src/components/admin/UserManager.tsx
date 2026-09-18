@@ -9,6 +9,7 @@ interface UserManagerProps {
   handleSetUserLevel: (userId: string, level: number | null) => void;
   updatingUserId: string | null;
   loadUsers: () => void;
+  onInspectUser?: (userId: string) => void;
 }
 
 export default function UserManager({
@@ -17,7 +18,8 @@ export default function UserManager({
   setUserSearchQuery,
   handleSetUserLevel,
   updatingUserId,
-  loadUsers
+  loadUsers,
+  onInspectUser
 }: UserManagerProps) {
   const filteredUsers = users.filter(u =>
     u.username.toLowerCase().includes(userSearchQuery.toLowerCase())
@@ -95,6 +97,16 @@ export default function UserManager({
                   </select>
                 </div>
               </div>
+
+              {onInspectUser && (
+                <button
+                  type="button"
+                  onClick={() => onInspectUser(userItem.id)}
+                  className="w-full py-2 bg-indigo-50 dark:bg-indigo-950/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 font-bold rounded-xl text-3xs border border-indigo-100 dark:border-indigo-900/50 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <span>Inspeksi Progres SRS Pengguna ➔</span>
+                </button>
+              )}
 
               {updatingUserId === userItem.id && (
                 <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center rounded-3xl">

@@ -173,6 +173,15 @@ export default function KamusManager({
                         key={item.id}
                         className={`group relative pt-4 pb-3 px-4 rounded-2xl border flex flex-col justify-between items-center text-center transition-all duration-300 hover:-translate-y-0.5 h-28 select-none whitespace-nowrap overflow-hidden ${cardStyles}`}
                       >
+                        {item.wanikani_id && (
+                          <span
+                            title={`WaniKani Subject ID: ${item.wanikani_id}`}
+                            className="absolute top-1.5 right-2 text-[9px] font-mono font-bold text-slate-400 dark:text-slate-500 opacity-70 group-hover:opacity-0 transition-opacity"
+                          >
+                            #{item.wanikani_id}
+                          </span>
+                        )}
+
                         {/* Character with Solid Border */}
                         <div className={`px-4 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
                           {item.character}

@@ -115,10 +115,10 @@ export async function fetchContextSentences(itemIds: string[]): Promise<any[]> {
 }
 
 /**
- * Fetches detailed relations for a single item (meanings, readings, context sentences, prerequisites).
+ * Fetches detailed relations for a single item (meanings, readings, context sentences, prerequisites, dependents).
  */
 export async function fetchItemFullDetails(itemId: string) {
-  const [meaningsRes, readingsRes, sentencesRes, prereqsRes] = await Promise.all([
+  const [meaningsRes, readingsRes, sentencesRes, prereqsRes, dependentsRes] = await Promise.all([
     supabase.from('item_meanings').select('*').eq('item_id', itemId),
     supabase.from('item_readings').select('*').eq('item_id', itemId),
     supabase.from('item_context_sentences').select('*').eq('item_id', itemId),
@@ -126,6 +126,10 @@ export async function fetchItemFullDetails(itemId: string) {
       .from('item_prerequisites')
       .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
       .eq('item_id', itemId),
+    supabase
+      .from('item_prerequisites')
+      .select('item_id, items!item_id(id, character, slug, level, type)')
+      .eq('requires_item_id', itemId),
   ]);
 
   return {
@@ -133,5 +137,6 @@ export async function fetchItemFullDetails(itemId: string) {
     readings: readingsRes.data || [],
     sentences: sentencesRes.data || [],
     prerequisites: prereqsRes.data?.map((p: any) => p.items).filter(Boolean) || [],
+    dependents: dependentsRes.data?.map((d: any) => d.items).filter(Boolean) || [],
   };
 }

@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Item, ItemType } from '@/lib/types';
-import { fetchItemsByType, fetchAllItemPrerequisites, fetchItemFullDetails } from '@/services/itemsService';
+import { fetchItemsByType, fetchItemFullDetails } from '@/services/itemsService';
 import { fetchAllUserProgress } from '@/services/progressService';
 
 export interface DictionaryItem extends Item {
@@ -48,11 +48,10 @@ export function useDictionaryItems(itemType: ItemType) {
           return;
         }
 
-        // Fetch items, progresses, prerequisites, and meanings/readings in parallel
-        const [itemsData, progData, prereqs] = await Promise.all([
+        // Fetch items and user progress in parallel
+        const [itemsData, progData] = await Promise.all([
           fetchItemsByType(itemType),
           fetchAllUserProgress(user.id),
-          fetchAllItemPrerequisites(),
         ]);
 
         // Pre-fetch meanings and readings for kanji & vocab to display on cards immediately
@@ -91,28 +90,6 @@ export function useDictionaryItems(itemType: ItemType) {
           readingsMap.get(r.item_id)!.push(r);
         });
 
-        // Group dependents / prerequisites
-        const dependentsMap = new Map<string, any[]>();
-        const componentsMap = new Map<string, any[]>();
-
-        if (prereqs) {
-          prereqs.forEach((row: any) => {
-            const depItem = row.items;
-            const reqId = row.requires_item_id;
-            const itemId = row.item_id;
-
-            if (depItem) {
-              // What depends on this required item
-              if (!dependentsMap.has(reqId)) dependentsMap.set(reqId, []);
-              dependentsMap.get(reqId)!.push(depItem);
-
-              // What this item is composed of
-              if (!componentsMap.has(itemId)) componentsMap.set(itemId, []);
-              componentsMap.get(itemId)!.push({ id: reqId });
-            }
-          });
-        }
-
         // Map progresses
         const progressMap = new Map(progData?.map(p => [p.item_id, p]) || []);
 
@@ -125,8 +102,6 @@ export function useDictionaryItems(itemType: ItemType) {
           const primaryMeaning = itemMeanings.find(m => m.primary_meaning)?.meaning || item.slug || '';
           const primaryReading = itemReadings.find(r => r.primary_reading)?.reading || '';
 
-          const foundDependents = dependentsMap.get(item.id) || [];
-
           return {
             ...item,
             srs_stage: progress ? progress.srs_stage : 0,
@@ -136,8 +111,6 @@ export function useDictionaryItems(itemType: ItemType) {
             readings: itemReadings,
             primary_meaning: primaryMeaning,
             primary_reading: primaryReading,
-            kanjis: itemType === 'radical' ? foundDependents.filter((d: any) => d.type === 'kanji') : undefined,
-            vocabularies: itemType === 'kanji' ? foundDependents.filter((d: any) => d.type === 'vocabulary') : undefined,
           };
         });
 
@@ -165,27 +138,28 @@ export function useDictionaryItems(itemType: ItemType) {
     loadData();
   }, [itemType, router]);
 
-  // Load detailed relations dynamically when opening modal if not preloaded (e.g. context sentences, components)
+  // Load detailed relations dynamically when opening modal (meanings, readings, context sentences, components, found-in)
   const openItemDetail = async (item: DictionaryItem) => {
     setSelectedItem(item);
 
-    if (itemType === 'kanji' || itemType === 'vocabulary') {
-      try {
-        setDetailLoading(true);
-        const details = await fetchItemFullDetails(item.id);
-        setSelectedItem(prev => prev && prev.id === item.id ? {
-          ...prev,
-          meanings: details.meanings.length ? details.meanings : prev.meanings,
-          readings: details.readings.length ? details.readings : prev.readings,
-          sentences: details.sentences,
-          radicals: details.prerequisites.filter((p: any) => p.type === 'radical'),
-          kanjis: details.prerequisites.filter((p: any) => p.type === 'kanji'),
-        } : prev);
-      } catch (err) {
-        console.error('Error fetching full item details:', err);
-      } finally {
-        setDetailLoading(false);
-      }
+    try {
+      setDetailLoading(true);
+      const details = await fetchItemFullDetails(item.id);
+      setSelectedItem(prev => prev && prev.id === item.id ? {
+        ...prev,
+        meanings: details.meanings.length ? details.meanings : prev.meanings,
+        readings: details.readings.length ? details.readings : prev.readings,
+        sentences: details.sentences,
+        radicals: details.prerequisites.filter((p: any) => p.type === 'radical'),
+        kanjis: itemType === 'radical'
+          ? details.dependents.filter((d: any) => d.type === 'kanji')
+          : details.prerequisites.filter((p: any) => p.type === 'kanji'),
+        vocabularies: details.dependents.filter((d: any) => d.type === 'vocabulary'),
+      } : prev);
+    } catch (err) {
+      console.error('Error fetching full item details:', err);
+    } finally {
+      setDetailLoading(false);
     }
   };
 

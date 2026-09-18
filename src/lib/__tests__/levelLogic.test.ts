@@ -6,8 +6,6 @@ import {
   checkPrerequisitesMet,
   getUnlockableItemsOnLevelUp,
   getUnlockableDependentItems,
-  MAX_LEVEL,
-  LEVEL_UP_RATIO_THRESHOLD,
   KanjiItem,
   ItemInfo,
 } from '../levelLogic';
@@ -207,20 +205,37 @@ describe('Level Up & SRS Logic Test Suite', () => {
       expect(calculatePenalty(8, 4)).toBe(4);
     });
 
-    it('should compute next review date according to SRS intervals', () => {
+    it('should compute next review date according to WaniKani drift-free intervals and hourly batching', () => {
       const base = new Date('2026-01-01T00:00:00.000Z');
       
-      // Stage 1: 4 hours (240 min)
+      // Stage 1: 4 hours
       const r1 = getNextReviewDate(1, base);
       expect(r1).toBe(new Date('2026-01-01T04:00:00.000Z').toISOString());
 
-      // Stage 3: 24 hours (1 day)
+      // Stage 2: 8 hours
+      const r2 = getNextReviewDate(2, base);
+      expect(r2).toBe(new Date('2026-01-01T08:00:00.000Z').toISOString());
+
+      // Stage 3: 23 hours (WaniKani drift-free: 1 day - 1h)
       const r3 = getNextReviewDate(3, base);
-      expect(r3).toBe(new Date('2026-01-02T00:00:00.000Z').toISOString());
+      expect(r3).toBe(new Date('2026-01-01T23:00:00.000Z').toISOString());
+
+      // Stage 4: 47 hours (WaniKani drift-free: 2 days - 1h)
+      const r4 = getNextReviewDate(4, base);
+      expect(r4).toBe(new Date('2026-01-02T23:00:00.000Z').toISOString());
+
+      // Stage 5 (Guru 1): 167 hours (7 days - 1h)
+      const r5 = getNextReviewDate(5, base);
+      expect(r5).toBe(new Date('2026-01-07T23:00:00.000Z').toISOString());
 
       // Stage 9 (Burned): null
       const r9 = getNextReviewDate(9, base);
       expect(r9).toBeNull();
+
+      // Hourly batching test: arbitrary minutes and seconds must be truncated to :00:00.000Z
+      const baseWithMinutes = new Date('2026-01-01T14:47:35.890Z');
+      const rBatch = getNextReviewDate(1, baseWithMinutes);
+      expect(rBatch).toBe(new Date('2026-01-01T18:00:00.000Z').toISOString());
     });
   });
 });

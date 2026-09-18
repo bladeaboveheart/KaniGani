@@ -8,9 +8,11 @@ import { calculateUserLevel } from '@/lib/levelLogic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  User, Mail, Settings, Save, Shield, Award, BarChart2,
-  Calendar, CheckCircle, Loader2, Sparkles, AlertCircle, RefreshCw
+  User, Mail, Settings, Save, Award, BarChart2,
+  Calendar, CheckCircle, Loader2, AlertCircle
 } from 'lucide-react';
+
+import WaniKaniIntegrationCard from '@/components/settings/WaniKaniIntegrationCard';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -210,6 +212,11 @@ export default function SettingsPage() {
               Kelola profil KaniGani Anda, atur preferensi nama, dan pantau kemajuan belajar SRS komprehensif Anda.
             </p>
           </div>
+        </section>
+
+        {/* WANIKANI INTEGRATION SECTION */}
+        <section>
+          <WaniKaniIntegrationCard />
         </section>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

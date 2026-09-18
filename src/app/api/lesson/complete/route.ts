@@ -1,28 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getNextReviewDate } from '@/lib/levelLogic';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-
-const SRS_INTERVALS: Record<number, number> = {
-  1: 4 * 60,         // 4 jam
-  2: 8 * 60,         // 8 jam
-  3: 24 * 60,        // 24 jam (1 hari)
-  4: 2 * 24 * 60,    // 48 jam (2 hari)
-  5: 7 * 24 * 60,    // 7 hari (1 minggu)
-  6: 14 * 24 * 60,   // 14 hari (2 minggu)
-  7: 30 * 24 * 60,   // 30 hari (1 bulan)
-  8: 120 * 24 * 60,  // 120 hari (4 bulan)
-};
-
-function getNextReviewDate(stage: number): string | null {
-  if (stage >= 9) return null;
-  const intervalMinutes = SRS_INTERVALS[stage];
-  if (!intervalMinutes) return null;
-  const next = new Date();
-  next.setMinutes(next.getMinutes() + intervalMinutes);
-  return next.toISOString();
-}
 
 export async function POST(request: Request) {
   try {

@@ -6,15 +6,28 @@
 export const MAX_LEVEL = 60;
 export const LEVEL_UP_RATIO_THRESHOLD = 0.9; // 90% kanji in current level must be Guru (srs_stage >= 5)
 
+// Official WaniKani SRS intervals in hours (drift-free: daily intervals are minus 1 hour)
+export const SRS_INTERVALS_HOURS: Record<number, number> = {
+  1: 4,               // 4 hours (Apprentice 1)
+  2: 8,               // 8 hours (Apprentice 2)
+  3: 23,              // 23 hours (Apprentice 3: 1 day - 1h)
+  4: 47,              // 47 hours (Apprentice 4: 2 days - 1h)
+  5: 167,             // 167 hours (Guru 1: 7 days - 1h)
+  6: 335,             // 335 hours (Guru 2: 14 days - 1h)
+  7: 719,             // 719 hours (Master: 30 days - 1h)
+  8: 2879,            // 2879 hours (Enlightened: 120 days - 1h)
+};
+
+// Kept for backwards compatibility in minutes
 export const SRS_INTERVALS: Record<number, number> = {
-  1: 4 * 60,         // 4 hours
-  2: 8 * 60,         // 8 hours
-  3: 24 * 60,        // 24 hours (1 day)
-  4: 2 * 24 * 60,    // 48 hours (2 days)
-  5: 7 * 24 * 60,    // 7 days (1 week)
-  6: 14 * 24 * 60,   // 14 days (2 weeks)
-  7: 30 * 24 * 60,   // 30 days (1 month)
-  8: 120 * 24 * 60,  // 120 days (4 months)
+  1: 4 * 60,
+  2: 8 * 60,
+  3: 23 * 60,
+  4: 47 * 60,
+  5: 167 * 60,
+  6: 335 * 60,
+  7: 719 * 60,
+  8: 2879 * 60,
 };
 
 export interface KanjiItem {
@@ -34,13 +47,16 @@ export interface ItemInfo {
 /**
  * Calculates next review ISO string based on SRS stage.
  * Burned (stage 9) or invalid stages return null.
+ * Follows WaniKani hourly batching: truncates review timestamp to top of the hour (:00:00.000Z).
  */
 export function getNextReviewDate(stage: number, fromDate: Date = new Date()): string | null {
-  if (stage >= 9) return null;
-  const intervalMinutes = SRS_INTERVALS[stage];
-  if (!intervalMinutes) return null;
+  if (stage >= 9 || stage < 1) return null;
+  const intervalHours = SRS_INTERVALS_HOURS[stage];
+  if (intervalHours === undefined) return null;
+
   const next = new Date(fromDate.getTime());
-  next.setMinutes(next.getMinutes() + intervalMinutes);
+  next.setHours(next.getHours() + intervalHours);
+  next.setMinutes(0, 0, 0); // Hourly batching (top of the hour)
   return next.toISOString();
 }
 

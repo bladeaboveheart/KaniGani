@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
 import { calculateUserLevel } from '@/lib/levelLogic';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical } from 'lucide-react';
+import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical, Database } from 'lucide-react';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
@@ -267,16 +267,14 @@ export default function Navbar() {
                           <Settings className="w-4 h-4 text-slate-400 dark:text-slate-450" />
                           <span>Pengaturan</span>
                         </Link>
-                        {devMode && (
-                          <Link
-                            href="/admin"
-                            onClick={() => setIsDropdownOpen(false)}
-                            className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left border-t border-slate-100 dark:border-slate-800"
-                          >
-                            <Layers className="w-4 h-4 text-emerald-500" />
-                            <span className="font-bold">CRUD Database</span>
-                          </Link>
-                        )}
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center space-x-2 px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors text-left border-t border-slate-100 dark:border-slate-800 cursor-pointer"
+                        >
+                          <Database className="w-4 h-4 text-emerald-500" />
+                          <span className="font-bold">Database Studio</span>
+                        </Link>
                         {/* Beta Tester Toggle */}
                         <button
                           onClick={toggleBetaTester}

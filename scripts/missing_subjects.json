@@ -1,0 +1,1513 @@
+[
+  {
+    "id": 9176,
+    "object": "kana_vocabulary",
+    "characters": "ちょっと",
+    "slug": "ちょっと",
+    "level": 10,
+    "meanings": [
+      "A Little",
+      "A Moment"
+    ],
+    "readings": [
+      "ちょっと"
+    ],
+    "components": [],
+    "meaning_mnemonic": "You <reading>chort</reading>le (ちょっと) <vocabulary>a little</vocabulary> at a silly joke. You can’t help chortling <vocabulary>for a moment</vocabulary>. Go ahead, chortle just a little, for just a moment, to help you remember this word.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9177,
+    "object": "kana_vocabulary",
+    "characters": "おはよう",
+    "slug": "おはよう",
+    "level": 2,
+    "meanings": [
+      "Good Morning"
+    ],
+    "readings": [
+      "おはよう"
+    ],
+    "components": [],
+    "meaning_mnemonic": "From <reading>Ohio</reading> (おはよう), you shout <vocabulary>good morning</vocabulary>. Why Ohio? Because that's where you woke up this morning. Imagine yourself waking up in Ohio, and wishing everyone \"good morning\" at the top of your lungs.\n\nおはよう is a casual way to say \"good morning.\" It can also be written in kanji, but hiragana is much more common.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9178,
+    "object": "kana_vocabulary",
+    "characters": "ホテル",
+    "slug": "ホテル",
+    "level": 2,
+    "meanings": [
+      "Hotel"
+    ],
+    "readings": [
+      "ホテル"
+    ],
+    "components": [],
+    "meaning_mnemonic": "ホテル comes from the English word <vocabulary>hotel</vocabulary> and the meaning is exactly the same!\n\nThe only thing to watch out for is that the \"l\" on the end becomes ル, because that's the closest sound in Japanese.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9179,
+    "object": "kana_vocabulary",
+    "characters": "これ",
+    "slug": "これ",
+    "level": 3,
+    "meanings": [
+      "This One",
+      "These Ones"
+    ],
+    "readings": [
+      "これ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Colle</reading>ct (これ) <vocabulary>this one</vocabulary> right here! Go ahead, collect this one.\n\nYou can use これ to talk about anything that's close to you. Things that are close to you are easy to collect, after all!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9180,
+    "object": "kana_vocabulary",
+    "characters": "する",
+    "slug": "する",
+    "level": 3,
+    "meanings": [
+      "To Do"
+    ],
+    "readings": [
+      "する"
+    ],
+    "components": [],
+    "meaning_mnemonic": "It's only <reading>through</reading> (する) doing things that we get better at them, so you need <vocabulary>to do</vocabulary> them as much as you can.\n\nする basically means <vocabulary>to do</vocabulary>, but it’s incredibly versatile and goes beyond its English equivalent. Besides being used alone, it can be put together with a whole range of nouns to turn them into verbs. We call these する verbs and you'll learn a lot of them as we go along!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9181,
+    "object": "kana_vocabulary",
+    "characters": "リンゴ",
+    "slug": "リンゴ",
+    "level": 3,
+    "meanings": [
+      "Apple"
+    ],
+    "readings": [
+      "リンゴ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Ringo</reading> (リンゴ) just ate your <vocabulary>apple</vocabulary>! You were about to take a bite, and he grabbed it. What is Ringo doing snatching apples? Surely he can afford his own.\n\nDid you know that Ringo Starr once appeared in a Japanese TV commercial for <vocabulary>apple</vocabulary> juice? That might help you remember this word, too!\n\nリンゴ is also commonly written in hiragana, and even in kanji, but you’ll probably see it in katakana the most.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9182,
+    "object": "kana_vocabulary",
+    "characters": "コーヒー",
+    "slug": "コーヒー",
+    "level": 3,
+    "meanings": [
+      "Coffee"
+    ],
+    "readings": [
+      "コーヒー"
+    ],
+    "components": [],
+    "meaning_mnemonic": "コーヒー is the katakana version of the English word <vocabulary>coffee</vocabulary>. \n\nJust watch out for the second syllable, which changes to ヒー in Japanese.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9183,
+    "object": "kana_vocabulary",
+    "characters": "こんにちは",
+    "slug": "こんにちは",
+    "level": 3,
+    "meanings": [
+      "Hello",
+      "Good Afternoon"
+    ],
+    "readings": [
+      "こんにちは"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Connie Chihua</reading>hua (こんにちは) says <vocabulary>hello</vocabulary>. Connie Chihuahua is an amazing talking chihuahua. She can only say \"hello\", but that alone is pretty impressive.\n\nこんにちは is a formal way to say \"hello\". It’s generally used during the daytime, from late morning to early evening. Watch out for the は on the end, which is always pronounced わ.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9184,
+    "object": "kana_vocabulary",
+    "characters": "いつ",
+    "slug": "いつ",
+    "level": 3,
+    "meanings": [
+      "When"
+    ],
+    "readings": [
+      "いつ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "He <reading>eats</reading> (いつ) and eats and eats. <vocabulary>When</vocabulary> does this guy not eat?\n\nいつ is a question word that is used to ask <vocabulary>when</vocabulary>.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9185,
+    "object": "kana_vocabulary",
+    "characters": "どれ",
+    "slug": "どれ",
+    "level": 4,
+    "meanings": [
+      "Which One",
+      "Which"
+    ],
+    "readings": [
+      "どれ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Do re</reading> (どれ) mi fa sol la ti... <vocabulary>which one</vocabulary> of these notes are you going to start singing from?\n\nThe question word どれ is used to ask <vocabulary>which one</vocabulary> out of three or more choices.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9186,
+    "object": "kana_vocabulary",
+    "characters": "テレビ",
+    "slug": "テレビ",
+    "level": 4,
+    "meanings": [
+      "Television",
+      "TV"
+    ],
+    "readings": [
+      "テレビ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "テレビ comes from the English word <vocabulary>television</vocabulary>. It’s been shortened, which is really common with loanwords in Japanese. The \"vi\" sound becomes ビ, too.\n\nテレビ is sometimes written as \"TV\", but even then it’s usually pronounced テレビ.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9187,
+    "object": "kana_vocabulary",
+    "characters": "うん",
+    "slug": "うん",
+    "level": 4,
+    "meanings": [
+      "Yep",
+      "Yeah",
+      "Yes"
+    ],
+    "readings": [
+      "うん"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Wanna play <reading>Un</reading>o (うん)? <vocabulary>Yep</vocabulary>! 'Course I do. I always wanna play Uno.\n\nうん is a casual way to say <vocabulary>yes</vocabulary>, or <vocabulary>yeah</vocabulary>, so you’d generally use it with friends and family, and in other informal situations.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9188,
+    "object": "kana_vocabulary",
+    "characters": "はい",
+    "slug": "はい",
+    "level": 4,
+    "meanings": [
+      "Yes"
+    ],
+    "readings": [
+      "はい"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Want me to write a <reading>hai</reading>ku (はい)? <vocabulary>Yes</vocabulary>, of course!\n\nはい is a formal word for \"yes\". You can use it to let someone know they’re right, or simply that you’re listening, as well as to respond if someone says your name.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9189,
+    "object": "kana_vocabulary",
+    "characters": "ノート",
+    "slug": "ノート",
+    "level": 4,
+    "meanings": [
+      "Notebook",
+      "Notes"
+    ],
+    "readings": [
+      "ノート"
+    ],
+    "components": [],
+    "meaning_mnemonic": "ノート is a shortened form of <vocabulary>notebook</vocabulary>, with an extra \"o\" on the end since you can’t end a word with \"t\" in Japanese.\n\nYou can also use this to mean <vocabulary>notes</vocabulary>, in the context of taking down notes in a class.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9190,
+    "object": "kana_vocabulary",
+    "characters": "さようなら",
+    "slug": "さようなら",
+    "level": 4,
+    "meanings": [
+      "Goodbye"
+    ],
+    "readings": [
+      "さようなら"
+    ],
+    "components": [],
+    "meaning_mnemonic": "I <reading>saw your Nara</reading> (さようなら), but I then had to say <vocabulary>goodbye</vocabulary>. It was just a short trip, but at least I saw your Nara.\n\nさようなら is a formal way to say goodbye, so a good word to use with colleagues and teachers.\n\nA quick tip before I say goodbye: さようなら often drops its middle う, becoming さよなら.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9191,
+    "object": "kana_vocabulary",
+    "characters": "こんばんは",
+    "slug": "こんばんは",
+    "level": 4,
+    "meanings": [
+      "Good Evening"
+    ],
+    "readings": [
+      "こんばんは"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Con ban, wah!</reading> (こんばんは) cries your friend, just as you say <vocabulary>good evening</vocabulary>. There's a report on the evening news about a con ban (yes, that's a ban on conning people). Wah! Exciting stuff.\n\nYou can use こんばんは as a greeting from around 5pm or 6pm, in both formal and informal situations.　Watch out for that は on the end, which is pronounced わ here too.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9192,
+    "object": "kana_vocabulary",
+    "characters": "それ",
+    "slug": "それ",
+    "level": 5,
+    "meanings": [
+      "That One",
+      "Those Ones"
+    ],
+    "readings": [
+      "それ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Sorry</reading> (それ), can you grab <vocabulary>that one</vocabulary> for me? Yeah, <vocabulary>that</vocabulary>, thanks!\n\nYou can use それ for things that are close to the person you're talking to, or fairly close to both of you.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9193,
+    "object": "kana_vocabulary",
+    "characters": "コンビニ",
+    "slug": "コンビニ",
+    "level": 5,
+    "meanings": [
+      "Convenience Store"
+    ],
+    "readings": [
+      "コンビニ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "コンビニ comes from the English word <vocabulary>convenience store</vocabulary>, but who has time for all those syllables? That's why they cut it down to \"conveni\". So much more convenient that way.\n\nWatch out for the “v” sound, which usually becomes “b” in Japanese, and this word is no exception.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9194,
+    "object": "kana_vocabulary",
+    "characters": "デパート",
+    "slug": "デパート",
+    "level": 5,
+    "meanings": [
+      "Department Store"
+    ],
+    "readings": [
+      "デパート"
+    ],
+    "components": [],
+    "meaning_mnemonic": "デパート comes from  <vocabulary>department store</vocabulary>. Yet another shortened loanword! There's an extra \"o\" sound on the end of this one, since a word can't end in \"t\" in Japanese.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9195,
+    "object": "kana_vocabulary",
+    "characters": "すみません",
+    "slug": "すみません",
+    "level": 5,
+    "meanings": [
+      "Excuse Me",
+      "I'm Sorry",
+      "Sorry"
+    ],
+    "readings": [
+      "すみません"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Sue me, Ma Sen!</reading> (すみません), you yell at Ma Sen, before quickly adding \"<vocabulary>Excuse me</vocabulary>…<vocabulary>I'm sorry</vocabulary>, so <vocabulary> sorry</vocabulary>!\" You shouldn't have shouted at Ma Sen like that. You hope she won’t actually sue you.\n\nYou can use すみません both to apologize and to get someone’s attention. This expression is really common in Japan, and dropping it in wherever you can will help you blend right in!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9196,
+    "object": "kana_vocabulary",
+    "characters": "いいえ",
+    "slug": "いいえ",
+    "level": 5,
+    "meanings": [
+      "No"
+    ],
+    "readings": [
+      "いいえ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Eeh! Eh?</reading> (いいえ) <vocabulary>No</vocabulary>! You’re so surprised by whatever the question was, you can only manage \"Eeh! Eh? No!\" in response.\n\nいいえ is a formal word for \"no\", so you can use it to answer politely in the negative.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9197,
+    "object": "kana_vocabulary",
+    "characters": "あなた",
+    "slug": "あなた",
+    "level": 5,
+    "meanings": [
+      "You",
+      "Darling"
+    ],
+    "readings": [
+      "あなた"
+    ],
+    "components": [],
+    "meaning_mnemonic": "\"<reading>A gnat, ah!</reading> (あなた). I’m going to get <vocabulary>you</vocabulary>! Yes YOU,\" you shout as you swat at that pesky gnat buzzing around your head.\n\nあなた is a lot less common than “you” in English, but you’ll come across it in adverts, online forums, and textbooks, where it’s used to address a general, anonymous audience. Some people also use it with their significant other, in which case it sounds intimate, like \"darling\". In casual conversations, though, it can come off as standoffish, so it's better to use someone's name or social title (like \"teacher\") instead.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9198,
+    "object": "kana_vocabulary",
+    "characters": "この",
+    "slug": "この",
+    "level": 6,
+    "meanings": [
+      "This",
+      "These"
+    ],
+    "readings": [
+      "この"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how これ means \"this one\"? Well, この simply means <vocabulary>this</vocabulary>. The difference is that これ is used on its own, whereas この goes before a noun. For example, この人 means \"this person\".\n\nNotice how words like this starting with こ are close to you? We'll be learning a few more of these, and they all follow the same pattern!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9199,
+    "object": "kana_vocabulary",
+    "characters": "あれ",
+    "slug": "あれ",
+    "level": 6,
+    "meanings": [
+      "That One Over There",
+      "Those Ones Over There"
+    ],
+    "readings": [
+      "あれ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "You need <reading>a le</reading>ns (あれ)? How about <vocabulary>that one over there</vocabulary>? You’re in a camera shop picking out a new lens, and that one over there looks good.\n\nUse あれ to refer to something that's far from both you and the person you're talking to.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9200,
+    "object": "kana_vocabulary",
+    "characters": "ドル",
+    "slug": "ドル",
+    "level": 6,
+    "meanings": [
+      "Dollar"
+    ],
+    "readings": [
+      "ドル"
+    ],
+    "components": [],
+    "meaning_mnemonic": "ドル is the Japanese version of the English word <vocabulary>dollar</vocabulary>. \n\nThe dollar symbol $ is also common in Japanese, and the pronunciation is still ドル.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9201,
+    "object": "kana_vocabulary",
+    "characters": "どの",
+    "slug": "どの",
+    "level": 6,
+    "meanings": [
+      "Which"
+    ],
+    "readings": [
+      "どの"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how どれ means \"which one\"? どの has a very similar meaning: <vocabulary>which</vocabulary>. Whereas どれ is used on its own, どの is used before a noun to ask \"which\" out of three or more options. So for example, どの本 is \"which book (out of that pile)?\".\n\nNotice how question words often start with a ど? We'll be seeing more of these!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9202,
+    "object": "kana_vocabulary",
+    "characters": "ない",
+    "slug": "ない",
+    "level": 6,
+    "meanings": [
+      "Not There",
+      "Not Exist"
+    ],
+    "readings": [
+      "ない"
+    ],
+    "components": [],
+    "meaning_mnemonic": "The <reading>kni</reading>fe (ない) is <vocabulary>not there</vocabulary>. It's not here and it's not there. It’s missing. It's nowhere to be found, so don't bother looking for it!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9203,
+    "object": "kana_vocabulary",
+    "characters": "カバン",
+    "slug": "カバン",
+    "level": 6,
+    "meanings": [
+      "Bag"
+    ],
+    "readings": [
+      "カバン"
+    ],
+    "components": [],
+    "meaning_mnemonic": "If there's a <reading>ca</reading>r <reading>ban</reading> (カバン), you'll need a nice <vocabulary>bag</vocabulary> to carry all your stuff in. You can't just throw it all in the car, so get yourself a nice bag instead.\n\nカバン is used for bags that you can close and that have a fairly rigid structure, like satchels or briefcases, but not more flimsy bags that don't close, like plastic or paper shopping bags.\n\nThis word can also be written in hiragana and kanji. All versions are pretty common, but you'll probably see it in katakana the most. ",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9204,
+    "object": "kana_vocabulary",
+    "characters": "タクシー",
+    "slug": "タクシー",
+    "level": 6,
+    "meanings": [
+      "Taxi",
+      "Cab"
+    ],
+    "readings": [
+      "タクシー"
+    ],
+    "components": [],
+    "meaning_mnemonic": "タクシー is the katakana version of the English word <vocabulary>taxi</vocabulary>. The \"xi\" sound becomes クシー to fit better with Japanese pronunciation.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9205,
+    "object": "kana_vocabulary",
+    "characters": "その",
+    "slug": "その",
+    "level": 7,
+    "meanings": [
+      "That",
+      "Those"
+    ],
+    "readings": [
+      "その"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how それ means \"that one\"? その has a very similar meaning: <vocabulary>that</vocabulary>. It's used before a noun that's either close to the person you're talking to, or fairly close to both of you. For example, その本 is \"that book\", and the book in question might be in the hand of the person you're talking to, or it might be on a shelf not far from you both.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9206,
+    "object": "kana_vocabulary",
+    "characters": "あの",
+    "slug": "あの",
+    "level": 7,
+    "meanings": [
+      "That Over There",
+      "Those Over There"
+    ],
+    "readings": [
+      "あの"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how あれ means \"that one over there\"? Well, あの means <vocabulary>that</vocabulary>, and goes before a noun to point out something that is far away from both you and the person you're talking to, such as あの本 (that book over there) or あの子犬 (that puppy over there).\n\nNotice how these words starting with あ are far away from you? We'll be learning a few more of these, and they all follow the same pattern! What's more, you’ll notice that words ending in の tend to go before a noun.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9207,
+    "object": "kana_vocabulary",
+    "characters": "でも",
+    "slug": "でも",
+    "level": 8,
+    "meanings": [
+      "But",
+      "However"
+    ],
+    "readings": [
+      "でも"
+    ],
+    "components": [],
+    "meaning_mnemonic": "I want to show you my <reading>demo</reading> (でも), <vocabulary>but</vocabulary> you don't want to see it. <vocabulary>However</vocabulary>, I'm going to show it to you anyway. So there.\n\nSomething to watch out for with でも is that it always goes at the beginning of a sentence, not in the middle, like \"but\" usually does in English. It’s also a fairly casual word, so it’s not normally used in formal situations.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9208,
+    "object": "kana_vocabulary",
+    "characters": "まだ",
+    "slug": "まだ",
+    "level": 8,
+    "meanings": [
+      "Still",
+      "Not Yet"
+    ],
+    "readings": [
+      "まだ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "You've been getting <reading>madder</reading> (まだ) and madder, and you’re <vocabulary>still</vocabulary> mad. You’re <vocabulary>not yet</vocabulary> as mad as you could be, though.\n\nYou can use まだ to talk about a situation that started in the past and continues into the present. Wait! Where are you going? I'm still explaining this! I'm not done yet!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9209,
+    "object": "kana_vocabulary",
+    "characters": "ここ",
+    "slug": "ここ",
+    "level": 8,
+    "meanings": [
+      "Here"
+    ],
+    "readings": [
+      "ここ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how words beginning with こ are close to you? It ends with こ too, which is a clue that we’re talking about a place. So ここ means <vocabulary>here</vocabulary>.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9210,
+    "object": "kana_vocabulary",
+    "characters": "おやつ",
+    "slug": "おやつ",
+    "level": 8,
+    "meanings": [
+      "Snack"
+    ],
+    "readings": [
+      "おやつ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Oh yah! Two</reading> (おやつ) <vocabulary>snack</vocabulary>s, just for you. Imagine your two snacks. What are they? I bet they're delicious. Oh yah!\n\nおやつ can be anything from candy to cookies to onigiri. Basically, it's anything fairly light that’s eaten between meals.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9211,
+    "object": "kana_vocabulary",
+    "characters": "どこ",
+    "slug": "どこ",
+    "level": 8,
+    "meanings": [
+      "Where"
+    ],
+    "readings": [
+      "どこ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how words beginning with ど are often question words, and words ending in こ refer to places? This one's no exception, so どこ means <vocabulary>where</vocabulary>. ",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9212,
+    "object": "kana_vocabulary",
+    "characters": "もしもし",
+    "slug": "もしもし",
+    "level": 8,
+    "meanings": [
+      "Hello",
+      "Telephone Hello",
+      "Excuse Me"
+    ],
+    "readings": [
+      "もしもし"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Woah, this place is <reading>mossy</reading>, <reading>mossy</reading> (もしもし)! This moss needs clearing up, so you call up the person in charge. <vocabulary>Hello</vocabulary>, says the person on the phone.\n\nもしもし is a <vocabulary>telephone hello</vocabulary>, the standard way to answer the phone in Japan!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9213,
+    "object": "kana_vocabulary",
+    "characters": "ほとんど",
+    "slug": "ほとんど",
+    "level": 9,
+    "meanings": [
+      "Most",
+      "Almost All",
+      "Hardly"
+    ],
+    "readings": [
+      "ほとんど"
+    ],
+    "components": [],
+    "meaning_mnemonic": "What can be eaten <reading>hot on dough</reading> (ほとんど)? <vocabulary>Most</vocabulary> things can. <vocabulary>Almost all</vocabulary> things, in fact. <vocabulary>Hardly</vocabulary> anything tastes bad when it's hot and served on dough.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9214,
+    "object": "kana_vocabulary",
+    "characters": "ガラス",
+    "slug": "ガラス",
+    "level": 9,
+    "meanings": [
+      "Glass",
+      "Pane of Glass"
+    ],
+    "readings": [
+      "ガラス"
+    ],
+    "components": [],
+    "meaning_mnemonic": "This comes from the word <vocabulary>glass</vocabulary>, and it refers to the stuff used to make Cinderella's slippers, and windows, in which case it can also mean a <vocabulary>pane of glass</vocabulary>.\n\nWe'll learn how to say the other meanings of \"glass\" later!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9215,
+    "object": "kana_vocabulary",
+    "characters": "そこ",
+    "slug": "そこ",
+    "level": 9,
+    "meanings": [
+      "There"
+    ],
+    "readings": [
+      "そこ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how words beginning with そ are either close to the person you're talking to, or fairly close to both of you? And how words ending in こ refer to places? This one's no exception. そこ means <vocabulary>there</vocabulary>.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9216,
+    "object": "kana_vocabulary",
+    "characters": "あそこ",
+    "slug": "あそこ",
+    "level": 9,
+    "meanings": [
+      "Over There"
+    ],
+    "readings": [
+      "あそこ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Remember how words beginning with あ show that whatever you're talking about is far away from both you and the person you're talking to? And how words ending in こ refer to places? So what do you think this means? That right, it's <vocabulary>over there</vocabulary>.\n\nNote that even though あそこ means \"over there,\" it's still used to refer to a specific, concrete place, as opposed to a word like 向こう which means \"over there\" in a broader, more general sense.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9217,
+    "object": "kana_vocabulary",
+    "characters": "キロ",
+    "slug": "キロ",
+    "level": 9,
+    "meanings": [
+      "Kilo",
+      "Kilogram",
+      "Kilometer",
+      "Kilowatt"
+    ],
+    "readings": [
+      "キロ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "キロ comes from <vocabulary>kilo</vocabulary>, and it can mean <vocabulary>kilogram</vocabulary>, <vocabulary>kilometer</vocabulary>, or any unit that starts with \"kilo\" in English.\n\nYou can also use abbreviations like \"kg\" and \"km\" in Japanese, and they're often just pronounced キロ too.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9218,
+    "object": "kana_vocabulary",
+    "characters": "タバコ",
+    "slug": "タバコ",
+    "level": 10,
+    "meanings": [
+      "Tobacco",
+      "Cigarette"
+    ],
+    "readings": [
+      "タバコ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "タバコ is the Japanese version of the Portuguese word \"tabaco.\" You probably won’t be shocked to learn that タバコ means <vocabulary>tobacco</vocabulary> or <vocabulary>cigarette</vocabulary> in English!\n\nWatch out for the first syllable, which is タ and not ト. タバコ can also be written in hiragana, and even in kanji, but katakana is the most common by far.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9219,
+    "object": "kana_vocabulary",
+    "characters": "サービス",
+    "slug": "サービス",
+    "level": 10,
+    "meanings": [
+      "Service",
+      "Freebie",
+      "Giving A Freebie"
+    ],
+    "readings": [
+      "サービス"
+    ],
+    "components": [],
+    "meaning_mnemonic": "This is the equivalent of the English word <vocabulary>service</vocabulary>. By extension, it's often used to mean a <vocabulary>freebie</vocabulary>. Though it's generally used as a standard noun, it can also be a verbal noun used with する. In this case, it means <vocabulary>giving a freebie</vocabulary>.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9220,
+    "object": "kana_vocabulary",
+    "characters": "しかし",
+    "slug": "しかし",
+    "level": 10,
+    "meanings": [
+      "However"
+    ],
+    "readings": [
+      "しかし"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>She cashe</reading>s (しかし) in on everything. <vocabulary>However</vocabulary>, this time you're going to stop her. No more cashing in.\n\nしかし is used at the beginning of a sentence, just like \"however.\" It's pretty formal, and you'll see it much more in written Japanese than spoken Japanese.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9221,
+    "object": "kana_vocabulary",
+    "characters": "パン",
+    "slug": "パン",
+    "level": 10,
+    "meanings": [
+      "Bread"
+    ],
+    "readings": [
+      "パン"
+    ],
+    "components": [],
+    "meaning_mnemonic": "パン is the katakana version of the Portuguese word \"pão\" and means <vocabulary>bread</vocabulary> in English.\n\nIf you know the Portuguese, Spanish, or French word for bread, you shouldn't have trouble remembering this word. If not, here's a mnemonic to help you:\n\nYou use a <reading>pan</reading> (パン) to make all your <vocabulary>bread</vocabulary>. It's your special bread pan, and all the bread you make with it is delicious.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9222,
+    "object": "kana_vocabulary",
+    "characters": "とても",
+    "slug": "とても",
+    "level": 10,
+    "meanings": [
+      "Very"
+    ],
+    "readings": [
+      "とても"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Look at this <reading>totem, oh</reading> (とても)! It's <vocabulary>very</vocabulary>, very, very, very lucky, as all totems should be. \n\nThis word has a slightly formal feel to it, and you’ll come across it most in writing.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9223,
+    "object": "kana_vocabulary",
+    "characters": "ビル",
+    "slug": "ビル",
+    "level": 10,
+    "meanings": [
+      "Building"
+    ],
+    "readings": [
+      "ビル"
+    ],
+    "components": [],
+    "meaning_mnemonic": "ビル is the Japanese version of the English word <vocabulary>building</vocabulary>. It usually refers to buildings that are taller than they are wide, most commonly apartment blocks and office buildings.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9224,
+    "object": "kana_vocabulary",
+    "characters": "もう",
+    "slug": "もう",
+    "level": 12,
+    "meanings": [
+      "Already",
+      "Soon",
+      "Yet",
+      "Anymore"
+    ],
+    "readings": [
+      "もう"
+    ],
+    "components": [],
+    "meaning_mnemonic": "You've <reading>mow</reading>ed your lawn (もう) <vocabulary>already</vocabulary>? Wow, you're ahead on your mowing. Good work. You'll have to do it again <vocabulary>soon</vocabulary>, though.\n\nThis can also mean <vocabulary>yet</vocabulary> in a question, and <vocabulary>anymore</vocabulary> with a negative.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9226,
+    "object": "kana_vocabulary",
+    "characters": "ワンピース",
+    "slug": "ワンピース",
+    "level": 13,
+    "meanings": [
+      "Dress"
+    ],
+    "readings": [
+      "ワンピース"
+    ],
+    "components": [],
+    "meaning_mnemonic": "ワンピース comes from the English word one-piece, but it generally refers to a casual <vocabulary>dress</vocabulary> in Japanese.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9227,
+    "object": "kana_vocabulary",
+    "characters": "マンション",
+    "slug": "マンション",
+    "level": 13,
+    "meanings": [
+      "Apartment Building",
+      "Apartment"
+    ],
+    "readings": [
+      "マンション"
+    ],
+    "components": [],
+    "meaning_mnemonic": "マンション comes from the English word \"mansion,\" but it just means an ordinary <vocabulary>apartment building</vocabulary> in Japanese. Depending on context, it can also mean an individual <vocabulary>apartment</vocabulary>. Either way, it’s definitely not a big, luxurious house in Japanese!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9228,
+    "object": "kana_vocabulary",
+    "characters": "オノマトペ",
+    "slug": "オノマトペ",
+    "level": 15,
+    "meanings": [
+      "Onomatopoeia",
+      "Mimetic Word"
+    ],
+    "readings": [
+      "オノマトペ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "オノマトペ comes from the French word “onomatopée” which, as you can probably guess, means <vocabulary>onomatopoeia</vocabulary>.\n\nオノマトペ has a wider meaning than its English equivalent, and it also covers <vocabulary>mimetic word</vocabulary>s, which are words that evoke ideas and actions rather than sounds.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9229,
+    "object": "kana_vocabulary",
+    "characters": "トランプ",
+    "slug": "トランプ",
+    "level": 15,
+    "meanings": [
+      "Deck Of Cards",
+      "Playing Cards",
+      "Cards"
+    ],
+    "readings": [
+      "トランプ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "トランプ comes from the English word \"trump\", as in \"a trump card\", but it means <vocabulary>deck of cards</vocabulary> or <vocabulary>playing cards</vocabulary> in Japanese.\n\nThe Japanese meaning probably comes from card games played by English-speaking Westerners back in the day. Japanese people heard the word \"trump\" a lot, and assumed it meant a deck of cards.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9230,
+    "object": "kana_vocabulary",
+    "characters": "ふわふわ",
+    "slug": "ふわふわ",
+    "level": 16,
+    "meanings": [
+      "Fluffy",
+      "Floating Lightly",
+      "Light-Headed"
+    ],
+    "readings": [
+      "ふわふわ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Who are who are</reading> (ふわふわ) <vocabulary>fluffy</vocabulary>? I’m thinking puppies, but ask yourself, \"who are the fluffiest creatures I know?\"\n\nThis is an オノマトペ meaning fluffy, like a puppy, a cloud, or a cotton ball. It can also describe the movement of a dandelion puffball or a jellyfish, <vocabulary>floating lightly</vocabulary> in the air or the water. And if you’re <vocabulary>feeling lightheaded</vocabulary>, that’s called ふわふわ too. Basically, anything with light or fluffy vibe!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9231,
+    "object": "kana_vocabulary",
+    "characters": "ペラペラ",
+    "slug": "ペラペラ",
+    "level": 17,
+    "meanings": [
+      "Fluent",
+      "Paper Thin",
+      "Leafing Through A Book"
+    ],
+    "readings": [
+      "ペラペラ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Parrot, parrot</reading> (ペラペラ), your speaking is so <vocabulary>fluent</vocabulary>!\n\nペラペラ is an オノマトペ that describes someone speaking a language fluently, or simply being a real chatterbox.\n\nRelated to this, ペラペラ also means <vocabulary>leafing through a book</vocabulary>. And in an extension of that meaning, it can describe something <vocabulary>paper thin</vocabulary> or flimsy, like a piece of paper from that book you're leafing through.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9232,
+    "object": "kana_vocabulary",
+    "characters": "ドキドキ",
+    "slug": "ドキドキ",
+    "level": 18,
+    "meanings": [
+      "Racing Heart",
+      "Excited",
+      "Nervous"
+    ],
+    "readings": [
+      "ドキドキ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "<reading>Doc, Doc</reading> (ドキドキ), listen to my <vocabulary>racing heart</vocabulary>. I'm so <vocabulary>excited</vocabulary>, but I'm also a bit <vocabulary>nervous</vocabulary>.\n\nドキドキ is an オノマトペ used to describe the feeling of your heart beating fast. When does your heart race? When you get excited or nervous, so ドキドキ also expresses those feelings!",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9233,
+    "object": "kana_vocabulary",
+    "characters": "バイキング",
+    "slug": "バイキング",
+    "level": 30,
+    "meanings": [
+      "Buffet",
+      "Smorgasbord",
+      "Viking"
+    ],
+    "readings": [
+      "バイキング"
+    ],
+    "components": [],
+    "meaning_mnemonic": "バイキング comes from the English word <vocabulary>Viking</vocabulary>, but in Japanese, it often refers to a <vocabulary>buffet</vocabulary>.\n\nバイキング came to mean \"buffet\" thanks to Japan’s first all-you-can-eat restaurant, \"Viking\", which was named after a feast scene from a movie called (you guessed it) \"Viking\".",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9234,
+    "object": "kana_vocabulary",
+    "characters": "レントゲン",
+    "slug": "レントゲン",
+    "level": 36,
+    "meanings": [
+      "X-ray"
+    ],
+    "readings": [
+      "レントゲン"
+    ],
+    "components": [],
+    "meaning_mnemonic": "レントゲン comes from the German word \"Röntgen\" meaning <vocabulary>X-ray</vocabulary>, named after their inventor Wilhelm Conrad Röntgen.\n\nIf that’s news to you, here’s a mnemonic to help you remember: \n\nYou’re planning to <reading>rent a Gen</reading>ji (レントゲン), but you ask Genji to get an <vocabulary>X-ray</vocabulary> first, just to make sure he’s in good health before signing the rental contract.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9235,
+    "object": "kana_vocabulary",
+    "characters": "まぐれ",
+    "slug": "まぐれ",
+    "level": 25,
+    "meanings": [
+      "Fluke",
+      "Chance"
+    ],
+    "readings": [
+      "まぐれ"
+    ],
+    "components": [],
+    "meaning_mnemonic": "Somebody tried to <reading>mug Re</reading>mi (まぐれ), your friend, but by <vocabulary>chance</vocabulary> they managed to escape! Their escape was a <vocabulary>fluke</vocabulary>, but what a relief they didn't get mugged.\n\nThis word can be written in kanji, but the kana version is way more common. In fact, it'd be quite a fluke if you saw it in kanji.",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9236,
+    "object": "kana_vocabulary",
+    "characters": "ホッチキス",
+    "slug": "ホッチキス",
+    "level": 48,
+    "meanings": [
+      "Stapler"
+    ],
+    "readings": [
+      "ホッチキス"
+    ],
+    "components": [],
+    "meaning_mnemonic": "This word means <vocabulary>stapler</vocabulary>. It comes from the name of the company that first imported staplers into Japan: Hotchkiss! Here’s a mnemonic to help you remember it:\n\nEver given a <reading>hot kiss</reading> (ホッチキス) to a <vocabulary>stapler</vocabulary>? Imagine what that feels like, and you'll remember this word forever. Just keep in mind that sometimes it's written as ホチキス, but ホッチキス is more common. ",
+    "reading_mnemonic": ""
+  },
+  {
+    "id": 9512,
+    "object": "vocabulary",
+    "characters": "世界史",
+    "slug": "世界史",
+    "level": 10,
+    "meanings": [
+      "World History"
+    ],
+    "readings": [
+      "せかいし"
+    ],
+    "components": [
+      527,
+      728,
+      1122
+    ],
+    "meaning_mnemonic": "Remember how 日本史 means \"Japanese history\"? Now we have 世界 (the world) combined with 史, or <kanji>history</kanji>, so this must mean… <vocabulary>world history</vocabulary>.",
+    "reading_mnemonic": "This jukugo word uses readings you've learned with 世界 and the kanji 史, so you should be good to go."
+  },
+  {
+    "id": 9513,
+    "object": "vocabulary",
+    "characters": "草食",
+    "slug": "草食",
+    "level": 25,
+    "meanings": [
+      "Herbivorous",
+      "Plant-Eating"
+    ],
+    "readings": [
+      "そうしょく"
+    ],
+    "components": [
+      605,
+      644
+    ],
+    "meaning_mnemonic": "If <kanji>grass</kanji> is all you <kanji>eat</kanji>, then you're probably <vocabulary>herbivorous</vocabulary>. You know, like a <vocabulary>plant-eating</vocabulary> animal.\n\nSometimes you'll also come across the slang expression 草食系 (herbivore type). This refers to people — usually men — who are gentle, passive, and not very aggressive in romance or competition.",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings. The そう reading for 草 may be new for you, so here's a mnemonic:\n\nA <vocabulary>herbivorous</vocabulary> animal has a pure <reading>sou</reading>l (そう). It doesn't need to eat other animals to survive, right? Hence its pure, guilt-free, herbivorous soul. Whenever you think of herbivores, think of their beautiful souls."
+  },
+  {
+    "id": 9514,
+    "object": "vocabulary",
+    "characters": "草原",
+    "slug": "草原",
+    "level": 25,
+    "meanings": [
+      "Grass Field",
+      "Meadow",
+      "Grassland"
+    ],
+    "readings": [
+      "そうげん",
+      "くさはら"
+    ],
+    "components": [
+      605,
+      995
+    ],
+    "meaning_mnemonic": "You learned 原 means \"original,\" but another meaning for it is \"field.\" Combine <kanji>grass</kanji> and <kanji>field</kanji> and you get… a <vocabulary>grass field</vocabulary>!\n\n草原 is for all kinds of grass fields: little local ones, medium-sized <vocabulary>meadow</vocabulary>s, and even vast <vocabulary>grassland</vocabulary>s like the prairie or savanna. ",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings for the kanji. The そう reading for 草 is new for you, so here's a mnemonic:\n\nWhen you die, you go to a <vocabulary>grass field</vocabulary> full of <reading>sou</reading>ls (そう). Idyllic image of heaven, right? Kind of like the ending scene in Gladiator, except it's not just the main character's soul, it's you and a billion other souls rubbing elbows in a grass field.\n\nNote: The main そうげん reading is used for wide grassy plains and grasslands. The くさはら reading feels smaller and more local, like a patch of tall grass or weeds where kids run around, catch bugs, and occasionally lose a baseball forever."
+  },
+  {
+    "id": 9515,
+    "object": "vocabulary",
+    "characters": "女史",
+    "slug": "女史",
+    "level": 57,
+    "meanings": [
+      "Lady",
+      "Ms.",
+      "Mrs.",
+      "Miss"
+    ],
+    "readings": [
+      "じょし"
+    ],
+    "components": [
+      454,
+      1122
+    ],
+    "meaning_mnemonic": "A <kanji>woman</kanji> who makes <kanji>history</kanji> will have a certain amount of status and deserves a nice title, like <vocabulary>Lady</vocabulary> So-and-so. That's why this word is a polite way to refer to respected and distinguished ladies. \n\n女史 often follows a woman's family name, like 田中女史 (<vocabulary>Ms.</vocabulary>, <vocabulary>Mrs.</vocabulary>, or <vocabulary>Miss</vocabulary> Tanaka). It was common in the Showa era, but today sounds old-fashioned. Occasionally you might still see it used as a title for distinguished women, especially scholars, politicians, writers, and artists.",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings you learned with the kanji, so you should be good to go."
+  },
+  {
+    "id": 9516,
+    "object": "vocabulary",
+    "characters": "史上初",
+    "slug": "史上初",
+    "level": 16,
+    "meanings": [
+      "First In History",
+      "Historic First"
+    ],
+    "readings": [
+      "しじょうはつ"
+    ],
+    "components": [
+      1122,
+      450,
+      784
+    ],
+    "meaning_mnemonic": "In <kanji>history</kanji>, there are people who rise <kanji>above</kanji> others to be the <kanji>first</kanji> to do something. That makes them the <vocabulary>first in history</vocabulary>.\n\n史上初 is used for any <vocabulary>historic first</vocabulary>. First human on the moon, first photograph ever taken, first movie to gross a billion dollars — that kind of thing.",
+    "reading_mnemonic": "This jukugo word uses familiar on'yomi readings for 史上 (しじょう), but a kun'yomi reading for 初 (はつ). Here's a mnemonic to remember the 初 part:\n\nWho was the <vocabulary>first in history</vocabulary> to start wearing <reading>hats</reading> (はつ)? From now on this question will torment you, because it's basically unanswerable. Nobody knows who the first in history to wear hats was. But you gotta imagine it was some kind of Neanderthal, right? "
+  },
+  {
+    "id": 9517,
+    "object": "vocabulary",
+    "characters": "歴然",
+    "slug": "歴然",
+    "level": 56,
+    "meanings": [
+      "Obvious",
+      "Unmistakable",
+      "Indisputable"
+    ],
+    "readings": [
+      "れきぜん"
+    ],
+    "components": [
+      1069,
+      881
+    ],
+    "meaning_mnemonic": "<kanji>History</kanji> has a <kanji>nature</kanji> that's <vocabulary>obvious</vocabulary> and <vocabulary>unmistakable</vocabulary>. It's about stuff that's already happened, so it's basically <vocabulary>indisputable</vocabulary>. We don't know what the future holds, but history? We know that stuff happened, unmistakably.\n\nYou'll mostly encounter 歴然 in writing or other relatively formal situations. Note that you need to add と to the end of this word to make it an adverb, and たる to make it an adjective!",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings for the kanji, both of which you've learned. Guess that makes the れきぜん reading pretty 歴然 for you, huh?"
+  },
+  {
+    "id": 9518,
+    "object": "vocabulary",
+    "characters": "草履",
+    "slug": "草履",
+    "level": 26,
+    "meanings": [
+      "Straw Sandals",
+      "Zori Sandals"
+    ],
+    "readings": [
+      "ぞうり"
+    ],
+    "components": [
+      605,
+      1075
+    ],
+    "meaning_mnemonic": "Use woven <kanji>grass</kanji> to make some <kanji>footwear</kanji>. Congrats, you've got a pair of <vocabulary>straw sandals</vocabulary>! You could also just call these <vocabulary>zori sandals</vocabulary>, since there's not really an English equivalent.\n\nZori are Japanese sandals traditionally made with woven rice straw (hence the name), though plastic and rubber ones are common too these days. You wear them flip-flop style, with a thong passing between the toes to keep them secure. ",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings, but the そう reading for 草 becomes ぞう for some reason, so here's a mnemonic to help you remember it:\n\n<vocabulary>Straw sandals</vocabulary> are often worn by <reading>zo</reading>mbies (ぞう). Zombies are undead, which means they've been around forever, which means they're still wearing centuries-old traditional zori sandals. Would it make sense to see a zombie in Air Jordans? No. Real zombies wear zori."
+  },
+  {
+    "id": 9519,
+    "object": "vocabulary",
+    "characters": "土砂崩れ",
+    "slug": "土砂崩れ",
+    "level": 45,
+    "meanings": [
+      "Landslide",
+      "Mudslide"
+    ],
+    "readings": [
+      "どしゃくずれ"
+    ],
+    "components": [
+      459,
+      1533,
+      1651
+    ],
+    "meaning_mnemonic": "When <kanji>earth</kanji> and <kanji>sand</kanji> <kanji>crumble</kanji>s down a slope, you have a <vocabulary>landslide</vocabulary> or <vocabulary>mudslide</vocabulary>.",
+    "reading_mnemonic": "You already know how to read 土砂 and 崩れる. This word uses those same readings."
+  },
+  {
+    "id": 9520,
+    "object": "vocabulary",
+    "characters": "城壁",
+    "slug": "城壁",
+    "level": 39,
+    "meanings": [
+      "Castle Wall",
+      "Rampart"
+    ],
+    "readings": [
+      "じょうへき"
+    ],
+    "components": [
+      1214,
+      1715
+    ],
+    "meaning_mnemonic": "A <kanji>castle</kanji> <kanji>wall</kanji> is exactly what it sounds like: a <vocabulary>castle wall</vocabulary>. This word refers to the thick, protective walls built around castles and fortresses, and sometimes around entire castle towns too.",
+    "reading_mnemonic": "This is a jukugo word that uses the on'yomi readings of the kanji. You haven't learned this reading yet for 壁, so here's a mnemonic to help you:\n\nThe gate in the <vocabulary>castle wall</vocabulary> is locked, so you fashion a key out of hay — a <reading>hay key</reading> (へき). You take this hay key and jam it into the lock, turning furiously until you feel a click… Miraculously, the gate opens. You make your way through the castle wall, still clutching your hay key."
+  },
+  {
+    "id": 9521,
+    "object": "vocabulary",
+    "characters": "塩コショウ",
+    "slug": "塩コショウ",
+    "level": 17,
+    "meanings": [
+      "Salt And Pepper"
+    ],
+    "readings": [
+      "しおこしょう",
+      "しおコショウ"
+    ],
+    "components": [
+      1002
+    ],
+    "meaning_mnemonic": "You've learned the word 塩, meaning salt. Add コショウ, which means pepper, and you get <vocabulary>salt and pepper</vocabulary>. You haven't learned the word for pepper yet, so here's a mnemonic to help you remember: If salt wanted to start a cooking podcast, who would be a better <reading>co-show</reading> (コショウ) host than pepper? Imagine the most classic pair of seasonings getting into a studio to co-show host a podcast. Now that's a spicy combo.\n\nJust a side note: The コショウ part can also be written in different ways, such as in kanji, all hiragana, or as コショー, especially on product packaging.",
+    "reading_mnemonic": "塩 uses the same reading you learned with the vocabulary, and if you remember your katakana too, you should be able to read this."
+  },
+  {
+    "id": 9522,
+    "object": "vocabulary",
+    "characters": "塩分",
+    "slug": "塩分",
+    "level": 19,
+    "meanings": [
+      "Salt Content",
+      "Amount Of Salt"
+    ],
+    "readings": [
+      "えんぶん"
+    ],
+    "components": [
+      1002,
+      501
+    ],
+    "meaning_mnemonic": "When you want to know the <kanji>salt</kanji> <kanji>part</kanji> of something, you're trying to find out how much salt is in it. In other words, you want to know its <vocabulary>salt content</vocabulary>.\n\n塩分 refers to the <vocabulary>amount of salt</vocabulary> in food, water, or even your body. This is the word you'll see when people talk about watching their salt intake.",
+    "reading_mnemonic": "This word is a jukugo that uses the on'yomi readings for the kanji. You learned 塩's on'yomi with 食塩, but here's a mnemonic in case you forgot:\n\nBeware foods high in <vocabulary>salt content</vocabulary> — they could spell your <reading>en</reading>d (えん). You may think you're fine eating cup ramen for every meal, but one day your heart and arteries will say \"sorry, bud, this is the end\" and give out on you. So, if you don't want to meet a premature end, watch the <vocabulary>amount of salt</vocabulary> you're getting."
+  },
+  {
+    "id": 9524,
+    "object": "vocabulary",
+    "characters": "壁画",
+    "slug": "壁画",
+    "level": 39,
+    "meanings": [
+      "Wall Painting",
+      "Fresco",
+      "Mural"
+    ],
+    "readings": [
+      "へきが"
+    ],
+    "components": [
+      1715,
+      629
+    ],
+    "meaning_mnemonic": "You see a <kanji>wall</kanji> with an <kanji>image</kanji> on it — this is a <vocabulary>wall painting</vocabulary>, like a <vocabulary>fresco</vocabulary> or <vocabulary>mural</vocabulary>. You can find them on the walls or ceilings of buildings, caves, or even tombs.",
+    "reading_mnemonic": "This word uses the on'yomi readings of the kanji, which you've already learned. If you know your readings, you should have no trouble with this one. "
+  },
+  {
+    "id": 9525,
+    "object": "vocabulary",
+    "characters": "岩場",
+    "slug": "岩場",
+    "level": 16,
+    "meanings": [
+      "Rocky Area",
+      "Rocky Place"
+    ],
+    "readings": [
+      "いわば"
+    ],
+    "components": [
+      929,
+      694
+    ],
+    "meaning_mnemonic": "A <kanji>boulder</kanji> <kanji>location</kanji> is a place where there are lots of large rocks. These are the <vocabulary>rocky area</vocabulary>s you find near the coast or in the mountains that can be a bit dangerous to get across. ",
+    "reading_mnemonic": "This jukugo uses the kun'yomi of the kanji instead of the more usual on'yomi. You learned both of these readings when you learned the vocabulary 岩 and 場所, so you're good to go here. "
+  },
+  {
+    "id": 9526,
+    "object": "vocabulary",
+    "characters": "岩塩",
+    "slug": "岩塩",
+    "level": 20,
+    "meanings": [
+      "Rock Salt"
+    ],
+    "readings": [
+      "がんえん"
+    ],
+    "components": [
+      929,
+      1002
+    ],
+    "meaning_mnemonic": "<kanji>Boulder</kanji> <kanji>salt</kanji> is the kind naturally found in rocks: it's <vocabulary>rock salt</vocabulary>.",
+    "reading_mnemonic": "This is a jukugo word that uses the on'yomi readings of the kanji. If you know your kanji readings, you should be good to go here!"
+  },
+  {
+    "id": 9527,
+    "object": "vocabulary",
+    "characters": "岩手県",
+    "slug": "岩手県",
+    "level": 17,
+    "meanings": [
+      "Iwate Prefecture"
+    ],
+    "readings": [
+      "いわてけん"
+    ],
+    "components": [
+      929,
+      474,
+      731
+    ],
+    "meaning_mnemonic": "The <kanji>boulder</kanji> <kanji>hand</kanji> <kanji>prefecture</kanji> is <vocabulary>Iwate prefecture</vocabulary>. They say the name came from a demon leaving its handprints on some sacred boulders in the area. Picture a giant handprint on a boulder whenever you think about Iwate Prefecture.",
+    "reading_mnemonic": "This word consists of the kun'yomi readings for 岩 and 手 plus 県. If you know your readings, you're all set."
+  },
+  {
+    "id": 9528,
+    "object": "vocabulary",
+    "characters": "岩盤",
+    "slug": "岩盤",
+    "level": 39,
+    "meanings": [
+      "Bedrock"
+    ],
+    "readings": [
+      "がんばん"
+    ],
+    "components": [
+      929,
+      1697
+    ],
+    "meaning_mnemonic": "A <kanji>boulder</kanji> <kanji>tray</kanji> is a thick layer of rock that holds everything on the surface of the earth. It is the solid <vocabulary>bedrock</vocabulary> that underlies everything.",
+    "reading_mnemonic": "This jukugo word uses on'yomi readings. You learned the kun'yomi with 岩 though, so here's a mnemonic for its がん on'yomi reading:\n\nWhen you think of <vocabulary>bedrock</vocabulary>, you think of <reading>Gan</reading>dhi (がん). His peaceful, unwavering resolve in the face of British colonialism definitely reminds you of bedrock. Gandhi is also one of the \"bedrocks\" that modern India was built upon… figuratively speaking. "
+  },
+  {
+    "id": 9529,
+    "object": "vocabulary",
+    "characters": "岩石",
+    "slug": "岩石",
+    "level": 20,
+    "meanings": [
+      "Rock"
+    ],
+    "readings": [
+      "がんせき"
+    ],
+    "components": [
+      929,
+      493
+    ],
+    "meaning_mnemonic": "<kanji>Boulder</kanji> and <kanji>stone</kanji> are really just different types of <vocabulary>rock</vocabulary>. This is a more formal, technical way to say rock, so it's often used in scientific and geological contexts.",
+    "reading_mnemonic": "This is a jukugo word that uses on'yomi readings of the kanji. You didn't learn this reading for 岩 though, so here's a mnemonic to help you:\n\nYou walk into a presentation on <vocabulary>rock</vocabulary>s by none other than <reading>Gan</reading>dhi (がん) himself. Who knew that Gandhi had such a passion for rocks? Imagine him carefully lifting rock after rock, explaining their various characteristics to a rapt audience."
+  },
+  {
+    "id": 9530,
+    "object": "vocabulary",
+    "characters": "岸",
+    "slug": "岸",
+    "level": 13,
+    "meanings": [
+      "Shore",
+      "Bank"
+    ],
+    "readings": [
+      "きし"
+    ],
+    "components": [
+      790
+    ],
+    "meaning_mnemonic": "The kanji and the word share their main meaning. As a word, 岸 refers to the <vocabulary>shore</vocabulary> — the land right at the water's edge, whether by a sea, a lake, or a river.",
+    "reading_mnemonic": "Since this word is made up of a single kanji with nothing attached, it uses the kun'yomi reading. You haven't learned this yet so here's a mnemonic to help you:\n\nThe best food to bring to the <vocabulary>shore</vocabulary> is undoubtedly <reading>quiche</reading> (きし). As a self-contained, nutritious, and endlessly customizable dish, you could say that quiche reigns supreme when it comes to waterside picnics everywhere. Yup, there's nothing better than quiche for your trips to the 岸."
+  },
+  {
+    "id": 9531,
+    "object": "vocabulary",
+    "characters": "岸辺",
+    "slug": "岸辺",
+    "level": 13,
+    "meanings": [
+      "Shore",
+      "Bank"
+    ],
+    "readings": [
+      "きしべ"
+    ],
+    "components": [
+      790,
+      651
+    ],
+    "meaning_mnemonic": "The <kanji>shore</kanji> <kanji>area</kanji> is exactly what it sounds like: It's the area along the edge of a body of water, so it's another way to talk about the <vocabulary>shore</vocabulary>.",
+    "reading_mnemonic": "The readings for this word are both kun'yomi readings. You haven't learned this reading for 辺 yet, so here's a mnemonic to help you:\n\nYou know you've come to the <vocabulary>shore</vocabulary> when you're greeted by the sound of <reading>be</reading>lls (べ). You know, buoy bells, ship bells, maybe even some bells ringing at a nearby harbor. Close your eyes and listen to them echoing across the waves… This is the sound of the shore, no doubt about it."
+  },
+  {
+    "id": 9532,
+    "object": "vocabulary",
+    "characters": "崖っ縁",
+    "slug": "崖っ縁",
+    "level": 48,
+    "meanings": [
+      "Brink",
+      "Edge Of A Cliff"
+    ],
+    "readings": [
+      "がけっぷち"
+    ],
+    "components": [
+      1993,
+      1874
+    ],
+    "meaning_mnemonic": "What do you call the very tip of a <kanji>cliff</kanji>'s <kanji>edge</kanji>? The <vocabulary>brink</vocabulary>. You can also simply call this the <vocabulary>edge of a cliff</vocabulary>. It's useful to know that 崖っ縁 means brink, though, because it's often used metaphorically to say that something is on the brink of something, whether it be catastrophe, death, or some other perilous situation.\n\nNote that the 崖っ縁 is often written as 崖っぷち, with the last part in kana.",
+    "reading_mnemonic": "This word uses the kun'yomi readings of the kanji, which you've already learned. Beware of the little っ stuck in there, and the rendaku magic on 縁 that makes ふち become ぷち. Just imagine chasing after your little <reading>poochie</reading> (ぷち) who just ran off towards the <vocabulary>edge of the cliff</vocabulary>. You catch it, right when it was on the <vocabulary>brink</vocabulary> of sure death. Whew, can't trust poochies to not fall off cliffs when left to their own devices."
+  },
+  {
+    "id": 9534,
+    "object": "vocabulary",
+    "characters": "縁取る",
+    "slug": "縁取る",
+    "level": 45,
+    "meanings": [
+      "To Add A Border To",
+      "To Decorate The Edges Of",
+      "To Form a Border Around"
+    ],
+    "readings": [
+      "ふちどる"
+    ],
+    "components": [
+      1874,
+      966
+    ],
+    "meaning_mnemonic": "This word is a combination of 縁 (edge) and 取る (to take). Picture yourself taking the edge of an object and giving it special attention: you're taking that edge in order <vocabulary>to add a border to</vocabulary> it or <vocabulary>to decorate the edges of</vocabulary> it.\n\nThis can apply to the edges of all sorts of things, like adding a white border to a photograph (写真を白い枠で縁取る), decorating the edges of a handkerchief with lace (ハンカチをレースで縁取る), or even lining one's eyes with eyeliner (目をアイライナーで縁取る). It can also be used to describe how something happens <vocabulary>to form a border around</vocabulary> something, like trees around a lake (木々が湖を縁取る).",
+    "reading_mnemonic": "This is a combination of the kun'yomi words 縁 (ふち) and 取る (とる), which you've already learned, so you should be able to read this one. Just make sure you remember that とる becomes どる because of rendaku."
+  },
+  {
+    "id": 9535,
+    "object": "vocabulary",
+    "characters": "雪崩",
+    "slug": "雪崩",
+    "level": 49,
+    "meanings": [
+      "Avalanche"
+    ],
+    "readings": [
+      "なだれ"
+    ],
+    "components": [
+      673,
+      1651
+    ],
+    "meaning_mnemonic": "When <kanji>snow</kanji> <kanji>crumble</kanji>s down a slope, you have an <vocabulary>avalanche</vocabulary>.",
+    "reading_mnemonic": "This reading is an exception. Let's use this mnemonic to remember it:\n\nIf you get stuck under an <vocabulary>avalanche</vocabulary>, <reading>not a ray</reading> (なだれ) of light will reach you. Snow is white, so you might think it's light under there, but nope. Unfortunately, not a single ray of light can penetrate an avalanche, so not only will you be cold, but you'll be stuck in the dark too. "
+  },
+  {
+    "id": 9537,
+    "object": "vocabulary",
+    "characters": "額縁",
+    "slug": "額縁",
+    "level": 46,
+    "meanings": [
+      "Picture Frame",
+      "Frame"
+    ],
+    "readings": [
+      "がくぶち"
+    ],
+    "components": [
+      1218,
+      1874
+    ],
+    "meaning_mnemonic": "You learned that 額 means \"amount,\" but remember that it can also mean \"framed picture.\" A <kanji>framed picture</kanji> is surrounded by <kanji>edge</kanji>s, and this word refers to those edges themselves: the <vocabulary>picture frame</vocabulary> that borders a picture, painting, certificate, and so on.",
+    "reading_mnemonic": "This word consists of the on'yomi reading for 額 and the kun'yomi reading for 縁. You've learned them both so you should be able to read this word too. Just watch out for that rendaku. "
+  },
+  {
+    "id": 9538,
+    "object": "vocabulary",
+    "characters": "食塩",
+    "slug": "食塩",
+    "level": 19,
+    "meanings": [
+      "Table Salt",
+      "Salt"
+    ],
+    "readings": [
+      "しょくえん"
+    ],
+    "components": [
+      644,
+      1002
+    ],
+    "meaning_mnemonic": "<kanji>Eat</kanji>ing <kanji>salt</kanji> is the kind meant for cooking and eating. It's <vocabulary>table salt</vocabulary>.",
+    "reading_mnemonic": "This word is a jukugo that uses the on'yomi reading for the kanji, but you haven't learned the on'yomi reading for 塩 yet, so here's a mnemonic to help you: \n\nBack in the day, you were only allowed to use <vocabulary>table salt</vocabulary> at the <reading>en</reading>d (えん) of the meal. It was precious commodity, so to discourage people from using too much of it you could only use it at the very end of the meal."
+  },
+  {
+    "id": 9539,
+    "object": "vocabulary",
+    "characters": "対岸",
+    "slug": "対岸",
+    "level": 12,
+    "meanings": [
+      "The Opposite Shore",
+      "The Other Bank",
+      "Across The River"
+    ],
+    "readings": [
+      "たいがん"
+    ],
+    "components": [
+      683,
+      790
+    ],
+    "meaning_mnemonic": "The <kanji>opposite</kanji> <kanji>shore</kanji> is exactly what it sounds like: <vocabulary>the opposite shore</vocabulary>. It's often used to talk about <vocabulary>the other bank</vocabulary> of a river, but it can also mean the other side of a lake, bay, or even the ocean.",
+    "reading_mnemonic": "This is a jukugo word that uses the on'yomi readings of the kanji. If you know the kanji readings, you should know how to read this too."
+  }
+]
