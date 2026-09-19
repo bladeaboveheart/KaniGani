@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { DashboardStats, Item } from '@/lib/types';
 import { fetchAllUserProgress, resetAllUserProgress } from '@/services/progressService';
-import { fetchItemsByType } from '@/services/itemsService';
 import { fetchActivityLogs, fetchLeaderboard, LeaderboardEntry } from '@/services/statsService';
 import { getUserProfile } from '@/services/profileService';
 import { calculateUserLevel } from '@/lib/levelLogic';
@@ -36,11 +35,23 @@ export function useDashboardData() {
   const [resetting, setResetting] = useState(false);
   const hasHydratedFromCache = useRef(false);
 
+  const applySnapshot = useCallback((cached: any) => {
+    if (!cached) return;
+    setUsername(cached.username || 'Pengguna');
+    setStats(cached.stats);
+    setItemDetails(cached.itemDetails || []);
+    setCurrentLevelKanjiList(cached.currentLevelKanjiList || []);
+    setAvailableLessons(cached.availableLessons || []);
+    setLeaderboard(cached.leaderboard || []);
+    setReviewHeatmap(cached.reviewHeatmap || {});
+    setLessonHeatmap(cached.lessonHeatmap || {});
+    setDurationHeatmap(cached.durationHeatmap || {});
+    setLoading(false);
+    hasHydratedFromCache.current = true;
+  }, []);
+
   const loadDashboard = useCallback(async (skipLoadingState = false) => {
     try {
-      if (!skipLoadingState && !hasHydratedFromCache.current) {
-        setLoading(true);
-      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/');
@@ -48,45 +59,78 @@ export function useDashboardData() {
       }
       setUserId(user.id);
 
-      // Try hydrating from SWR cache immediately
       const cacheKey = `dashboard_snapshot_${user.id}`;
-      const cached = memoryCache.get<any>(cacheKey);
-      if (cached && !hasHydratedFromCache.current) {
-        setUsername(cached.username || 'Pengguna');
-        setStats(cached.stats);
-        setItemDetails(cached.itemDetails || []);
-        setCurrentLevelKanjiList(cached.currentLevelKanjiList || []);
-        setAvailableLessons(cached.availableLessons || []);
-        setLeaderboard(cached.leaderboard || []);
-        setReviewHeatmap(cached.reviewHeatmap || {});
-        setLessonHeatmap(cached.lessonHeatmap || {});
-        setDurationHeatmap(cached.durationHeatmap || {});
-        setLoading(false);
-        hasHydratedFromCache.current = true;
+
+      // 1. FAST SWR HYDRATION (0ms): Check in-memory cache, then persistent localStorage
+      let cached = memoryCache.get<any>(cacheKey);
+      if (!cached && typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem(cacheKey);
+          if (stored) {
+            cached = JSON.parse(stored);
+            memoryCache.set(cacheKey, cached, 15 * 60 * 1000);
+          }
+        } catch (e) {
+          console.warn('Failed to parse dashboard localStorage:', e);
+        }
       }
 
-      // Load Profile
-      const profile = await getUserProfile(user.id);
-      if (profile?.username) {
-        setUsername(profile.username);
+      if (cached && !hasHydratedFromCache.current) {
+        applySnapshot(cached);
+      } else if (!skipLoadingState && !hasHydratedFromCache.current) {
+        setLoading(true);
       }
 
       const now = new Date().toISOString();
 
-      // 1. Fetch user progress & cached all kanji in parallel (fast!)
+      // 2. PARALLEL PHASE 1: Fetch profile, user_progress, kanji catalog, logs, and leaderboard concurrently
+      // Cached kanji catalog (check memory -> localStorage -> fetch slim columns)
       let allKanji = memoryCache.get<Item[]>('catalog_kanji_all');
-      const fetchKanjiPromise = allKanji
-        ? Promise.resolve(allKanji)
-        : fetchItemsByType('kanji').then(items => {
-            memoryCache.set('catalog_kanji_all', items, 60 * 60 * 1000); // 1 hour
-            return items;
-          });
+      if (!allKanji && typeof window !== 'undefined') {
+        try {
+          const storedKanji = localStorage.getItem('catalog_kanji_all');
+          if (storedKanji) {
+            allKanji = JSON.parse(storedKanji);
+            memoryCache.set('catalog_kanji_all', allKanji, 60 * 60 * 1000);
+          }
+        } catch {}
+      }
 
-      const [progresses, kanjiItems] = await Promise.all([
-        fetchAllUserProgress(user.id, 'item_id, srs_stage, unlocked_at, next_review, items(id, character, slug, level, type, lesson_position)'),
-        fetchKanjiPromise,
+      const kanjiPromise = allKanji
+        ? Promise.resolve(allKanji)
+        : supabase
+            .from('items')
+            .select('id, level, character, slug, lesson_position')
+            .eq('type', 'kanji')
+            .order('level', { ascending: true })
+            .order('lesson_position', { ascending: true })
+            .then(res => {
+              const list = (res.data as Item[]) || [];
+              memoryCache.set('catalog_kanji_all', list, 60 * 60 * 1000);
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem('catalog_kanji_all', JSON.stringify(list));
+                } catch {}
+              }
+              return list;
+            });
+
+      const [profile, progresses, kanjiItems, activityLogs, lb] = await Promise.all([
+        getUserProfile(user.id),
+        fetchAllUserProgress(
+          user.id,
+          'item_id, srs_stage, unlocked_at, next_review, items(id, character, slug, level, type, lesson_position)'
+        ),
+        kanjiPromise,
+        fetchActivityLogs(user.id),
+        fetchLeaderboard(user.id, 'Pengguna', 1, 0),
       ]);
+
       allKanji = kanjiItems;
+
+      if (profile?.username) {
+        setUsername(profile.username);
+      }
 
       const progressGuruSet = new Set(
         (progresses || [])
@@ -96,15 +140,31 @@ export function useDashboardData() {
 
       const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
 
+      const currentLevelKanji = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
+      const totalKanji = currentLevelKanji.length;
+      const kanjiIds = currentLevelKanji.map(k => k.id);
+
+      // 3. PARALLEL PHASE 2: Fetch level radicals & kanji prerequisites concurrently
+      const [levelRadicalsRes, prereqRes] = await Promise.all([
+        supabase
+          .from('items')
+          .select('id, level, type')
+          .eq('type', 'radical')
+          .lte('level', userLevel),
+        kanjiIds.length > 0
+          ? supabase
+              .from('item_prerequisites')
+              .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+              .in('item_id', kanjiIds)
+          : Promise.resolve({ data: [] as any[], error: null }),
+      ]);
+
+      const levelRadicals = levelRadicalsRes.data || [];
+      const prereqs = prereqRes.data || [];
+
       // Self-healing check: ensure all radicals with level <= userLevel are unlocked (srs_stage >= 1)
       const unlockedItemIds = new Set((progresses || []).map((p: any) => p.item_id));
-      const { data: levelRadicals } = await supabase
-        .from('items')
-        .select('id, level, type')
-        .eq('type', 'radical')
-        .lte('level', userLevel);
-
-      const lockedRadicalsToUnlock = (levelRadicals || []).filter(
+      const lockedRadicalsToUnlock = levelRadicals.filter(
         (rad: any) => !unlockedItemIds.has(rad.id)
       );
 
@@ -127,10 +187,6 @@ export function useDashboardData() {
       }
 
       // Calculate stats for current active level
-      const currentLevelKanji = allKanji ? allKanji.filter((k: any) => k.level === userLevel) : [];
-      const totalKanji = currentLevelKanji.length;
-      const kanjiIds = currentLevelKanji.map(k => k.id);
-
       let lessonsAvailable = 0;
       let reviewsDue = 0;
       let kanjiPassed = 0;
@@ -201,18 +257,7 @@ export function useDashboardData() {
         });
       }
 
-      // Fetch prerequisites ONLY for kanjis in the current level (super fast!)
-      let prereqs: any[] = [];
-      if (kanjiIds.length > 0) {
-        const { data: prereqData, error: prereqErr } = await supabase
-          .from('item_prerequisites')
-          .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
-          .in('item_id', kanjiIds);
-        if (!prereqErr && prereqData) {
-          prereqs = prereqData;
-        }
-      }
-
+      // Map Prerequisites
       const prereqsMap = new Map<string, any[]>();
       prereqs.forEach((row: any) => {
         const reqItem = row.items;
@@ -261,7 +306,6 @@ export function useDashboardData() {
       setAvailableLessons(lessonsList);
 
       // Activity logs & Heatmap
-      const activityLogs = await fetchActivityLogs(user.id);
       const reviewMap: Record<string, number> = {};
       const lessonMap: Record<string, number> = {};
       const durationMap: Record<string, number> = {};
@@ -306,23 +350,6 @@ export function useDashboardData() {
         }
       }
 
-      setStats({
-        lessonsAvailable,
-        reviewsDue,
-        distribution,
-        byType,
-        level: userLevel,
-        kanjiPassedInLevel: kanjiPassed,
-        kanjiTotalInLevel: totalKanji,
-        daysSinceLevelUp,
-      });
-
-      // Leaderboard
-      const userPoints = progresses ? progresses.filter((i: any) => i.srs_stage >= 5).length * 10 + progresses.filter((i: any) => i.srs_stage > 0).length : 0;
-      const lb = await fetchLeaderboard(user.id, profile?.username || username, userLevel, userPoints);
-      setLeaderboard(lb);
-
-      // Save snapshot to memory cache for instant SWR transitions
       const computedStats: DashboardStats = {
         lessonsAvailable,
         reviewsDue,
@@ -333,25 +360,47 @@ export function useDashboardData() {
         kanjiTotalInLevel: totalKanji,
         daysSinceLevelUp,
       };
+      setStats(computedStats);
 
-      memoryCache.set(`dashboard_snapshot_${user.id}`, {
+      // Recompute leaderboard entry for self
+      const userPoints = progresses
+        ? progresses.filter((i: any) => i.srs_stage >= 5).length * 10 + progresses.filter((i: any) => i.srs_stage > 0).length
+        : 0;
+      const finalLb = (lb || []).map(entry =>
+        entry.isSelf
+          ? { ...entry, name: profile?.username || username, level: userLevel, points: userPoints }
+          : entry
+      );
+      setLeaderboard(finalLb);
+
+      // 4. PERSIST SNAPSHOT (RAM + LocalStorage): Enables 0ms render on hard reloads
+      const snapshot = {
         username: profile?.username || username,
         stats: computedStats,
         itemDetails: loadedItems,
         currentLevelKanjiList: kanjiList,
         availableLessons: lessonsList,
-        leaderboard: lb,
+        leaderboard: finalLb,
         reviewHeatmap: reviewMap,
         lessonHeatmap: lessonMap,
         durationHeatmap: durationMap,
-      }, 5 * 60 * 1000); // 5 minutes SWR cache
+      };
+
+      memoryCache.set(cacheKey, snapshot, 15 * 60 * 1000);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(cacheKey, JSON.stringify(snapshot));
+        } catch (e) {
+          console.warn('Failed to save dashboard localStorage:', e);
+        }
+      }
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
       setLoading(false);
     }
-  }, [router, username]);
+  }, [router, applySnapshot]);
 
   useEffect(() => {
     let isMounted = true;
