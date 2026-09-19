@@ -153,7 +153,6 @@ export default function Navbar() {
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-radical/20 hover:shadow-[0_0_10px_rgba(0,160,240,0.2)] border border-transparent hover:border-radical/30'
                 }`}
             >
-              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-radical mr-1 sm:mr-1.5 shrink-0"></span>
               <span>部首</span>
               <span className="hidden sm:inline ml-1">Radikal</span>
             </Link>
@@ -166,7 +165,6 @@ export default function Navbar() {
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-kanji/20 hover:shadow-[0_0_10px_rgba(240,0,160,0.2)] border border-transparent hover:border-kanji/30'
                 }`}
             >
-              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-kanji mr-1 sm:mr-1.5 shrink-0"></span>
               <span>漢字</span>
               <span className="hidden sm:inline ml-1">Kanji</span>
             </Link>
@@ -179,7 +177,6 @@ export default function Navbar() {
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-vocab/20 hover:shadow-[0_0_10px_rgba(160,0,240,0.2)] border border-transparent hover:border-vocab/30'
                 }`}
             >
-              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-vocab mr-1 sm:mr-1.5 shrink-0"></span>
               <span>語彙</span>
               <span className="hidden sm:inline ml-1">Kosakata</span>
             </Link>
