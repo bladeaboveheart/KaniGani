@@ -4,7 +4,8 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database, Sun, Moon } from 'lucide-react';
+import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database, Sun, Moon, Search } from 'lucide-react';
+import GlobalSearchModal from '@/components/search/GlobalSearchModal';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [_betaResetting, setBetaResetting] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const router = useRouter();
@@ -59,6 +61,27 @@ export default function Navbar() {
         setTheme('dark');
       }, 0);
     }
+  }, []);
+
+  // Global keyboard shortcut for search (Ctrl+K, Cmd+K, or '/')
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+        return;
+      }
+      if (
+        e.key === '/' &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const toggleTheme = () => {
@@ -208,12 +231,25 @@ export default function Navbar() {
             </span>
           </nav>
 
-          {/* User Settings, Theme, Logout */}
-          <div className="flex items-center space-x-4">
+          {/* User Settings, Search, Theme, Logout */}
+          <div className="flex items-center space-x-2 sm:space-x-3">
+            {/* Search Button (Replaced former Theme Toggle spot) */}
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all duration-200 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer flex items-center space-x-2 group"
+              aria-label="Cari item kamus"
+              title="Cari Radikal, Kanji, atau Kosakata (Ctrl+K)"
+            >
+              <Search className="w-5 h-5 text-slate-600 dark:text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+              <span className="hidden xl:inline text-xs text-slate-400 dark:text-slate-500 font-medium">
+                Cari... <kbd className="ml-1 px-1.5 py-0.5 text-xxs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-slate-500 dark:text-slate-400">Ctrl K</kbd>
+              </span>
+            </button>
+
             {!isLoading && !username && (
               <button
                 onClick={toggleTheme}
-                className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all duration-200 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all duration-200 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer"
                 aria-label="Toggle tema gelap/terang"
               >
                 {theme === 'light' ? (
@@ -326,6 +362,12 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+
+      {/* Global Dictionary Search Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </header>
   );
 }

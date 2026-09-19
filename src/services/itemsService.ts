@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { Item, ItemType } from '@/lib/types';
+import * as wanakana from 'wanakana';
 
 /**
  * Fetches all items of a given type in parallel chunks to bypass PostgREST 1000 row limits.
@@ -590,5 +591,139 @@ export async function saveItemFullData(formItem: import('@/lib/types').ItemInput
     console.error('Error in saveItemFullData:', err);
     return { success: false, error: err?.message || String(err) };
   }
+}
+
+export interface GlobalSearchResultItem {
+  id: string;
+  character: string;
+  slug: string;
+  level: number;
+  type: ItemType;
+  primary_meaning: string;
+  primary_reading: string | null;
+}
+
+const searchCache = new Map<string, GlobalSearchResultItem[]>();
+
+/**
+ * Searches items (radical, kanji, vocabulary) across character, slug, meanings, and readings.
+ * Automatically supports Romaji, Hiragana, Katakana, Indonesian/English meanings, and Kanji characters.
+ */
+export async function searchGlobalItems(
+  query: string,
+  typeFilter: 'all' | ItemType = 'all',
+  limit: number = 30
+): Promise<GlobalSearchResultItem[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const cacheKey = `${typeFilter}_${trimmed.toLowerCase()}`;
+  if (searchCache.has(cacheKey)) {
+    return searchCache.get(cacheKey)!;
+  }
+
+  const kana = wanakana.toKana(trimmed);
+
+  // 1. Parallel search queries
+  let itemsQuery = supabase
+    .from('items')
+    .select('id, character, slug, level, type')
+    .or(`character.ilike.%${trimmed}%,slug.ilike.%${trimmed}%`);
+
+  if (typeFilter !== 'all') {
+    itemsQuery = itemsQuery.eq('type', typeFilter);
+  }
+
+  const meaningsQuery = supabase
+    .from('item_meanings')
+    .select('item_id')
+    .ilike('meaning', `%${trimmed}%`)
+    .limit(limit);
+
+  let readingsQuery = supabase
+    .from('item_readings')
+    .select('item_id');
+
+  if (kana !== trimmed) {
+    readingsQuery = readingsQuery.or(`reading.ilike.%${trimmed}%,reading.ilike.%${kana}%`);
+  } else {
+    readingsQuery = readingsQuery.ilike('reading', `%${trimmed}%`);
+  }
+
+  const [itemsRes, meaningsRes, readingsRes] = await Promise.all([
+    itemsQuery.limit(limit),
+    meaningsQuery,
+    readingsQuery.limit(limit),
+  ]);
+
+  const allIds = new Set<string>();
+  (itemsRes.data || []).forEach((i: any) => allIds.add(i.id));
+  (meaningsRes.data || []).forEach((m: any) => allIds.add(m.item_id));
+  (readingsRes.data || []).forEach((r: any) => allIds.add(r.item_id));
+
+  if (allIds.size === 0) {
+    searchCache.set(cacheKey, []);
+    return [];
+  }
+
+  const idList = Array.from(allIds).slice(0, limit);
+
+  let finalQuery = supabase
+    .from('items')
+    .select(`
+      id, character, slug, level, type,
+      item_meanings(meaning, primary_meaning),
+      item_readings(reading, primary_reading)
+    `)
+    .in('id', idList);
+
+  if (typeFilter !== 'all') {
+    finalQuery = finalQuery.eq('type', typeFilter);
+  }
+
+  const { data: finalData, error } = await finalQuery;
+  if (error || !finalData) {
+    console.error('Error in searchGlobalItems:', error);
+    return [];
+  }
+
+  const results: GlobalSearchResultItem[] = finalData.map((it: any) => {
+    const meanings = it.item_meanings || [];
+    const readings = it.item_readings || [];
+    const primaryMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || meanings[0]?.meaning || it.slug || '';
+    const primaryReading = readings.find((r: any) => r.primary_reading)?.reading || readings[0]?.reading || null;
+
+    return {
+      id: it.id,
+      character: it.character,
+      slug: it.slug || '',
+      level: it.level,
+      type: it.type as ItemType,
+      primary_meaning: primaryMeaning,
+      primary_reading: primaryReading,
+    };
+  });
+
+  // Intelligent ranking:
+  // 1. Exact character match first
+  // 2. Exact slug/meaning match second
+  // 3. Lower level first
+  const lowerQ = trimmed.toLowerCase();
+  results.sort((a, b) => {
+    const aCharMatch = a.character.toLowerCase() === lowerQ;
+    const bCharMatch = b.character.toLowerCase() === lowerQ;
+    if (aCharMatch && !bCharMatch) return -1;
+    if (!aCharMatch && bCharMatch) return 1;
+
+    const aMeaningMatch = a.primary_meaning.toLowerCase() === lowerQ || a.slug.toLowerCase() === lowerQ;
+    const bMeaningMatch = b.primary_meaning.toLowerCase() === lowerQ || b.slug.toLowerCase() === lowerQ;
+    if (aMeaningMatch && !bMeaningMatch) return -1;
+    if (!aMeaningMatch && bMeaningMatch) return 1;
+
+    return a.level - b.level;
+  });
+
+  searchCache.set(cacheKey, results);
+  return results;
 }
 
