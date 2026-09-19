@@ -7,11 +7,11 @@ export type SrsLevelGroup = 'locked' | 'apprentice' | 'guru' | 'master' | 'enlig
  */
 export function getSrsLabel(stage: number): string {
   if (stage === 0) return 'Terkunci';
-  if (stage >= 1 && stage <= 4) return 'Kepiting Cilik'; // Apprentice
-  if (stage === 5 || stage === 6) return 'Kepiting Guru'; // Guru
-  if (stage === 7) return 'Kepiting Suhu'; // Master
-  if (stage === 8) return 'Kepiting Sakti'; // Enlightened
-  return 'Kepiting Rebus'; // Burned (Stage 9+)
+  if (stage >= 1 && stage <= 4) return 'Pemula'; // Apprentice
+  if (stage === 5 || stage === 6) return 'Lulus'; // Guru
+  if (stage === 7) return 'Mahir'; // Master
+  if (stage === 8) return 'Ahli'; // Enlightened
+  return 'Tuntas'; // Burned (Stage 9+)
 }
 
 /**

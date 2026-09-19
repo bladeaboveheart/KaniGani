@@ -37,7 +37,7 @@ export default function LevelProgress({
             </h3>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            KaniGani mensyaratkan kelulusan minimal 90% Kanji Level {stats.level} ke status Kepiting Guru (Tahap 5) untuk naik level.
+            KaniGani mensyaratkan kelulusan minimal 90% Kanji Level {stats.level} ke status Lulus (Tahap 5) untuk naik level.
           </p>
         </div>
         <div className="text-right">
@@ -116,11 +116,11 @@ export default function LevelProgress({
                     tooltipText = "Tersedia untuk Pelajaran (Lesson)";
                   } else if (isPassed) {
                     cardClass = "bg-emerald-500 text-white font-extrabold border border-emerald-600 shadow-3xs";
-                    statusLabel = `Kepiting Guru+ (${kanji.srs_stage})`;
+                    statusLabel = `Lulus+ (${kanji.srs_stage})`;
                     tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Lulus";
                   } else {
                     cardClass = "bg-[#f03e64] text-white font-extrabold border border-[#f03e64]/80 shadow-3xs";
-                    statusLabel = `Kepiting Cilik (${kanji.srs_stage})`;
+                    statusLabel = `Pemula (${kanji.srs_stage})`;
                     tooltipText = kanji.next_review ? formatDueTime(kanji.next_review) : "Terkunci";
                   }
 

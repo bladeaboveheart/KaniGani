@@ -104,7 +104,7 @@ export default function Navbar() {
   };
 
   const _handleAccelerateReviews = async () => {
-    if (!confirm('Percepat review menjadi SEKARANG (Hanya untuk item s/d tingkat Kepiting Guru)?')) return;
+    if (!confirm('Percepat review menjadi SEKARANG (Hanya untuk item s/d tingkat Lulus)?')) return;
     setBetaResetting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();

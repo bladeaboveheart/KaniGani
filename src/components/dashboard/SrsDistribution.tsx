@@ -14,27 +14,27 @@ export default function SrsDistribution({ stats }: SrsDistributionProps) {
 
   const stages = [
     {
-      label: 'Kepiting Cilik',
+      label: 'Pemula',
       count: (distribution[1] || 0) + (distribution[2] || 0) + (distribution[3] || 0) + (distribution[4] || 0),
       color: 'bg-rose-500'
     },
     {
-      label: 'Kepiting Guru',
+      label: 'Lulus',
       count: (distribution[5] || 0) + (distribution[6] || 0),
       color: 'bg-purple-600'
     },
     {
-      label: 'Kepiting Suhu',
+      label: 'Mahir',
       count: distribution[7] || 0,
       color: 'bg-blue-600'
     },
     {
-      label: 'Kepiting Sakti',
+      label: 'Ahli',
       count: distribution[8] || 0,
       color: 'bg-teal-600'
     },
     {
-      label: 'Kepiting Rebus',
+      label: 'Tuntas',
       count: distribution[9] || 0,
       color: 'bg-slate-700 text-amber-400 border border-amber-500/20'
     }

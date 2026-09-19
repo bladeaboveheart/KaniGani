@@ -100,7 +100,7 @@ export default function Dashboard() {
 
       if (error) throw error;
 
-      alert('Sukses! Item review s/d tingkat Kepiting Guru telah dipercepat menjadi SEKARANG. Silakan review segera!');
+      alert('Sukses! Item review s/d tingkat Lulus telah dipercepat menjadi SEKARANG. Silakan review segera!');
       window.location.reload();
     } catch (err: any) {
       console.error('Error resetting review timers:', err);
@@ -161,7 +161,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-semibold text-sm">Menyiapkan Beranda...</p>
+          <p className="font-semibold text-sm">Menyiapkan Halaman Beranda...</p>
         </div>
       </div>
     );
@@ -434,7 +434,7 @@ export default function Dashboard() {
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <p className="text-xs text-slate-500 dark:text-indigo-200 max-w-xl leading-relaxed">
-                Anda dapat mempercepat timer SRS untuk item yang telah Anda pelajari (Kepiting Cilik s/d Kepiting Guru) menjadi saat ini. Item di atas tingkat Kepiting Guru (seperti Kepiting Suhu/Sakti) tidak dapat dipercepat.
+                Anda dapat mempercepat timer SRS untuk item yang telah Anda pelajari (Pemula s/d Lulus) menjadi saat ini. Item di atas tingkat Lulus (seperti Mahir/Ahli/Tuntas) tidak dapat dipercepat.
               </p>
               <button
                 onClick={handleResetTimers}

@@ -113,7 +113,7 @@ export default function WaniKaniSyncModal({
                     <div className="text-lg font-black text-pink-600 dark:text-pink-400 mt-1">
                       {previewData.byStage.apprentice}
                     </div>
-                    <div className="text-3xs text-muted-foreground">Kepiting Cilik</div>
+                    <div className="text-3xs text-muted-foreground">Pemula</div>
                   </div>
 
                   <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
@@ -123,7 +123,7 @@ export default function WaniKaniSyncModal({
                     <div className="text-lg font-black text-purple-600 dark:text-purple-400 mt-1">
                       {previewData.byStage.guru}
                     </div>
-                    <div className="text-3xs text-muted-foreground">Kepiting Guru (Lulus)</div>
+                    <div className="text-3xs text-muted-foreground">Lulus</div>
                   </div>
 
                   <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
@@ -133,7 +133,7 @@ export default function WaniKaniSyncModal({
                     <div className="text-lg font-black text-blue-600 dark:text-blue-400 mt-1">
                       {previewData.byStage.master}
                     </div>
-                    <div className="text-3xs text-muted-foreground">Kepiting Mahir</div>
+                    <div className="text-3xs text-muted-foreground">Mahir</div>
                   </div>
 
                   <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl">
@@ -143,7 +143,7 @@ export default function WaniKaniSyncModal({
                     <div className="text-lg font-black text-cyan-600 dark:text-cyan-400 mt-1">
                       {previewData.byStage.enlightened}
                     </div>
-                    <div className="text-3xs text-muted-foreground">Tercerahkan</div>
+                    <div className="text-3xs text-muted-foreground">Ahli</div>
                   </div>
 
                   <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
@@ -153,7 +153,7 @@ export default function WaniKaniSyncModal({
                     <div className="text-lg font-black text-amber-600 dark:text-amber-400 mt-1">
                       {previewData.byStage.burned}
                     </div>
-                    <div className="text-3xs text-muted-foreground">Kekal / Terbakar</div>
+                    <div className="text-3xs text-muted-foreground">Tuntas</div>
                   </div>
 
                   <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">

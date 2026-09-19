@@ -29,16 +29,16 @@ export default function QuizFeedback({
 
   const getSrsStageName = (stage: number | undefined) => {
     if (stage === undefined) return '';
-    if (stage === 1) return 'Kepiting Cilik 1';
-    if (stage === 2) return 'Kepiting Cilik 2';
-    if (stage === 3) return 'Kepiting Cilik 3';
-    if (stage === 4) return 'Kepiting Cilik 4';
-    if (stage === 5) return 'Kepiting Guru 1';
-    if (stage === 6) return 'Kepiting Guru 2';
-    if (stage === 7) return 'Kepiting Suhu';
-    if (stage === 8) return 'Kepiting Sakti';
-    if (stage === 9) return 'Kepiting Rebus';
-    return 'Kepiting Cilik 1';
+    if (stage === 1) return 'Pemula 1';
+    if (stage === 2) return 'Pemula 2';
+    if (stage === 3) return 'Pemula 3';
+    if (stage === 4) return 'Pemula 4';
+    if (stage === 5) return 'Lulus 1';
+    if (stage === 6) return 'Lulus 2';
+    if (stage === 7) return 'Mahir';
+    if (stage === 8) return 'Ahli';
+    if (stage === 9) return 'Tuntas';
+    return 'Pemula 1';
   };
 
   return (
