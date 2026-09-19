@@ -27,8 +27,11 @@ export default function DatabaseHealthCard() {
     { name: 'user_progress', label: 'User Progress', count: null, description: 'Status SRS & jadwal review pengguna' },
     { name: 'profiles', label: 'Profiles', count: null, description: 'Akun pembelajar & level akun' },
     { name: 'user_integrations', label: 'User Integrations', count: null, description: 'Kredensial sinkronisasi WaniKani terenkripsi' },
+    { name: 'item_similar_kanji', label: 'Similar Kanji (Kembaran)', count: null, description: 'Relasi kemiripan visual kanji (Awas Tertukar)' },
     { name: 'activity_logs', label: 'Activity Logs', count: null, description: 'Riwayat sesi review & lesson harian' },
   ]);
+
+  const [syncingSimilar, setSyncingSimilar] = useState(false);
 
   const [diagnostics, setDiagnostics] = useState<{
     missingMeanings: number;
@@ -125,6 +128,22 @@ export default function DatabaseHealthCard() {
     };
   }, []);
 
+  const handleSyncSimilarKanji = async () => {
+    setSyncingSimilar(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/admin/sync-similar-kanji', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Gagal menyinkronkan kanji mirip');
+      setMessage({ type: 'success', text: data.message || 'Sukses menyinkronkan data kanji mirip dari WaniKani!' });
+      await loadHealthData();
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err?.message || 'Terjadi kesalahan saat sinkronisasi' });
+    } finally {
+      setSyncingSimilar(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -141,14 +160,25 @@ export default function DatabaseHealthCard() {
           </div>
         </div>
 
-        <button
-          onClick={loadHealthData}
-          disabled={loading}
-          className="px-3.5 py-2 text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border rounded-xl transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50 self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-primary' : ''}`} />
-          Refresh Metrik
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={handleSyncSimilarKanji}
+            disabled={syncingSimilar || loading}
+            className="px-3.5 py-2 text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+            title="Sinkronkan relasi kemiripan visual kanji dari WaniKani API"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncingSimilar ? 'animate-spin text-amber-500' : ''}`} />
+            {syncingSimilar ? 'Menyinkronkan...' : 'Sync Kanji Mirip'}
+          </button>
+          <button
+            onClick={loadHealthData}
+            disabled={loading}
+            className="px-3.5 py-2 text-xs font-semibold bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border rounded-xl transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-primary' : ''}`} />
+            Refresh Metrik
+          </button>
+        </div>
       </div>
 
       {/* Message */}

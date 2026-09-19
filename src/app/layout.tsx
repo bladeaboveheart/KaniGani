@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import { Outfit } from 'next/font/google';
+import { Suspense } from 'react';
+import { TopProgressBar } from '@/components/TopProgressBar';
 import './globals.css';
 
 const outfit = Outfit({
@@ -45,6 +47,9 @@ export default function RootLayout({
         {/* Favicon: Next.js auto-detects src/app/icon.png */}
       </head>
       <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         {children}
       </body>
     </html>

@@ -6,10 +6,11 @@ import { supabase } from '@/lib/supabase';
 import CharacterDisplay from '@/components/CharacterDisplay';
 import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
-import { Item } from '@/lib/types';
+import { Item, SimilarKanji } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
+import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import {
   ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
+import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -67,12 +69,54 @@ export default function LessonPage() {
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
 
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const currentItem = currentBatch[itemIndex];
+
+  // Play audio for current vocabulary item (supports learn and quiz phases)
+  const playCurrentAudio = useCallback(() => {
+    let targetItem: Item | undefined;
+    if (phase === 'learn') {
+      targetItem = currentItem;
+    } else if (phase === 'quiz') {
+      targetItem = activeCard?.item;
+    }
+
+    if (!targetItem || targetItem.type !== 'vocabulary') return;
+    const audios = targetItem.audios || (targetItem as any).item_audios || [];
+    if (!audios.length) return;
+
+    const preferred = typeof window !== 'undefined'
+      ? (localStorage.getItem('kanigani-preferred-voice') || 'Kyoko')
+      : 'Kyoko';
+
+    const kyoko = audios.find((a: any) => a.voice_actor_name?.toLowerCase() === 'kyoko' || a.gender === 'female');
+    const kenichi = audios.find((a: any) => a.voice_actor_name?.toLowerCase() === 'kenichi' || a.gender === 'male');
+    const target = preferred === 'Kyoko' ? (kyoko || kenichi) : (kenichi || kyoko);
+
+    if (target?.url) {
+      if (!audioPlayerRef.current) {
+        audioPlayerRef.current = new Audio();
+      }
+      audioPlayerRef.current.src = target.url;
+      audioPlayerRef.current.play().catch((err) => console.error('Audio play error:', err));
+    }
+  }, [phase, currentItem, activeCard]);
+
   // Keyboard shortcut hook
   useQuizShortcuts({
     onToggleInfo: toggleItemInfo,
     onAdvance: () => proceedNext(),
     isAnswerSubmitted: phase === 'quiz' && isAnswerSubmitted,
+    onPlayAudio: playCurrentAudio,
   });
+
+  // Auto-play audio when vocab question is correctly answered in quiz phase
+  useEffect(() => {
+    if (phase === 'quiz' && isAnswerSubmitted && isCorrect && activeCard?.item.type === 'vocabulary') {
+      playCurrentAudio();
+    }
+  }, [phase, isAnswerSubmitted, isCorrect, activeCard, playCurrentAudio]);
 
   // Read global dev mode setting
   useEffect(() => {
@@ -88,9 +132,6 @@ export default function LessonPage() {
     }
     return activeCard.item.accepted_readings?.[0] || activeCard.item.primary_reading || '';
   };
-
-  const inputRef = useRef<HTMLInputElement>(null);
-  const currentItem = currentBatch[itemIndex];
 
   const startQuiz = useCallback(() => {
     if (currentBatch.length === 0) return;
@@ -145,9 +186,11 @@ export default function LessonPage() {
         const rawItems = data.map((row: any) => row.items).filter(Boolean);
         const itemIds = rawItems.map((i: any) => i.id);
         const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
+        const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
+        const vocabIds = rawItems.filter((i: any) => i.type === 'vocabulary').map((i: any) => i.id);
 
-        // Fetch detail meanings, readings, sentences, and radical kanji relations
-        const [meaningsRes, readingsRes, sentencesRes, prereqsRes] = await Promise.all([
+        // Fetch detail meanings, readings, sentences, radical relations, similar kanji, and audio
+        const [meaningsRes, readingsRes, sentencesRes, prereqsRes, similarRes, audiosRes] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
@@ -157,12 +200,39 @@ export default function LessonPage() {
                 .select('requires_item_id, items!item_id(id, character, slug, level, type)')
                 .in('requires_item_id', radicalIds)
             : Promise.resolve({ data: [] }),
+          kanjiIds.length > 0
+            ? supabase
+                .from('item_similar_kanji')
+                .select(`
+                  item_id,
+                  items!similar_item_id(
+                    id, character, slug, level, type,
+                    item_meanings(meaning, primary_meaning),
+                    item_readings(reading, primary_reading)
+                  )
+                `)
+                .in('item_id', kanjiIds)
+            : Promise.resolve({ data: [] }),
+          vocabIds.length > 0
+            ? supabase
+                .from('item_audios')
+                .select('*')
+                .in('item_id', vocabIds)
+            : Promise.resolve({ data: [] }),
         ]);
 
         const meanings = meaningsRes.data || [];
         const readings = readingsRes.data || [];
         const sentences = sentencesRes.data || [];
         const prereqs = prereqsRes.data || [];
+        const audios = audiosRes.data || [];
+
+        // Map vocabulary audios
+        const audiosMap = new Map<string, any[]>();
+        audios.forEach((a: any) => {
+          if (!audiosMap.has(a.item_id)) audiosMap.set(a.item_id, []);
+          audiosMap.get(a.item_id)!.push(a);
+        });
 
         // Map radical kanji dependencies (strictly Kanji items only)
         const kanjisMap = new Map<string, any[]>();
@@ -177,6 +247,25 @@ export default function LessonPage() {
 
         kanjisMap.forEach((list) => {
           list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+        });
+
+        // Map similar kanji
+        const similarKanjiMap = new Map<string, SimilarKanji[]>();
+        similarRes.data?.forEach((row: any) => {
+          const it = row.items;
+          if (!it) return;
+          const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+          const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+          if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
+          similarKanjiMap.get(row.item_id)!.push({
+            id: it.id,
+            character: it.character,
+            slug: it.slug,
+            level: it.level,
+            type: it.type,
+            primary_meaning: primaryMeaning,
+            primary_reading: primaryReading,
+          });
         });
 
         // Combine details
@@ -202,6 +291,8 @@ export default function LessonPage() {
             accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
             accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
             kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : undefined,
+            similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : undefined,
+            audios: item.type === 'vocabulary' ? (audiosMap.get(item.id) || []) : undefined,
           };
         });
 
@@ -533,6 +624,12 @@ export default function LessonPage() {
                 <CharacterDisplay character={currentItem.character} slug={currentItem.slug} imgClassName="w-20 h-20" />
               </h1>
               <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.slug}</p>
+
+              {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
+                <div className="mt-3">
+                  <AudioPlayerButton audios={currentItem.audios} variant="compact" />
+                </div>
+              )}
             </div>
 
             {/* Explanation Navigation Tabs */}
@@ -597,6 +694,21 @@ export default function LessonPage() {
                       <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
                       <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic} /></p>
                     </div>
+                  )}
+
+                  {/* Visually Similar Kanji in Lesson */}
+                  {currentItem.type === 'kanji' && currentItem.similar_kanjis && currentItem.similar_kanjis.length > 0 && (
+                    <SimilarKanjiSection
+                      currentKanji={{
+                        character: currentItem.character,
+                        slug: currentItem.slug,
+                        level: currentItem.level,
+                        primary_meaning: currentItem.primary_meaning,
+                        primary_reading: currentItem.primary_reading,
+                      }}
+                      similarKanjis={currentItem.similar_kanjis}
+                      variant="lesson"
+                    />
                   )}
                 </div>
               )}
@@ -681,9 +793,14 @@ export default function LessonPage() {
                         })`
                         : 'Bacaan Jepang Utama (Kana)'}
                     </h3>
-                    <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-                      {currentItem.primary_reading}
-                    </p>
+                    <div className="flex items-center gap-3 mt-1">
+                      <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                        {currentItem.primary_reading}
+                      </p>
+                      {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
+                        <AudioPlayerButton audios={currentItem.audios} variant="compact" />
+                      )}
+                    </div>
                   </div>
 
                   {currentItem.readings && currentItem.readings.length > 1 && (

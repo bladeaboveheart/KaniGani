@@ -8,122 +8,115 @@ import { DictionaryItem } from '@/hooks/useDictionaryItems';
 interface ItemCardProps {
   item: DictionaryItem;
   onClick: (item: DictionaryItem) => void;
+  displayMode?: 'reading' | 'meaning';
 }
 
-export default function ItemCard({ item, onClick }: ItemCardProps) {
-  const isLocked = item.srs_stage === 0;
-  const isInLessons = item.srs_stage === 1 && !item.next_review;
-  const isInReviews = item.srs_stage !== undefined && item.srs_stage >= 1 && item.srs_stage <= 8 && item.next_review !== null;
-
+export default function ItemCard({
+  item,
+  onClick,
+  displayMode = 'reading',
+}: ItemCardProps) {
+  const stage = item.srs_stage || 0;
+  const isLocked = stage === 0;
   const type = item.type || 'radical';
 
   // Base theme classes per item type
-  let cardStyles = '';
-  let charBorderStyles = '';
-  let textStyles = '';
-  let readingTextStyles = '';
-  let lockColor = '';
+  let cardBg = '';
+  let charColor = '';
+  let subtextColor = '';
 
   if (type === 'radical') {
-    lockColor = 'text-radical/50 dark:text-radical/40';
     if (isLocked) {
-      cardStyles = 'bg-hatched-radical border-dashed border-radical/30 dark:border-radical/20 hover:border-radical/45';
-      charBorderStyles = 'border-solid border-radical/30 text-radical/55';
-      textStyles = 'text-slate-500 dark:text-slate-400 capitalize font-bold';
-    } else if (isInLessons) {
-      cardStyles = 'bg-radical/5 border-solid border-radical/20 dark:bg-radical/10 hover:border-radical/40 hover:shadow-radical/5';
-      charBorderStyles = 'border-solid border-radical text-radical';
-      textStyles = 'text-slate-750 dark:text-slate-200 capitalize font-black';
-    } else if (isInReviews) {
-      cardStyles = 'bg-radical border-solid border-radical/80 text-white shadow-3xs hover:shadow-2xs hover:bg-radical-hover';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      charColor = 'text-slate-500 dark:text-slate-400';
+      subtextColor = 'text-slate-400 dark:text-slate-500';
     } else {
-      cardStyles = 'bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
+      cardBg = 'bg-radical text-white border-radical shadow-xs hover:shadow-md hover:brightness-105';
+      charColor = 'text-white';
+      subtextColor = 'text-white/90';
     }
   } else if (type === 'kanji') {
-    lockColor = 'text-kanji/50 dark:text-kanji/40';
     if (isLocked) {
-      cardStyles = 'bg-hatched-kanji border-dashed border-kanji/30 dark:border-kanji/20 hover:border-kanji/45';
-      charBorderStyles = 'border-solid border-kanji/30 text-kanji/55';
-      textStyles = 'text-slate-500 dark:text-slate-400 capitalize font-bold';
-      readingTextStyles = 'text-slate-400 dark:text-slate-500';
-    } else if (isInLessons) {
-      cardStyles = 'bg-kanji/5 border-solid border-kanji/20 dark:bg-kanji/10 hover:border-kanji/40 hover:shadow-kanji/5';
-      charBorderStyles = 'border-solid border-kanji text-kanji';
-      textStyles = 'text-slate-750 dark:text-slate-200 capitalize font-black';
-      readingTextStyles = 'text-kanji font-bold';
-    } else if (isInReviews) {
-      cardStyles = 'bg-kanji border-solid border-kanji/80 text-white shadow-3xs hover:shadow-2xs hover:bg-kanji-hover';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
-      readingTextStyles = 'text-white/80 font-medium';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      charColor = 'text-slate-500 dark:text-slate-400';
+      subtextColor = 'text-slate-400 dark:text-slate-500';
     } else {
-      cardStyles = 'bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
-      readingTextStyles = 'text-white/80 font-medium';
+      cardBg = 'bg-kanji text-white border-kanji shadow-xs hover:shadow-md hover:brightness-105';
+      charColor = 'text-white';
+      subtextColor = 'text-white/90';
     }
   } else {
-    // vocabulary
-    lockColor = 'text-vocab/50 dark:text-vocab/40';
+    // Vocabulary
     if (isLocked) {
-      cardStyles = 'bg-hatched-vocab border-dashed border-vocab/30 dark:border-vocab/20 hover:border-vocab/45';
-      charBorderStyles = 'border-solid border-vocab/30 text-vocab/55';
-      textStyles = 'text-slate-500 dark:text-slate-400 capitalize font-bold';
-      readingTextStyles = 'text-slate-400 dark:text-slate-500';
-    } else if (isInLessons) {
-      cardStyles = 'bg-vocab/5 border-solid border-vocab/20 dark:bg-vocab/10 hover:border-vocab/40 hover:shadow-vocab/5';
-      charBorderStyles = 'border-solid border-vocab text-vocab';
-      textStyles = 'text-slate-750 dark:text-slate-200 capitalize font-black';
-      readingTextStyles = 'text-vocab font-bold';
-    } else if (isInReviews) {
-      cardStyles = 'bg-vocab border-solid border-vocab/80 text-white shadow-3xs hover:shadow-2xs hover:bg-vocab-hover';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
-      readingTextStyles = 'text-white/80 font-medium';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      charColor = 'text-slate-500 dark:text-slate-400';
+      subtextColor = 'text-slate-400 dark:text-slate-500';
     } else {
-      cardStyles = 'bg-burned-card border-solid text-white shadow-3xs hover:shadow-2xs';
-      charBorderStyles = 'border-solid border-white/60 text-white';
-      textStyles = 'text-white capitalize font-black';
-      readingTextStyles = 'text-white/80 font-medium';
+      cardBg = 'bg-vocab text-white border-vocab shadow-xs hover:shadow-md hover:brightness-105';
+      charColor = 'text-white';
+      subtextColor = 'text-white/90';
     }
   }
 
-  const displayName = item.primary_meaning || item.slug || '';
-  const displayReading = item.primary_reading || '';
+  // Determine subtext content (Reading vs Meaning)
+  let subtext = '';
+  if (type === 'radical') {
+    subtext = item.primary_meaning || item.slug || '';
+  } else {
+    if (displayMode === 'meaning') {
+      subtext = item.primary_meaning || item.slug || '';
+    } else {
+      subtext = item.primary_reading || item.primary_meaning || item.slug || '';
+    }
+  }
+
+  // Bottom SRS Indicator Bar (WaniKani Style)
+  let srsIndicatorBg = 'bg-transparent';
+  if (stage >= 1 && stage <= 4) {
+    srsIndicatorBg = 'bg-pink-400 dark:bg-pink-300'; // Apprentice
+  } else if (stage >= 5 && stage <= 6) {
+    srsIndicatorBg = 'bg-purple-400 dark:bg-purple-300'; // Guru
+  } else if (stage === 7) {
+    srsIndicatorBg = 'bg-blue-400 dark:bg-blue-300'; // Master
+  } else if (stage === 8) {
+    srsIndicatorBg = 'bg-cyan-300 dark:bg-cyan-200'; // Enlightened
+  } else if (stage === 9) {
+    srsIndicatorBg = 'bg-amber-400 dark:bg-amber-300'; // Burned
+  }
 
   return (
     <div
       onClick={() => onClick(item)}
-      className={`pt-3.5 pb-2.5 px-3.5 rounded-2xl border flex flex-col justify-between items-center text-center cursor-pointer transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group min-w-[76px] select-none whitespace-nowrap ${
-        type === 'radical' ? 'h-28' : 'h-32'
-      } ${cardStyles}`}
+      className={`group relative rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:scale-102 cursor-pointer select-none flex flex-col justify-between items-center text-center overflow-hidden shrink-0 ${
+        type === 'vocabulary'
+          ? 'w-[88px] sm:w-[96px] h-[78px] sm:h-[84px] px-2 py-2'
+          : 'w-[72px] sm:w-[80px] h-[78px] sm:h-[84px] px-1.5 py-2'
+      } ${cardBg}`}
+      title={`${item.character || item.slug} • ${item.primary_meaning || ''}`}
     >
-      {/* Character with Solid Border */}
-      <div className={`px-3 py-1 border rounded-xl font-japanese font-black text-2xl mb-1 flex items-center justify-center transition-transform duration-300 group-hover:scale-105 ${charBorderStyles}`}>
-        <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-7 h-7" />
+      {/* Top Character */}
+      <div className={`font-japanese font-black text-2xl sm:text-3xl leading-none flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${charColor}`}>
+        <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-6 h-6" />
       </div>
 
-      {/* Reading (Kanji & Vocab only) */}
-      {type !== 'radical' && displayReading && (
-        <span className={`text-xxs font-japanese leading-none block truncate max-w-[80px] ${readingTextStyles}`}>
-          {displayReading}
-        </span>
-      )}
+      {/* Subtext (Reading or Meaning) */}
+      <div className={`text-3xs sm:text-xxs font-bold leading-tight truncate w-full px-1 ${subtextColor}`}>
+        {subtext}
+      </div>
 
-      {/* Meaning / Slug */}
-      <span className={`text-xs leading-none mt-1 block truncate max-w-[90px] ${textStyles}`} title={displayName}>
-        {displayName}
-      </span>
-
-      {/* Mini Lock Icon for Locked */}
+      {/* Lock Icon for Locked items */}
       {isLocked && (
-        <div className={`absolute top-1 right-1.5 ${lockColor}`}>
+        <div className="absolute top-1.5 right-1.5 text-slate-400 dark:text-slate-500">
           <Lock className="w-2.5 h-2.5" />
         </div>
+      )}
+
+      {/* Bottom SRS Stage Bar */}
+      {!isLocked && (
+        <div
+          className={`absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 ${srsIndicatorBg}`}
+          title={`SRS Stage ${stage}`}
+        />
       )}
     </div>
   );

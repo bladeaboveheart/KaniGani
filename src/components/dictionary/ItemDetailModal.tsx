@@ -1,25 +1,106 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { X, Layers, Languages, FileText, Loader2 } from 'lucide-react';
+import { X, Layers, Languages, FileText, Loader2, ExternalLink } from 'lucide-react';
 import CharacterDisplay from '@/components/CharacterDisplay';
 import FormattedText from '@/components/FormattedText';
 import { DictionaryItem } from '@/hooks/useDictionaryItems';
 import { getSrsLabel, getSrsColorClass } from '@/lib/srs';
+import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
+import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
+import { supabase } from '@/lib/supabase';
 
 interface ItemDetailModalProps {
   item: DictionaryItem | null;
   onClose: () => void;
   loading?: boolean;
+  onNavigateItem?: (item: any) => void;
+  onItemUpdated?: (updatedItem: any) => void;
 }
 
-export default function ItemDetailModal({ item, onClose, loading }: ItemDetailModalProps) {
+export default function ItemDetailModal({
+  item,
+  onClose,
+  loading,
+  onNavigateItem,
+  onItemUpdated,
+}: ItemDetailModalProps) {
   const router = useRouter();
+  const [localSimilar, setLocalSimilar] = useState<any[]>(item?.similar_kanji || []);
+  const [localAudios, setLocalAudios] = useState<any[]>(item?.audios || []);
+  const type = item?.type || 'radical';
+
+  useEffect(() => {
+    if (!item) {
+      setLocalSimilar([]);
+      setLocalAudios([]);
+      return;
+    }
+    if (item.similar_kanji && item.similar_kanji.length > 0) {
+      setLocalSimilar(item.similar_kanji);
+    } else if (type !== 'kanji') {
+      setLocalSimilar([]);
+    }
+
+    if (item.audios && item.audios.length > 0) {
+      setLocalAudios(item.audios);
+    } else if (type === 'vocabulary') {
+      supabase
+        .from('item_audios')
+        .select('*')
+        .eq('item_id', item.id)
+        .then(({ data }) => {
+          if (data) setLocalAudios(data);
+        });
+    } else {
+      setLocalAudios([]);
+    }
+
+    let isMounted = true;
+    async function loadFallbackSimilar() {
+      if (type !== 'kanji' || (item!.similar_kanji && item!.similar_kanji.length > 0)) return;
+      try {
+        const { data } = await supabase
+          .from('item_similar_kanji')
+          .select(`
+            similar_item_id,
+            items!similar_item_id(
+              id, character, slug, level, type,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            )
+          `)
+          .eq('item_id', item!.id);
+
+        if (!isMounted || !data) return;
+        const list = data.map((s: any) => {
+          const it = Array.isArray(s.items) ? s.items[0] : s.items;
+          if (!it) return null;
+          const pMean = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+          const pRead = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+          return {
+            id: it.id,
+            character: it.character,
+            slug: it.slug,
+            level: it.level,
+            type: it.type,
+            primary_meaning: pMean,
+            primary_reading: pRead,
+          };
+        }).filter(Boolean);
+
+        setLocalSimilar(list);
+      } catch (e) {
+        console.error('Error in fallback similar kanji fetch:', e);
+      }
+    }
+
+    loadFallbackSimilar();
+    return () => { isMounted = false; };
+  }, [item?.id, item?.similar_kanji, item?.audios, type]);
 
   if (!item) return null;
-
-  const type = item.type || 'radical';
 
   // Gradient styles per type
   let headerGradient = 'bg-radical-gradient';
@@ -46,12 +127,27 @@ export default function ItemDetailModal({ item, onClose, loading }: ItemDetailMo
       >
         {/* Header Banner */}
         <div className={`${headerGradient} p-8 text-white flex flex-col items-center justify-center relative shrink-0`}>
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="absolute top-4 right-4 flex items-center space-x-1.5">
+            <button
+              onClick={() => {
+                onClose();
+                const identifier = encodeURIComponent(item.character || item.slug || '');
+                router.push(`/${type}/${identifier}`);
+              }}
+              className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors flex items-center space-x-1 text-xs font-semibold px-2"
+              title="Buka Halaman Lengkap"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-4xs uppercase tracking-wider">Halaman Penuh</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+              title="Tutup"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
           <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
             {typeLabel} • Level {item.level}
@@ -62,9 +158,17 @@ export default function ItemDetailModal({ item, onClose, loading }: ItemDetailMo
           </h1>
 
           {type !== 'radical' && primaryReading && (
-            <p className="text-xl font-japanese font-black tracking-wider mt-2 opacity-95">
-              {primaryReading}
-            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2.5 mt-2">
+              <p className="text-xl font-japanese font-black tracking-wider opacity-95">
+                {primaryReading}
+              </p>
+              {type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
+                <AudioPlayerButton
+                  audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
+                  variant="hero"
+                />
+              )}
+            </div>
           )}
 
           <p className="text-lg font-bold tracking-wide mt-1 uppercase opacity-90">{primaryMeaning}</p>
@@ -92,10 +196,18 @@ export default function ItemDetailModal({ item, onClose, loading }: ItemDetailMo
           {/* Readings Section (Kanji & Vocab) */}
           {item.readings && item.readings.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-1.5">
-                <Languages className="w-3.5 h-3.5 text-pink-500" />
-                <span>Cara Baca (Readings)</span>
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Languages className="w-3.5 h-3.5 text-pink-500" />
+                  <span>Cara Baca (Readings)</span>
+                </h3>
+                {type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
+                  <AudioPlayerButton
+                    audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
+                    variant="compact"
+                  />
+                )}
+              </div>
               <div className="flex flex-wrap gap-2">
                 {item.readings.map((r: any, idx: number) => (
                   <div
@@ -152,6 +264,28 @@ export default function ItemDetailModal({ item, onClose, loading }: ItemDetailMo
                 <FormattedText text={item.description} />
               </p>
             </div>
+          )}
+
+          {/* Relations: Visually Similar Kanji (Prominently Placed) */}
+          {type === 'kanji' && ((item.similar_kanji && item.similar_kanji.length > 0) || localSimilar.length > 0) && (
+            <SimilarKanjiSection
+              currentKanji={{
+                character: item.character,
+                slug: item.slug,
+                level: item.level,
+                primary_meaning: primaryMeaning,
+                primary_reading: primaryReading,
+              }}
+              similarKanjis={item.similar_kanji && item.similar_kanji.length > 0 ? item.similar_kanji : localSimilar}
+              onSelectKanji={(sim) => {
+                if (onNavigateItem) {
+                  onNavigateItem(sim);
+                } else {
+                  router.push(`/kanji?character=${encodeURIComponent(sim.character)}`);
+                }
+              }}
+              variant="modal"
+            />
           )}
 
           {/* Context Sentences (Vocabulary) */}
@@ -274,10 +408,22 @@ export default function ItemDetailModal({ item, onClose, loading }: ItemDetailMo
               </div>
             </div>
           )}
+
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-end shrink-0">
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-between shrink-0">
+          <button
+            onClick={() => {
+              onClose();
+              const identifier = encodeURIComponent(item.character || item.slug || '');
+              router.push(`/${type}/${identifier}`);
+            }}
+            className="flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
+          >
+            <ExternalLink className="w-3.5 h-3.5" />
+            <span>Buka Halaman Lengkap</span>
+          </button>
           <button
             onClick={onClose}
             className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"

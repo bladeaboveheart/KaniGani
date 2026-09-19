@@ -1,9 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Item } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { Item, SimilarKanji } from '@/lib/types';
 import FormattedText from '@/components/FormattedText';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
+import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 
 interface QuizInfoDrawerProps {
   item: Item | null;
@@ -13,11 +16,88 @@ interface QuizInfoDrawerProps {
 export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
   const [prevItemId, setPrevItemId] = useState(item?.id);
+  const [similarKanjis, setSimilarKanjis] = useState<SimilarKanji[]>(item?.similar_kanjis || []);
+  const [localAudios, setLocalAudios] = useState<any[]>(item?.audios || []);
 
   if (item?.id !== prevItemId) {
     setPrevItemId(item?.id);
     setShowAllKanjis(false);
   }
+
+  useEffect(() => {
+    if (!item) {
+      setSimilarKanjis([]);
+      setLocalAudios([]);
+      return;
+    }
+    if (item.audios && item.audios.length > 0) {
+      setLocalAudios(item.audios);
+    } else if (item.type === 'vocabulary') {
+      supabase
+        .from('item_audios')
+        .select('*')
+        .eq('item_id', item.id)
+        .then(({ data }) => {
+          if (data) setLocalAudios(data);
+        });
+    } else {
+      setLocalAudios([]);
+    }
+
+    if (item.similar_kanjis && item.similar_kanjis.length > 0) {
+      setSimilarKanjis(item.similar_kanjis);
+      return;
+    }
+    if (item.type !== 'kanji') {
+      setSimilarKanjis([]);
+      return;
+    }
+
+    let isMounted = true;
+    async function loadSimilar() {
+      try {
+        const { data } = await supabase
+          .from('item_similar_kanji')
+          .select(`
+            similar_item_id,
+            items!similar_item_id(
+              id, character, slug, level, type,
+              item_meanings(meaning, primary_meaning),
+              item_readings(reading, primary_reading)
+            )
+          `)
+          .eq('item_id', item!.id);
+
+        if (!isMounted) return;
+        const list: SimilarKanji[] = [];
+        if (data) {
+          for (const s of data) {
+            const it: any = Array.isArray((s as any).items) ? (s as any).items[0] : (s as any).items;
+            if (it) {
+              const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+              const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+              list.push({
+                id: it.id,
+                character: it.character,
+                slug: it.slug,
+                level: it.level,
+                type: it.type,
+                primary_meaning: primaryMeaning,
+                primary_reading: primaryReading,
+              });
+            }
+          }
+        }
+
+        setSimilarKanjis(list);
+      } catch (e) {
+        console.error('Error loading similar kanji in drawer:', e);
+      }
+    }
+
+    loadSimilar();
+    return () => { isMounted = false; };
+  }, [item?.id, item?.type, item?.similar_kanjis]);
 
   if (!item) return null;
 
@@ -130,9 +210,17 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
               </div>
             </div>
           ) : (
-            <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400 mt-1">
-              {item.primary_reading}
-            </p>
+            <div className="flex items-center space-x-3 mt-1">
+              <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                {item.primary_reading}
+              </p>
+              {item.type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
+                <AudioPlayerButton
+                  audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
+                  variant="compact"
+                />
+              )}
+            </div>
           )}
 
           {item.reading_mnemonic && (
@@ -203,6 +291,21 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
             </button>
           )}
         </div>
+      )}
+
+      {/* 4. Visually Similar Kanji */}
+      {item.type === 'kanji' && similarKanjis.length > 0 && (
+        <SimilarKanjiSection
+          currentKanji={{
+            character: item.character,
+            slug: item.slug,
+            level: item.level,
+            primary_meaning: item.primary_meaning,
+            primary_reading: item.primary_reading,
+          }}
+          similarKanjis={similarKanjis}
+          variant="drawer"
+        />
       )}
     </div>
   );

@@ -25,12 +25,19 @@ describe('useQuizShortcuts handler logic', () => {
     isAnswerSubmitted?: boolean;
     onToggleInfo?: () => void;
     onAdvance?: () => void;
+    onPlayAudio?: () => void;
   }) => {
     const handleKeyDown = (e: any) => {
       if (options.isAnswerSubmitted) {
         if ((e.key === 'f' || e.key === 'F') && options.onToggleInfo) {
           e.preventDefault();
           options.onToggleInfo();
+          return;
+        }
+
+        if ((e.key === 'j' || e.key === 'J') && options.onPlayAudio) {
+          e.preventDefault();
+          options.onPlayAudio();
           return;
         }
 
@@ -87,14 +94,37 @@ describe('useQuizShortcuts handler logic', () => {
     cleanup();
   });
 
-  it('does NOT trigger onToggleInfo or onAdvance when isAnswerSubmitted is false', () => {
+  it('triggers onPlayAudio when "j" or "J" is pressed and isAnswerSubmitted is true', () => {
+    const onPlayAudio = vi.fn();
+
+    const cleanup = createHandler({
+      isAnswerSubmitted: true,
+      onPlayAudio,
+    });
+
+    const preventDefault1 = vi.fn();
+    listeners['keydown']?.({ key: 'j', preventDefault: preventDefault1 });
+    expect(onPlayAudio).toHaveBeenCalledTimes(1);
+    expect(preventDefault1).toHaveBeenCalledTimes(1);
+
+    const preventDefault2 = vi.fn();
+    listeners['keydown']?.({ key: 'J', preventDefault: preventDefault2 });
+    expect(onPlayAudio).toHaveBeenCalledTimes(2);
+    expect(preventDefault2).toHaveBeenCalledTimes(1);
+
+    cleanup();
+  });
+
+  it('does NOT trigger onToggleInfo, onPlayAudio, or onAdvance when isAnswerSubmitted is false', () => {
     const onToggleInfo = vi.fn();
     const onAdvance = vi.fn();
+    const onPlayAudio = vi.fn();
 
     const cleanup = createHandler({
       isAnswerSubmitted: false,
       onToggleInfo,
       onAdvance,
+      onPlayAudio,
     });
 
     const preventDefault1 = vi.fn();
@@ -103,12 +133,19 @@ describe('useQuizShortcuts handler logic', () => {
     listeners['keydown']?.({ key: 'F', preventDefault: preventDefault2 });
     const preventDefault3 = vi.fn();
     listeners['keydown']?.({ key: ' ', preventDefault: preventDefault3 });
+    const preventDefault4 = vi.fn();
+    listeners['keydown']?.({ key: 'j', preventDefault: preventDefault4 });
+    const preventDefault5 = vi.fn();
+    listeners['keydown']?.({ key: 'J', preventDefault: preventDefault5 });
 
     expect(onToggleInfo).not.toHaveBeenCalled();
     expect(onAdvance).not.toHaveBeenCalled();
+    expect(onPlayAudio).not.toHaveBeenCalled();
     expect(preventDefault1).not.toHaveBeenCalled();
     expect(preventDefault2).not.toHaveBeenCalled();
     expect(preventDefault3).not.toHaveBeenCalled();
+    expect(preventDefault4).not.toHaveBeenCalled();
+    expect(preventDefault5).not.toHaveBeenCalled();
 
     cleanup();
   });

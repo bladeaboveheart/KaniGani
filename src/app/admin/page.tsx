@@ -61,7 +61,14 @@ export default function AdminPage() {
   const [devMode, setDevMode] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      const s = p.get('search');
+      return s ? decodeURIComponent(s) : '';
+    }
+    return '';
+  });
   const [filterType, setFilterType] = useState<'all' | 'radical' | 'kanji' | 'vocabulary'>('all');
   const [filterLevel, setFilterLevel] = useState<string>('all');
 
@@ -94,7 +101,16 @@ export default function AdminPage() {
   const [formItem, setFormItem] = useState<ItemInput>(initialFormState);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const [adminTab, setAdminTab] = useState<'kamus' | 'progress' | 'users' | 'health'>('kamus');
+  const [adminTab, setAdminTab] = useState<'kamus' | 'progress' | 'users' | 'health'>(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search);
+      const tab = p.get('tab');
+      if (tab && ['kamus', 'progress', 'users', 'health'].includes(tab)) {
+        return tab as any;
+      }
+    }
+    return 'kamus';
+  });
   const [users, setUsers] = useState<any[]>([]);
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);

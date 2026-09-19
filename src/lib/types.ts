@@ -17,6 +17,7 @@ export interface Item {
   meanings?: ItemMeaning[];
   readings?: ItemReading[];
   context_sentences?: ItemContextSentence[];
+  audios?: ItemAudio[];
   
   // Shortcuts for quick UI rendering
   primary_meaning?: string;
@@ -26,6 +27,17 @@ export interface Item {
 
   // Related items
   kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string }>;
+  similar_kanjis?: SimilarKanji[];
+}
+
+export interface SimilarKanji {
+  id: string;
+  character: string;
+  slug?: string;
+  level: number;
+  type?: string;
+  primary_meaning?: string;
+  primary_reading?: string | null;
 }
 
 export interface ItemMeaning {
@@ -50,6 +62,15 @@ export interface ItemContextSentence {
   item_id: string;
   japanese: string;
   indonesian: string;
+}
+
+export interface ItemAudio {
+  id: string;
+  item_id: string;
+  url: string;
+  content_type: string;
+  voice_actor_name: 'Kyoko' | 'Kenichi' | string;
+  gender: 'female' | 'male' | string;
 }
 
 export interface ItemPrerequisite {
@@ -90,3 +111,42 @@ export interface UserIntegration {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface MeaningInput {
+  id?: string;
+  meaning: string;
+  primary_meaning: boolean;
+  accepted_answer: boolean;
+}
+
+export interface ReadingInput {
+  id?: string;
+  reading: string;
+  reading_type: 'onyomi' | 'kunyomi' | 'nanori' | null;
+  primary_reading: boolean;
+  accepted_answer: boolean;
+}
+
+export interface SentenceInput {
+  id?: string;
+  japanese: string;
+  indonesian: string;
+}
+
+export interface ItemInput {
+  id?: string;
+  type: 'radical' | 'kanji' | 'vocabulary';
+  character: string;
+  slug: string;
+  level: number;
+  lesson_position: number;
+  meaning_mnemonic: string;
+  reading_mnemonic: string;
+  description: string;
+  meanings: MeaningInput[];
+  readings: ReadingInput[];
+  context_sentences: SentenceInput[];
+  prerequisites: string[];
+  found_in_kanjis?: string[];
+}
+

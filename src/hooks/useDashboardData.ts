@@ -1,14 +1,15 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { DashboardStats } from '@/lib/types';
+import { DashboardStats, Item } from '@/lib/types';
 import { fetchAllUserProgress, resetAllUserProgress } from '@/services/progressService';
-import { fetchItemsByType, fetchAllItemPrerequisites } from '@/services/itemsService';
+import { fetchItemsByType } from '@/services/itemsService';
 import { fetchActivityLogs, fetchLeaderboard, LeaderboardEntry } from '@/services/statsService';
 import { getUserProfile } from '@/services/profileService';
 import { calculateUserLevel } from '@/lib/levelLogic';
+import { memoryCache } from '@/lib/memoryCache';
 
 export interface DashboardKanjiItem {
   id: string;
@@ -33,16 +34,36 @@ export function useDashboardData() {
   const [durationHeatmap, setDurationHeatmap] = useState<Record<string, number>>({});
   const [userId, setUserId] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
+  const hasHydratedFromCache = useRef(false);
 
-  const loadDashboard = useCallback(async () => {
+  const loadDashboard = useCallback(async (skipLoadingState = false) => {
     try {
-      setLoading(true);
+      if (!skipLoadingState && !hasHydratedFromCache.current) {
+        setLoading(true);
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/');
         return;
       }
       setUserId(user.id);
+
+      // Try hydrating from SWR cache immediately
+      const cacheKey = `dashboard_snapshot_${user.id}`;
+      const cached = memoryCache.get<any>(cacheKey);
+      if (cached && !hasHydratedFromCache.current) {
+        setUsername(cached.username || 'Pengguna');
+        setStats(cached.stats);
+        setItemDetails(cached.itemDetails || []);
+        setCurrentLevelKanjiList(cached.currentLevelKanjiList || []);
+        setAvailableLessons(cached.availableLessons || []);
+        setLeaderboard(cached.leaderboard || []);
+        setReviewHeatmap(cached.reviewHeatmap || {});
+        setLessonHeatmap(cached.lessonHeatmap || {});
+        setDurationHeatmap(cached.durationHeatmap || {});
+        setLoading(false);
+        hasHydratedFromCache.current = true;
+      }
 
       // Load Profile
       const profile = await getUserProfile(user.id);
@@ -52,12 +73,20 @@ export function useDashboardData() {
 
       const now = new Date().toISOString();
 
-      // 1. Fetch user progress, all kanji, and prerequisites in parallel
-      const [progresses, allKanji, prereqs] = await Promise.all([
+      // 1. Fetch user progress & cached all kanji in parallel (fast!)
+      let allKanji = memoryCache.get<Item[]>('catalog_kanji_all');
+      const fetchKanjiPromise = allKanji
+        ? Promise.resolve(allKanji)
+        : fetchItemsByType('kanji').then(items => {
+            memoryCache.set('catalog_kanji_all', items, 60 * 60 * 1000); // 1 hour
+            return items;
+          });
+
+      const [progresses, kanjiItems] = await Promise.all([
         fetchAllUserProgress(user.id, 'item_id, srs_stage, unlocked_at, next_review, items(id, character, slug, level, type, lesson_position)'),
-        fetchItemsByType('kanji'),
-        fetchAllItemPrerequisites(),
+        fetchKanjiPromise,
       ]);
+      allKanji = kanjiItems;
 
       const progressGuruSet = new Set(
         (progresses || [])
@@ -172,19 +201,29 @@ export function useDashboardData() {
         });
       }
 
-      const prereqsMap = new Map<string, any[]>();
-      if (prereqs) {
-        prereqs.forEach((row: any) => {
-          const reqItem = row.items;
-          if (reqItem) {
-            const depId = row.item_id;
-            if (!prereqsMap.has(depId)) {
-              prereqsMap.set(depId, []);
-            }
-            prereqsMap.get(depId)!.push(reqItem);
-          }
-        });
+      // Fetch prerequisites ONLY for kanjis in the current level (super fast!)
+      let prereqs: any[] = [];
+      if (kanjiIds.length > 0) {
+        const { data: prereqData, error: prereqErr } = await supabase
+          .from('item_prerequisites')
+          .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+          .in('item_id', kanjiIds);
+        if (!prereqErr && prereqData) {
+          prereqs = prereqData;
+        }
       }
+
+      const prereqsMap = new Map<string, any[]>();
+      prereqs.forEach((row: any) => {
+        const reqItem = row.items;
+        if (reqItem) {
+          const depId = row.item_id;
+          if (!prereqsMap.has(depId)) {
+            prereqsMap.set(depId, []);
+          }
+          prereqsMap.get(depId)!.push(reqItem);
+        }
+      });
 
       const progressMap = new Map(
         (progresses || []).map((p: any) => [p.item_id, p])
@@ -282,6 +321,30 @@ export function useDashboardData() {
       const userPoints = progresses ? progresses.filter((i: any) => i.srs_stage >= 5).length * 10 + progresses.filter((i: any) => i.srs_stage > 0).length : 0;
       const lb = await fetchLeaderboard(user.id, profile?.username || username, userLevel, userPoints);
       setLeaderboard(lb);
+
+      // Save snapshot to memory cache for instant SWR transitions
+      const computedStats: DashboardStats = {
+        lessonsAvailable,
+        reviewsDue,
+        distribution,
+        byType,
+        level: userLevel,
+        kanjiPassedInLevel: kanjiPassed,
+        kanjiTotalInLevel: totalKanji,
+        daysSinceLevelUp,
+      };
+
+      memoryCache.set(`dashboard_snapshot_${user.id}`, {
+        username: profile?.username || username,
+        stats: computedStats,
+        itemDetails: loadedItems,
+        currentLevelKanjiList: kanjiList,
+        availableLessons: lessonsList,
+        leaderboard: lb,
+        reviewHeatmap: reviewMap,
+        lessonHeatmap: lessonMap,
+        durationHeatmap: durationMap,
+      }, 5 * 60 * 1000); // 5 minutes SWR cache
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
