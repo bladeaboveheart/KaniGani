@@ -7,34 +7,36 @@
 ## 🌟 Fitur Utama
 
 ### 1. 🧠 Sistem Pembelajaran SRS Berjenjang (60 Level)
-Tingkatan SRS KaniGani bertema kepiting:
+Tingkatan SRS KaniGani dirancang berjenjang, formal, dan mudah dipahami:
 - **Terkunci (Stage 0)**: Belum dipelajari atau belum memenuhi prasyarat item.
-- **Kepiting Cilik (Stage 1–4 / Apprentice)**: Item baru yang sedang dihafal dengan interval ulasan pendek.
-- **Kepiting Guru (Stage 5–6 / Guru)**: Item mulai melekat kuat di memori; syarat untuk membuka level dan kanji/kosakata berikutnya.
-- **Kepiting Suhu (Stage 7 / Master)**: Interval ulasan mingguan hingga bulanan.
-- **Kepiting Sakti (Stage 8 / Enlightened)**: Interval ulasan multi-bulan.
-- **Kepiting Rebus (Stage 9 / Burned)**: Item telah dikuasai penuh dan keluar dari antrean ulasan aktif.
+- **Pemula (Stage 1–4 / Apprentice)**: Item baru yang sedang dihafal dengan interval ulasan pendek (Pemula 1 hingga Pemula 4).
+- **Lulus (Stage 5–6 / Guru)**: Item mulai melekat kuat di memori; syarat untuk membuka level berikutnya (minimal 90% kanji level saat ini mencapai status Lulus).
+- **Mahir (Stage 7 / Master)**: Interval ulasan mingguan hingga bulanan.
+- **Ahli (Stage 8 / Enlightened)**: Interval ulasan multi-bulan.
+- **Tuntas (Stage 9 / Burned)**: Item telah dikuasai penuh dan keluar dari antrean ulasan aktif.
 
-### 2. 📚 Pustaka Kamus Terpadu (Radikal, Kanji, Kosakata)
-- **Kamus Radikal (Bushu)**: Pelajari komponen dasar pembentuk huruf Kanji lengkap dengan visual SVG custom.
-- **Kamus Kanji**: Cara baca *On'yomi* & *Kun'yomi*, makna utama & alternatif, jembatan keledai visual, serta relasi radikal pembentuknya.
+### 2. 📚 Pustaka Kamus Terpadu & Minimalis
+- **Kamus Radikal (Bushu)**: Pelajari komponen dasar pembentuk huruf Kanji lengkap dengan visual SVG kustom.
+- **Kamus Kanji**: Cara baca terstruktur dalam tabel 3 kolom (*On'yomi*, *Kun'yomi*, dan *Nanori*), penanda bacaan utama (*Utama*), jembatan keledai visual, serta daftar radikal pembentuknya.
 - **Kamus Kosakata**: Ribuan perbendaharaan kata dengan cara baca kana, makna, dan contoh kalimat kontekstual dalam Bahasa Indonesia.
-- **Pencarian & Filter Cepat**: Filter berdasarkan level (1–60) atau cari langsung berdasarkan karakter, kana, maupun arti.
+- **Audio Pengucapan Asli**: Pemutar audio terintegrasi pada kosakata dengan pilihan pengisi suara pria (*Kenichi*) dan wanita (*Kyoko*).
+- **Desain Kartu Dinamis & Minimalis**: Format kartu terpusat dengan karakter besar, bacaan kana, dan arti kata yang lebarnya fleksibel tanpa terpotong (*no text truncation*).
+- **Pencarian Global Cepat**: Pencarian instan seluruh radikal, kanji, dan kosakata melalui modal pencarian di Navbar (`Ctrl+K` / ikon kaca pembesar).
 
 ### 3. 🎯 Engine Kuis & Pembelajaran Interaktif
-- **Mode Lesson**: Pembelajaran batch terstruktur (5 item per batch) yang dapat di-*interleave* (campur radikal, kanji, kosakata), dilengkapi slide mnemonik sebelum kuis.
-- **Mode Review**: Ulasan berkala dengan deteksi typo (*almost correct*), auto-convert romaji ke hiragana via Wanakana, fitur *Wrap Up*, dan shortcut keyboard (`Enter`, `Space`, `F` untuk buka drawer info).
-- **Session Summary**: Tampilan ringkasan hasil belajar dengan persentase akurasi dan opsi lanjut batch berikutnya.
+- **Mode Lesson**: Pembelajaran batch terstruktur (5 item per batch) yang dapat di-*interleave* (campuran radikal, kanji, kosakata), dilengkapi slide mnemonik sebelum kuis.
+- **Mode Review**: Ulasan berkala dengan deteksi salah ketik (*almost correct*), konversi otomatis romaji ke hiragana via Wanakana, fitur *Wrap Up*, dan shortcut keyboard (`Enter`, `Space`, `F` untuk buka drawer info).
+- **Session Summary**: Tampilan ringkasan hasil belajar dengan persentase akurasi, perolehan XP, dan opsi lanjut ke batch berikutnya.
 
 ### 4. 📊 Dashboard & Analitik Belajar
-- **Level Progression Tracker**: Menampilkan progres kelulusan kanji level saat ini (syarat 90% kanji lulus ke tahap Kepiting Guru untuk naik level).
+- **Level Progression Tracker**: Menampilkan kemajuan kelulusan kanji level saat ini secara visual (syarat 90% kanji lulus ke tahap Lulus/Tahap 5 untuk naik level).
+- **Distribusi SRS 5 Tahap**: Grafik visual interaktif pembagian item aktif di setiap tahap (*Pemula*, *Lulus*, *Mahir*, *Ahli*, *Tuntas*).
 - **24-Hour Review Forecast**: Jadwal perkiraan item yang akan jatuh tempo dalam 24 jam ke depan.
-- **Distribusi SRS**: Grafik visual pembagian item yang sedang aktif di setiap tingkatan SRS.
 - **Activity Heatmap & Leaderboard**: Kalender aktivitas harian (jumlah ulasan, lesson baru, durasi belajar) dan papan peringkat pengguna.
 
 ### 5. 🧪 KaniGani Lab & Mode Pengembang
-- **Mode Beta Tester**: Akses tombol percepat antrean review (*instant due*) untuk keperluan testing SRS.
-- **Dev Mode Tools**: Shortcut `G` untuk mengaktifkan autofill kunci jawaban pengujian dan alat admin.
+- **Mode Beta Tester**: Akses tombol percepat antrean review (*instant due*) untuk keperluan pengujian SRS (hingga tahap Lulus).
+- **Dev Mode Tools**: Shortcut `G` untuk mengaktifkan autofill kunci jawaban pengujian dan alat inspeksi progres admin.
 
 ---
 
@@ -45,6 +47,7 @@ Tingkatan SRS KaniGani bertema kepiting:
 - **State Management**: [Zustand](https://github.com/pmndrs/zustand)
 - **Input Converter**: [Wanakana](https://wanakana.com/) (IME Romaji-to-Kana otomatis)
 - **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, Auth)
+- **Testing**: [Vitest](https://vitest.dev/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 
 ---
@@ -52,7 +55,7 @@ Tingkatan SRS KaniGani bertema kepiting:
 ## 🚀 Memulai Proyek
 
 ### 1. Prasyarat
-- Node.js versi 20 atau lebih baru
+- [Node.js](https://nodejs.org/) versi 20 atau lebih baru
 - Akun [Supabase](https://supabase.com/)
 
 ### 2. Kloning Repositori
@@ -78,7 +81,16 @@ Jalankan file-file SQL di folder `sql/` pada Supabase SQL Editor:
 1. Skema tabel dan fungsi RLS (`sql/fix_rls_policies.sql`, `sql/add_user_level_and_leaderboard.sql`, dsb.)
 2. Seed data materi Level 1 sampai 60 (`sql/seed_level1.sql` s/d `sql/seed_level60.sql`)
 
-### 6. Jalankan Server Pengembangan
+### 6. Jalankan Pengujian
+```bash
+# Menjalankan unit test
+npm test
+
+# Menjalankan pemeriksaan tipe TypeScript
+npx tsc --noEmit
+```
+
+### 7. Jalankan Server Pengembangan
 ```bash
 npm run dev
 ```
@@ -92,12 +104,14 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 src/
 ├── app/                  # Next.js App Router (Dashboard, Radical, Kanji, Vocab, Lesson, Review, Admin, Settings)
 ├── components/           # Komponen React modular
-│   ├── dictionary/       # ItemCard, ItemDetailModal, FilterBar, SrsLegend, LevelGroup
+│   ├── audio/            # AudioPlayerButton (suara Kyoko & Kenichi)
+│   ├── dictionary/       # ItemCard, ItemDetailModal, ItemFullPageView, SimilarKanjiSection, LevelTierBar, LevelGroupSection
 │   ├── dashboard/        # LevelProgress, HourlySchedule, SrsDistribution, HeatmapCard, Leaderboard
+│   ├── search/           # GlobalSearchModal
 │   ├── quiz/             # QuizHeader, QuizInput, QuizFeedback, QuizSummaryView, InfoDrawer
 │   └── admin/            # Manajemen kamus & pengguna
 ├── hooks/                # Custom React hooks (useDictionaryItems, useDashboardData, useQuizShortcuts, etc.)
-├── lib/                  # Utilities, Types, SRS calculations (srs.ts, dateUtils.ts, supabase.ts)
+├── lib/                  # Utilities, Types, SRS logic (srs.ts, levelLogic.ts, dateUtils.ts, supabase.ts)
 ├── services/             # Supabase queries & data access layer (itemsService, progressService, statsService, profileService)
 └── store/                # Zustand quiz session store (useQuizStore.ts)
 ```
