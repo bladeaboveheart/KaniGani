@@ -201,25 +201,127 @@ export default function ItemDetailModal({
                   />
                 )}
               </div>
-              <div className="flex flex-wrap gap-2">
-                {item.readings.map((r: any, idx: number) => (
-                  <div
-                    key={idx}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-2 ${
-                      r.primary_reading
-                        ? 'bg-pink-50 dark:bg-pink-950/30 border-pink-200 dark:border-pink-900 text-pink-600 dark:text-pink-300'
-                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    <span>{r.reading}</span>
-                    {r.reading_type && (
-                      <span className="text-4xs uppercase tracking-wider font-semibold opacity-70">
-                        {r.reading_type}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+
+              {type === 'kanji' ? (
+                (() => {
+                  const onyomiList = item.readings.filter(
+                    (r: any) => r.reading_type === 'onyomi' || (!r.reading_type && r.reading_type !== 'kunyomi' && r.reading_type !== 'nanori')
+                  );
+                  const kunyomiList = item.readings.filter((r: any) => r.reading_type === 'kunyomi');
+                  const nanoriList = item.readings.filter((r: any) => r.reading_type === 'nanori');
+
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/70 dark:bg-slate-850/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-800/70">
+                      {/* On'yomi */}
+                      <div className="space-y-1.5">
+                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                          On’yomi
+                        </span>
+                        {onyomiList.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {onyomiList.map((r: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                  r.primary_reading
+                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                <span className="leading-none">{r.reading}</span>
+                                {r.primary_reading && (
+                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                    Utama
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                            None
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Kun'yomi */}
+                      <div className="space-y-1.5">
+                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                          Kun’yomi
+                        </span>
+                        {kunyomiList.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {kunyomiList.map((r: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                  r.primary_reading
+                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                <span className="leading-none">{r.reading}</span>
+                                {r.primary_reading && (
+                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                    Utama
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                            None
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Nanori */}
+                      <div className="space-y-1.5">
+                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                          Nanori
+                        </span>
+                        {nanoriList.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {nanoriList.map((r: any, idx: number) => (
+                              <div
+                                key={idx}
+                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                  r.primary_reading
+                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                <span className="leading-none">{r.reading}</span>
+                                {r.primary_reading && (
+                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                    Utama
+                                  </span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                            None
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {item.readings.map((r: any, idx: number) => (
+                    <div
+                      key={idx}
+                      className="px-3 py-1.5 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-2 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-300 shadow-xs"
+                    >
+                      <span>{r.reading}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
