@@ -512,14 +512,19 @@ export default function ItemFullPageView({
           )}
 
           {/* Found in Kanji (Radical & Vocab) */}
-          {item.kanjis && item.kanjis.length > 0 && (
+          {itemToDisplay.kanjis && itemToDisplay.kanjis.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 space-y-3 shadow-sm">
-              <h3 className="text-xxs font-bold text-pink-500 uppercase tracking-widest flex items-center space-x-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>{type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}</span>
-              </h3>
-              <div className="grid grid-cols-2 gap-2.5">
-                {item.kanjis.map((kj: any) => (
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-pink-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>{type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}</span>
+                </h3>
+                <span className="text-xxs font-bold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full border border-pink-200/60 dark:border-pink-900/50">
+                  {itemToDisplay.kanjis.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 max-h-[224px] overflow-y-auto pr-1.5 custom-scrollbar">
+                {itemToDisplay.kanjis.map((kj: any) => (
                   <Link
                     key={kj.id}
                     href={`/kanji/${encodeURIComponent(kj.character)}`}
@@ -545,14 +550,19 @@ export default function ItemFullPageView({
           )}
 
           {/* Found in Vocabulary (Kanji) */}
-          {item.vocabularies && item.vocabularies.length > 0 && (
+          {itemToDisplay.vocabularies && itemToDisplay.vocabularies.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 space-y-3 shadow-sm">
-              <h3 className="text-xxs font-bold text-purple-500 uppercase tracking-widest flex items-center space-x-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Ditemukan di Kosakata ({item.vocabularies.length})</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[420px] overflow-y-auto pr-1">
-                {item.vocabularies.map((vc: any) => (
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-purple-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Ditemukan di Kosakata</span>
+                </h3>
+                <span className="text-xxs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-900/50">
+                  {itemToDisplay.vocabularies.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[168px] overflow-y-auto pr-1.5 custom-scrollbar">
+                {itemToDisplay.vocabularies.map((vc: any) => (
                   <Link
                     key={vc.id}
                     href={`/vocabulary/${encodeURIComponent(vc.character)}`}

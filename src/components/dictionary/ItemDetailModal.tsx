@@ -338,13 +338,18 @@ export default function ItemDetailModal({
           {/* Relations: Found in Kanji (Radical) */}
           {item.kanjis && item.kanjis.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
-                <Layers className="w-3.5 h-3.5 text-pink-500" />
-                <span>
-                  {type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
+                  <Layers className="w-3.5 h-3.5 text-pink-500" />
+                  <span>
+                    {type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}
+                  </span>
+                </h3>
+                <span className="text-xxs font-bold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full border border-pink-200/60 dark:border-pink-900/50">
+                  {item.kanjis.length}
                 </span>
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 max-h-[188px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {item.kanjis.map((kj: any) => (
                   <div
                     key={kj.id}
@@ -376,11 +381,16 @@ export default function ItemDetailModal({
           {/* Relations: Found in Vocabulary (Kanji) */}
           {item.vocabularies && item.vocabularies.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
-                <Layers className="w-3.5 h-3.5 text-purple-500" />
-                <span>Ditemukan di Kosakata</span>
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
+                  <Layers className="w-3.5 h-3.5 text-purple-500" />
+                  <span>Ditemukan di Kosakata</span>
+                </h3>
+                <span className="text-xxs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-900/50">
+                  {item.vocabularies.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 max-h-[148px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {item.vocabularies.map((vc: any) => (
                   <div
                     key={vc.id}
