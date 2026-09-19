@@ -47,28 +47,9 @@ const ALL_TIER_LIST: { name: string; range: [number, number] }[] = [
 export function useDictionaryItems(itemType: ItemType) {
   const router = useRouter();
 
-  // 0. SYNCHRONOUS HYDRATION: Paint instantly on initial render if cached (0ms cold load)
-  const [items, setItems] = useState<DictionaryItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const lastUserId = localStorage.getItem('kanigani_last_user_id');
-        if (lastUserId) {
-          const localSnapshot = localStorage.getItem(`dict_snap_${itemType}_${lastUserId}`);
-          if (localSnapshot) {
-            const parsed = JSON.parse(localSnapshot);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              return parsed;
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Initial state localStorage parse error:', e);
-      }
-    }
-    return [];
-  });
-
-  const [loading, setLoading] = useState(() => items.length === 0);
+  // SSR-safe initial state (prevents React hydration mismatch)
+  const [items, setItems] = useState<DictionaryItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const progressMapRef = useRef<Map<string, any>>(new Map());
   const prefetchStartedRef = useRef(false);
 

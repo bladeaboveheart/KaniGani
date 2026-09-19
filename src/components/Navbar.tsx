@@ -4,14 +4,11 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { fetchAllUserProgress, fetchAllKanjiItems } from '@/lib/userProgress';
-import { calculateUserLevel } from '@/lib/levelLogic';
 import ThemeToggle from './ThemeToggle';
-import { LogOut, User, BookOpen, Layers, Settings, HelpCircle, FlaskConical, Database } from 'lucide-react';
+import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database } from 'lucide-react';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
-  const [level, setLevel] = useState<number>(1);
   const [isLoading, setIsLoading] = useState(true);
   const [devMode, setDevMode] = useState<boolean>(false);
   const [betaTester, setBetaTester] = useState<boolean>(false);
@@ -92,37 +89,18 @@ export default function Navbar() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          // 1. Dapatkan username & level dari profile
+          // Dapatkan username dari profile
           const { data: profile } = await supabase
             .from('profiles')
-            .select('username, level')
+            .select('username')
             .eq('id', user.id)
             .maybeSingle();
 
-          if (profile) {
+          if (profile?.username) {
             setUsername(profile.username);
           } else {
             // Fallback ke user metadata atau email prefix
             setUsername(user.user_metadata?.username || user.email?.split('@')[0] || 'User');
-          }
-
-          if (profile && profile.level !== null && profile.level !== undefined) {
-            setLevel(profile.level);
-          } else {
-            // 2. Dapatkan level saat ini secara dinamis (dari progres kanji lulus >= 90%)
-            const [progresses, allKanji] = await Promise.all([
-              fetchAllUserProgress(user.id, 'item_id, srs_stage'),
-              fetchAllKanjiItems('id, level')
-            ]);
-
-            const progressGuruSet = new Set(
-              progresses
-                .filter((p: any) => p.srs_stage >= 5)
-                .map((p: any) => p.item_id)
-            );
-
-            const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
-            setLevel(userLevel);
           }
         }
       } catch (err) {
@@ -148,7 +126,7 @@ export default function Navbar() {
     <header className="sticky top-0 z-40 w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 text-slate-800 dark:text-white shadow-sm transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo & Level */}
+          {/* Logo */}
           <div className="flex items-center space-x-4">
             <Link href="/dashboard" className="flex items-center space-x-2 group">
               <div className="flex flex-col items-start justify-center group cursor-pointer">
@@ -163,13 +141,6 @@ export default function Navbar() {
                 </span>
               </div>
             </Link>
-
-            {username && (
-              <div className="flex items-center space-x-1.5 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm">
-                <Layers className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
-                <span className="font-semibold">Level {level}</span>
-              </div>
-            )}
           </div>
 
           {/* Navigation Links - Colorful like KaniGani */}
@@ -205,7 +176,7 @@ export default function Navbar() {
                 }`}
             >
               <span className="inline-block w-2.5 h-2.5 rounded-full bg-kanji mr-2"></span>
-              Kanji
+              漢字 Kanji
             </Link>
 
             {/* Vocabulary (Purple) */}
