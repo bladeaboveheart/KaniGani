@@ -46,8 +46,29 @@ const ALL_TIER_LIST: { name: string; range: [number, number] }[] = [
 
 export function useDictionaryItems(itemType: ItemType) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [items, setItems] = useState<DictionaryItem[]>([]);
+
+  // 0. SYNCHRONOUS HYDRATION: Paint instantly on initial render if cached (0ms cold load)
+  const [items, setItems] = useState<DictionaryItem[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const lastUserId = localStorage.getItem('kanigani_last_user_id');
+        if (lastUserId) {
+          const localSnapshot = localStorage.getItem(`dict_snap_${itemType}_${lastUserId}`);
+          if (localSnapshot) {
+            const parsed = JSON.parse(localSnapshot);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed;
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Initial state localStorage parse error:', e);
+      }
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState(() => items.length === 0);
   const progressMapRef = useRef<Map<string, any>>(new Map());
   const prefetchStartedRef = useRef(false);
 
@@ -95,6 +116,10 @@ export function useDictionaryItems(itemType: ItemType) {
           return;
         }
 
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('kanigani_last_user_id', user.id);
+        }
+
         const cacheKey = `dict_catalog_${itemType}_${user.id}`;
         const cachedCatalog = memoryCache.get<DictionaryItem[]>(cacheKey);
 
@@ -108,8 +133,8 @@ export function useDictionaryItems(itemType: ItemType) {
           return;
         }
 
-        // 1.1 LocalStorage SWR Hydration: Instant render for cold tabs / page reloads (0ms)
-        if (typeof window !== 'undefined') {
+        // 1.1 LocalStorage SWR Hydration fallback if not already hydrated
+        if (items.length === 0 && typeof window !== 'undefined') {
           const localSnapshot = localStorage.getItem(`dict_snap_${itemType}_${user.id}`);
           if (localSnapshot) {
             try {
@@ -125,17 +150,7 @@ export function useDictionaryItems(itemType: ItemType) {
           }
         }
 
-        // 2. Fetch or load cached user progress
-        const progCacheKey = `user_progress_${user.id}`;
-        let progData = memoryCache.get<any[]>(progCacheKey);
-        if (!progData) {
-          progData = await fetchAllUserProgress(user.id);
-          memoryCache.set(progCacheKey, progData || [], 3 * 60 * 1000);
-        }
-        const progMap = new Map(progData?.map(p => [p.item_id, p]) || []);
-        progressMapRef.current = progMap;
-
-        // 3. Determine initial tier to fetch
+        // 2. Determine initial tier to fetch
         let initialRange: [number, number] = [1, 10];
         if (selectedTier !== 'all' && TIER_RANGES[selectedTier]) {
           initialRange = TIER_RANGES[selectedTier];
@@ -149,9 +164,23 @@ export function useDictionaryItems(itemType: ItemType) {
           }
         }
 
-        // 4. Fetch initial tier immediately (<150ms)
-        const initialRaw = await fetchDictionaryTierItems(itemType, initialRange[0], initialRange[1]);
+        // 3. PARALLEL FETCH: Run progress & initial tier queries concurrently!
+        const progCacheKey = `user_progress_${user.id}`;
+        const cachedProg = memoryCache.get<any[]>(progCacheKey);
+        const progPromise = cachedProg
+          ? Promise.resolve(cachedProg)
+          : fetchAllUserProgress(user.id).then(data => {
+              memoryCache.set(progCacheKey, data || [], 3 * 60 * 1000);
+              return data || [];
+            });
+
+        const tierPromise = fetchDictionaryTierItems(itemType, initialRange[0], initialRange[1]);
+
+        const [progData, initialRaw] = await Promise.all([progPromise, tierPromise]);
         if (isCancelled) return;
+
+        const progMap = new Map((progData || []).map((p: any) => [p.item_id, p]));
+        progressMapRef.current = progMap;
 
         const initialCombined: DictionaryItem[] = initialRaw.map(item => {
           const progress = progMap.get(item.id);

@@ -58,6 +58,9 @@ export function useDashboardData() {
         return;
       }
       setUserId(user.id);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kanigani_last_user_id', user.id);
+      }
 
       const cacheKey = `dashboard_snapshot_${user.id}`;
 

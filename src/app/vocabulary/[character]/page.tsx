@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import WaniKaniSubNav from '@/components/dictionary/WaniKaniSubNav';
 import ItemFullPageView from '@/components/dictionary/ItemFullPageView';
 import { fetchItemByIdentifier, fetchAdjacentItems } from '@/services/itemsService';
 import { supabase } from '@/lib/supabase';
@@ -89,7 +88,6 @@ export default function VocabularyDetailPage({ params }: PageProps) {
     return (
       <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <Navbar />
-        <WaniKaniSubNav currentType="vocabulary" />
         <div className="flex-1 flex flex-col items-center justify-center py-24 space-y-4">
           <Loader2 className="w-10 h-10 text-vocab animate-spin" />
           <p className="font-semibold text-xs text-slate-500 dark:text-slate-400">
@@ -104,7 +102,6 @@ export default function VocabularyDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <Navbar />
-      <WaniKaniSubNav currentType="vocabulary" />
       <main className="flex-1">
         <ItemFullPageView
           item={item}

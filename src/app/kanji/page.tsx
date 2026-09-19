@@ -5,12 +5,11 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useDictionaryItems } from '@/hooks/useDictionaryItems';
 import { ITEM_THEMES } from '@/lib/srs';
-import WaniKaniSubNav from '@/components/dictionary/WaniKaniSubNav';
 import LevelTierBar from '@/components/dictionary/LevelTierBar';
 import DictionaryFilterBar from '@/components/dictionary/DictionaryFilterBar';
 import LevelGroupSection from '@/components/dictionary/LevelGroupSection';
 import ItemDetailModal from '@/components/dictionary/ItemDetailModal';
-import { BookOpen, Sparkles, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export default function KanjiPage() {
   const {
@@ -50,26 +49,19 @@ export default function KanjiPage() {
     <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <Navbar />
 
-      {/* WaniKani Official Sub-Navigation Tab Bar */}
-      <WaniKaniSubNav currentType="kanji" counts={{ kanji: items.length }} />
-
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 animate-fade-in">
-        {/* Banner Title */}
-        <section className={`bg-gradient-to-r ${theme.bannerGradient} text-white p-6 sm:p-8 rounded-3xl shadow-md relative overflow-hidden`}>
-          <div className="absolute right-0 bottom-0 translate-x-8 translate-y-8 opacity-10 pointer-events-none">
-            <BookOpen className="w-56 h-56" />
-          </div>
-          <div className="relative z-10 space-y-1.5">
-            <div className="flex items-center space-x-1.5 text-pink-200">
-              <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-              <span className="text-xxs font-bold uppercase tracking-widest">KaniGani Kurikulum</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">{theme.title}</h1>
-            <p className="text-xs sm:text-sm text-pink-100 max-w-2xl leading-relaxed">
-              {theme.subtitle} Pelajari kanji secara terstruktur mulai dari radikal dasar hingga kanji tingkat mahir (Level 1–60).
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-fade-in">
+        {/* Simple & Clean Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
+              <span className="w-3.5 h-3.5 rounded-full bg-kanji inline-block" />
+              {theme.title}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Kurikulum Level 1–60 • Menampilkan {filteredItems.length} kanji
             </p>
           </div>
-        </section>
+        </div>
 
         {/* Official 6 Tiers & Level 1–60 Pills Bar */}
         <LevelTierBar
