@@ -323,9 +323,6 @@ export default function ItemFullPageView({
                 <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
                   {typeLabel} • Level {itemToDisplay.level}
                 </span>
-                <span className="text-4xs font-black uppercase tracking-widest bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-                  WaniKani Kurikulum
-                </span>
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight capitalize">{primaryMeaning}</h1>
