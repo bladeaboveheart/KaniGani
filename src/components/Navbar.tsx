@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database, Sun, Moon, Search } from 'lucide-react';
 import GlobalSearchModal from '@/components/search/GlobalSearchModal';
+import CrabLogo from '@/components/CrabLogo';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
@@ -172,13 +173,16 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Logo */}
           <div className="flex items-center space-x-4">
-            <Link href="/dashboard" className="flex items-center space-x-2 group">
+            <Link href="/dashboard" className="flex items-center space-x-2.5 group">
+              <div className="relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden shadow-sm group-hover:scale-105 group-hover:shadow-rose-500/20 group-hover:shadow-md transition-all duration-300 flex items-center justify-center shrink-0">
+                <CrabLogo className="w-full h-full" showBadge={true} />
+              </div>
               <div className="flex flex-col items-start justify-center group cursor-pointer">
                 {/* Sub-teks kecil aksen Jepang */}
-                <span className="text-[9px] font-bold tracking-[0.3em] text-slate-400 uppercase leading-none mb-0.5 transform group-hover:translate-x-1 transition-transform duration-300">
+                <span className="text-[9px] font-bold tracking-[0.3em] text-slate-400 uppercase leading-none mb-0.5 transform group-hover:translate-x-0.5 transition-transform duration-300">
                   カニガニ
                 </span>
-                <span className="text-2xl tracking-tight text-slate-800 dark:text-white transition-all duration-200">
+                <span className="text-xl sm:text-2xl tracking-tight text-slate-800 dark:text-white transition-all duration-200 leading-tight">
                   <span className="font-black">Kani</span>
                   {/* Mengubah warna dari indigo menjadi rose (merah modern yang estetik) */}
                   <span className="font-light text-rose-500 dark:text-rose-400">Gani</span>

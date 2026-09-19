@@ -1,0 +1,147 @@
+import React from 'react';
+
+interface CrabLogoProps {
+  className?: string;
+  size?: number;
+  showBadge?: boolean;
+}
+
+export default function CrabLogo({
+  className = 'w-8 h-8',
+  size,
+  showBadge = true,
+}: CrabLogoProps) {
+  const style = size ? { width: size, height: size } : undefined;
+
+  return (
+    <svg
+      viewBox="0 0 512 512"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      style={style}
+    >
+      <defs>
+        {/* Background: Deep obsidian gradient */}
+        <linearGradient id="kg-bg-c" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#0f172a" />
+          <stop offset="50%" stopColor="#080c14" />
+          <stop offset="100%" stopColor="#020408" />
+        </linearGradient>
+
+        {/* Radial glow behind crab */}
+        <radialGradient id="kg-back-glow-c" cx="256" cy="270" r="190" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.25" />
+          <stop offset="60%" stopColor="#e11d48" stopOpacity="0.08" />
+          <stop offset="100%" stopColor="#e11d48" stopOpacity="0" />
+        </radialGradient>
+
+        {/* Border highlight */}
+        <linearGradient id="kg-border-c" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#fb7185" stopOpacity="0.6" />
+          <stop offset="30%" stopColor="#475569" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#1e293b" stopOpacity="0.2" />
+        </linearGradient>
+
+        {/* Primary Crab Gradient */}
+        <linearGradient id="kg-body-c" x1="256" y1="180" x2="256" y2="400" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ff3b66" />
+          <stop offset="45%" stopColor="#e11d48" />
+          <stop offset="100%" stopColor="#9f1239" />
+        </linearGradient>
+
+        {/* Claws Gradient */}
+        <linearGradient id="kg-claw-left-c" x1="120" y1="70" x2="210" y2="250" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ff4b72" />
+          <stop offset="50%" stopColor="#f43f5e" />
+          <stop offset="100%" stopColor="#be123c" />
+        </linearGradient>
+
+        <linearGradient id="kg-claw-right-c" x1="392" y1="70" x2="302" y2="250" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ff4b72" />
+          <stop offset="50%" stopColor="#f43f5e" />
+          <stop offset="100%" stopColor="#be123c" />
+        </linearGradient>
+
+        {/* Inner Shell Facet Gradient */}
+        <linearGradient id="kg-facet-c" x1="256" y1="230" x2="256" y2="360" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#fda4af" stopOpacity="0.35" />
+          <stop offset="50%" stopColor="#f43f5e" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#881337" stopOpacity="0.4" />
+        </linearGradient>
+
+        {/* Specular Highlight Top */}
+        <linearGradient id="kg-specular-c" x1="256" y1="210" x2="256" y2="260" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.55" />
+          <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+        </linearGradient>
+
+        {/* Drop Shadows */}
+        <filter id="kg-drop-c" x="-10%" y="-10%" width="120%" height="120%">
+          <feDropShadow dx="0" dy="8" stdDeviation="10" floodColor="#000000" floodOpacity="0.6" />
+          <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="#f43f5e" floodOpacity="0.3" />
+        </filter>
+
+        <filter id="kg-claw-glow-c" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#000000" floodOpacity="0.45" />
+        </filter>
+      </defs>
+
+      {/* Squircle Base Frame */}
+      {showBadge && (
+        <>
+          <rect x="16" y="16" width="480" height="480" rx="112" fill="url(#kg-bg-c)" />
+          <circle cx="256" cy="280" r="190" fill="url(#kg-back-glow-c)" />
+          <rect x="16" y="16" width="480" height="480" rx="112" stroke="url(#kg-border-c)" strokeWidth="6" fill="none" />
+        </>
+      )}
+
+      {/* === LEGS === */}
+      <g opacity="0.92">
+        <path d="M 175 305 C 130 295 90 315 68 340 C 62 347 70 354 78 350 C 102 336 138 326 172 324 Z" fill="url(#kg-claw-left-c)" />
+        <path d="M 180 338 C 138 348 100 376 82 408 C 77 416 86 422 93 416 C 114 397 146 380 178 368 Z" fill="url(#kg-claw-left-c)" />
+        <path d="M 195 370 C 162 396 132 432 120 465 C 116 473 126 479 133 472 C 152 450 180 424 208 402 Z" fill="url(#kg-claw-left-c)" />
+
+        <path d="M 337 305 C 382 295 422 315 444 340 C 450 347 442 354 434 350 C 410 336 374 326 340 324 Z" fill="url(#kg-claw-right-c)" />
+        <path d="M 332 338 C 374 348 412 376 430 408 C 435 416 426 422 419 416 C 398 397 366 380 334 368 Z" fill="url(#kg-claw-right-c)" />
+        <path d="M 317 370 C 350 396 380 432 392 465 C 396 473 386 479 379 472 C 360 450 332 424 304 402 Z" fill="url(#kg-claw-right-c)" />
+      </g>
+
+      {/* === CLAWS & ARMS === */}
+      <g filter="url(#kg-claw-glow-c)">
+        <path d="M 210 270 C 165 260 132 222 136 175 C 139 146 160 130 182 136 C 200 141 210 160 205 192 C 200 220 215 248 232 265 Z" fill="url(#kg-claw-left-c)" />
+        <path d="M 136 168 C 114 135 118 82 154 62 C 168 54 179 62 176 76 C 172 104 152 138 136 168 Z" fill="url(#kg-claw-left-c)" />
+        <path d="M 152 64 C 122 82 118 130 137 165" stroke="#ffe4e6" strokeWidth="3.5" strokeLinecap="round" opacity="0.65" />
+
+        <path d="M 302 270 C 347 260 380 222 376 175 C 373 146 352 130 330 136 C 312 141 302 160 307 192 C 312 220 297 248 280 265 Z" fill="url(#kg-claw-right-c)" />
+        <path d="M 376 168 C 398 135 394 82 358 62 C 344 54 333 62 336 76 C 340 104 360 138 376 168 Z" fill="url(#kg-claw-right-c)" />
+        <path d="M 360 64 C 390 82 394 130 375 165" stroke="#ffe4e6" strokeWidth="3.5" strokeLinecap="round" opacity="0.65" />
+      </g>
+
+      {/* === CARAPACE / MAIN SHIELD === */}
+      <g filter="url(#kg-drop-c)">
+        <path d="M 256 206 C 328 206 364 235 372 284 C 380 335 352 392 256 408 C 160 392 132 335 140 284 C 148 235 184 206 256 206 Z" fill="url(#kg-body-c)" />
+        <path d="M 256 208 C 318 208 348 228 358 260 C 320 240 285 234 256 234 C 227 234 192 240 154 260 C 164 228 194 208 256 208 Z" fill="url(#kg-specular-c)" />
+
+        <path d="M 256 252 L 294 288 L 282 338 L 256 352 L 230 338 L 218 288 Z" fill="url(#kg-facet-c)" stroke="#ffe4e6" strokeWidth="2.5" strokeLinejoin="round" opacity="0.85" />
+        <circle cx="256" cy="298" r="14" fill="#ffffff" opacity="0.95" />
+        <circle cx="256" cy="298" r="9" fill="#f43f5e" />
+        <circle cx="256" cy="298" r="4" fill="#ffe4e6" />
+
+        <line x1="256" y1="228" x2="256" y2="246" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity="0.75" />
+        <line x1="256" y1="358" x2="256" y2="384" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" opacity="0.75" />
+
+        <path d="M 210 216 L 210 178 C 210 168 224 168 224 178 L 224 216 Z" fill="url(#kg-body-c)" />
+        <path d="M 288 216 L 288 178 C 288 168 302 168 302 178 L 302 216 Z" fill="url(#kg-body-c)" />
+
+        <circle cx="217" cy="175" r="15" fill="#ffffff" />
+        <circle cx="218" cy="175" r="8" fill="#0b0f19" />
+        <circle cx="221" cy="172" r="3.5" fill="#ffffff" />
+
+        <circle cx="295" cy="175" r="15" fill="#ffffff" />
+        <circle cx="294" cy="175" r="8" fill="#0b0f19" />
+        <circle cx="297" cy="172" r="3.5" fill="#ffffff" />
+      </g>
+    </svg>
+  );
+}

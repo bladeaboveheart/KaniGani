@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import ThemeToggle from '@/components/ThemeToggle';
 import Footer from '@/components/Footer';
+import CrabLogo from '@/components/CrabLogo';
 import { Mail, Lock, User, ArrowRight, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function AuthPage() {
@@ -161,11 +162,14 @@ export default function AuthPage() {
 
       {/* Top Header Controls */}
       <div className="w-full max-w-7xl mx-auto px-4 py-6 flex items-center justify-between z-10">
-        <div className="flex items-center space-x-2">
-          <span className="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex items-center justify-center shrink-0">
+            <CrabLogo className="w-full h-full" showBadge={true} />
+          </div>
+          <span className="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-rose-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
             KaniGani
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-900/50">
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-900/50">
             Bahasa Indonesia
           </span>
         </div>
@@ -177,7 +181,10 @@ export default function AuthPage() {
         <div className="w-full max-w-md bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-8 sm:p-10 animate-fade-in">
 
           {/* Title Header */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-8 flex flex-col items-center">
+            <div className="w-14 h-14 mb-3 rounded-2xl shadow-md overflow-hidden flex items-center justify-center">
+              <CrabLogo className="w-full h-full" showBadge={true} />
+            </div>
             <h1 className="text-3xl font-extrabold tracking-tight mb-2">
               {isSignUp ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
             </h1>

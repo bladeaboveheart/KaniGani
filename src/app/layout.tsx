@@ -15,6 +15,14 @@ export const metadata: Metadata = {
   description:
     'Aplikasi klon KaniGani terjemahan Bahasa Indonesia. Kuasai Kanji Jepang melalui alur linear Radical -> Kanji -> Kosakata dengan algoritma Spaced Repetition System (SRS) yang terbukti cerdas dan aman.',
   keywords: 'kanigani, kanji, bahasa indonesia, bahasa jepang, srs, spaced repetition, belajar jepang, vocabulary, radical',
+  icons: {
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/favicon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({
