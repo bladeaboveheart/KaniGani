@@ -49,16 +49,17 @@ export default function RadicalDetailPage({ params }: PageProps) {
         setItem(data);
 
         if (data) {
-          // Fetch adjacent items in the same level
-          const adj = await fetchAdjacentItems('radical', data.level, data.id);
-          if (isMounted) {
-            setPrevItem(adj.prev);
-            setNextItem(adj.next);
-          }
+          // Fetch user and run adjacent items + user progress queries in parallel
+          const userPromise = supabase.auth.getUser();
+          const adjPromise = fetchAdjacentItems('radical', data.level, data.id);
 
-          // Fetch user progress for this item
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && isMounted) {
+          const [{ data: { user } }, adj] = await Promise.all([userPromise, adjPromise]);
+          if (!isMounted) return;
+
+          setPrevItem(adj.prev);
+          setNextItem(adj.next);
+
+          if (user) {
             const { data: prog } = await supabase
               .from('user_progress')
               .select('srs_stage, unlocked_at, next_review')

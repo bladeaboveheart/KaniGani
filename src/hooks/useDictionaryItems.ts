@@ -108,6 +108,23 @@ export function useDictionaryItems(itemType: ItemType) {
           return;
         }
 
+        // 1.1 LocalStorage SWR Hydration: Instant render for cold tabs / page reloads (0ms)
+        if (typeof window !== 'undefined') {
+          const localSnapshot = localStorage.getItem(`dict_snap_${itemType}_${user.id}`);
+          if (localSnapshot) {
+            try {
+              const parsed = JSON.parse(localSnapshot);
+              if (Array.isArray(parsed) && parsed.length > 0 && !isCancelled) {
+                setItems(parsed);
+                setLoading(false);
+                checkDeepLink(parsed);
+              }
+            } catch (e) {
+              console.error('Failed to parse local dict snapshot:', e);
+            }
+          }
+        }
+
         // 2. Fetch or load cached user progress
         const progCacheKey = `user_progress_${user.id}`;
         let progData = memoryCache.get<any[]>(progCacheKey);
@@ -150,6 +167,13 @@ export function useDictionaryItems(itemType: ItemType) {
         setLoading(false);
         checkDeepLink(initialCombined);
 
+        // Persist initial tier to localStorage for 0ms cold reload
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.setItem(`dict_snap_${itemType}_${user.id}`, JSON.stringify(initialCombined.slice(0, 150)));
+          } catch (e) {}
+        }
+
         // 5. Background prefetch remaining tiers
         if (!prefetchStartedRef.current) {
           prefetchStartedRef.current = true;
@@ -186,9 +210,14 @@ export function useDictionaryItems(itemType: ItemType) {
               }
             }
 
-            // Cache the full catalog for 30 minutes
+            // Cache the full catalog for 30 minutes in memory and persist snapshot in localStorage
             if (!isCancelled && runningList.length > 0) {
               memoryCache.set(cacheKey, runningList, 30 * 60 * 1000);
+              if (typeof window !== 'undefined') {
+                try {
+                  localStorage.setItem(`dict_snap_${itemType}_${user.id}`, JSON.stringify(runningList.slice(0, 200)));
+                } catch (e) {}
+              }
             }
           }, 200);
         }

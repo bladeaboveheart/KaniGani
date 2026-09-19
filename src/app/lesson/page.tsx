@@ -189,42 +189,17 @@ export default function LessonPage() {
         const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
         const vocabIds = rawItems.filter((i: any) => i.type === 'vocabulary').map((i: any) => i.id);
 
-        // Fetch detail meanings, readings, sentences, radical relations, similar kanji, and audio
-        const [meaningsRes, readingsRes, sentencesRes, prereqsRes, similarRes, audiosRes] = await Promise.all([
+        // Phase 1: Critical card presentation path (meanings, readings, audios)
+        const [meaningsRes, readingsRes, audiosRes] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
-          radicalIds.length > 0
-            ? supabase
-                .from('item_prerequisites')
-                .select('requires_item_id, items!item_id(id, character, slug, level, type)')
-                .in('requires_item_id', radicalIds)
-            : Promise.resolve({ data: [] }),
-          kanjiIds.length > 0
-            ? supabase
-                .from('item_similar_kanji')
-                .select(`
-                  item_id,
-                  items!similar_item_id(
-                    id, character, slug, level, type,
-                    item_meanings(meaning, primary_meaning),
-                    item_readings(reading, primary_reading)
-                  )
-                `)
-                .in('item_id', kanjiIds)
-            : Promise.resolve({ data: [] }),
           vocabIds.length > 0
-            ? supabase
-                .from('item_audios')
-                .select('*')
-                .in('item_id', vocabIds)
+            ? supabase.from('item_audios').select('*').in('item_id', vocabIds)
             : Promise.resolve({ data: [] }),
         ]);
 
         const meanings = meaningsRes.data || [];
         const readings = readingsRes.data || [];
-        const sentences = sentencesRes.data || [];
-        const prereqs = prereqsRes.data || [];
         const audios = audiosRes.data || [];
 
         // Map vocabulary audios
@@ -234,45 +209,10 @@ export default function LessonPage() {
           audiosMap.get(a.item_id)!.push(a);
         });
 
-        // Map radical kanji dependencies (strictly Kanji items only)
-        const kanjisMap = new Map<string, any[]>();
-        prereqs.forEach((row: any) => {
-          const reqId = row.requires_item_id;
-          const kanjiItem = row.items;
-          if (kanjiItem && kanjiItem.type === 'kanji') {
-            if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
-            kanjisMap.get(reqId)!.push(kanjiItem);
-          }
-        });
-
-        kanjisMap.forEach((list) => {
-          list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
-        });
-
-        // Map similar kanji
-        const similarKanjiMap = new Map<string, SimilarKanji[]>();
-        similarRes.data?.forEach((row: any) => {
-          const it = row.items;
-          if (!it) return;
-          const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
-          const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
-          if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
-          similarKanjiMap.get(row.item_id)!.push({
-            id: it.id,
-            character: it.character,
-            slug: it.slug,
-            level: it.level,
-            type: it.type,
-            primary_meaning: primaryMeaning,
-            primary_reading: primaryReading,
-          });
-        });
-
-        // Combine details
+        // Combine critical details
         const itemsWithDetails: Item[] = rawItems.map((item: any) => {
           const mList = meanings.filter((m) => m.item_id === item.id);
           const rList = readings.filter((r) => r.item_id === item.id);
-          const sList = sentences.filter((s) => s.item_id === item.id);
 
           const primaryMeaning = mList.find((m) => m.primary_meaning)?.meaning || '';
           const primaryReading = rList.find((r) => r.primary_reading)?.reading || null;
@@ -285,13 +225,13 @@ export default function LessonPage() {
             srs_stage: srsStage,
             meanings: mList,
             readings: rList,
-            context_sentences: sList,
+            context_sentences: [],
             primary_meaning: primaryMeaning,
             primary_reading: primaryReading,
             accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
             accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
-            kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : undefined,
-            similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : undefined,
+            kanjis: item.type === 'radical' ? [] : undefined,
+            similar_kanjis: item.type === 'kanji' ? [] : undefined,
             audios: item.type === 'vocabulary' ? (audiosMap.get(item.id) || []) : undefined,
           };
         });
@@ -301,7 +241,7 @@ export default function LessonPage() {
         itemsWithDetails.sort((a, b) => {
           const levelDiff = a.level - b.level;
           if (levelDiff !== 0) return levelDiff;
-          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[a.type] ?? 3);
+          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[b.type] ?? 3);
           if (typeDiff !== 0) return typeDiff;
           return a.lesson_position - b.lesson_position;
         });
@@ -325,11 +265,88 @@ export default function LessonPage() {
 
         setLessons(finalLessons);
 
-        // Get first batch of 5 items
+        // Get first batch of 5 items and immediately show the card!
         const batch = finalLessons.slice(0, 5);
         setCurrentBatch(batch);
         setItemIndex(0);
+        setLoading(false);
 
+        // Phase 2: Asynchronous background fetch of heavy drawer data (sentences, prereqs, similar kanji)
+        (async () => {
+          try {
+            const [sentencesRes, prereqsRes, similarRes] = await Promise.all([
+              supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
+              radicalIds.length > 0
+                ? supabase
+                    .from('item_prerequisites')
+                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                    .in('requires_item_id', radicalIds)
+                : Promise.resolve({ data: [] }),
+              kanjiIds.length > 0
+                ? supabase
+                    .from('item_similar_kanji')
+                    .select(`
+                      item_id,
+                      items!similar_item_id(
+                        id, character, slug, level, type,
+                        item_meanings(meaning, primary_meaning),
+                        item_readings(reading, primary_reading)
+                      )
+                    `)
+                    .in('item_id', kanjiIds)
+                : Promise.resolve({ data: [] }),
+            ]);
+
+            const sentences = sentencesRes.data || [];
+            const prereqs = prereqsRes.data || [];
+
+            // Map radical kanji dependencies
+            const kanjisMap = new Map<string, any[]>();
+            prereqs.forEach((row: any) => {
+              const reqId = row.requires_item_id;
+              const kanjiItem = row.items;
+              if (kanjiItem && kanjiItem.type === 'kanji') {
+                if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
+                kanjisMap.get(reqId)!.push(kanjiItem);
+              }
+            });
+
+            kanjisMap.forEach((list) => {
+              list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+            });
+
+            // Map similar kanji
+            const similarKanjiMap = new Map<string, SimilarKanji[]>();
+            similarRes.data?.forEach((row: any) => {
+              const it = row.items;
+              if (!it) return;
+              const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+              const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+              if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
+              similarKanjiMap.get(row.item_id)!.push({
+                id: it.id,
+                character: it.character,
+                slug: it.slug,
+                level: it.level,
+                type: it.type,
+                primary_meaning: primaryMeaning,
+                primary_reading: primaryReading,
+              });
+            });
+
+            const enrichItem = (item: Item): Item => ({
+              ...item,
+              context_sentences: sentences.filter((s: any) => s.item_id === item.id),
+              kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : item.kanjis,
+              similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : item.similar_kanjis,
+            });
+
+            setLessons((prev) => prev.map(enrichItem));
+            setCurrentBatch((prev) => prev.map(enrichItem));
+          } catch (bgErr) {
+            console.error('Background lesson drawer enrichment failed (non-blocking):', bgErr);
+          }
+        })();
       } catch (err) {
         console.error('Error fetching lessons:', err);
       } finally {

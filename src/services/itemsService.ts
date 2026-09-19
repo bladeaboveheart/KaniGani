@@ -222,11 +222,31 @@ export async function fetchItemFullDetails(itemId: string) {
   };
 }
 
+const itemIdentifierCache = new Map<string, any>();
+const adjacentItemsCache = new Map<string, any>();
+
+/**
+ * Invalidate in-memory caches for items and adjacent items.
+ */
+export function invalidateItemCache(key?: string) {
+  if (key) {
+    itemIdentifierCache.delete(key.toLowerCase());
+  } else {
+    itemIdentifierCache.clear();
+  }
+  adjacentItemsCache.clear();
+}
+
 /**
  * Fetches an item by character or slug and hydrates its full relations.
  */
 export async function fetchItemByIdentifier(type: ItemType, identifier: string) {
   const decoded = decodeURIComponent(identifier).trim();
+  const cacheKey = `${type}_${decoded.toLowerCase()}`;
+
+  if (itemIdentifierCache.has(cacheKey)) {
+    return itemIdentifierCache.get(cacheKey);
+  }
 
   // Try matching character or slug
   const { data: matched, error } = await supabase
@@ -260,7 +280,7 @@ export async function fetchItemByIdentifier(type: ItemType, identifier: string) 
   const primaryMeaning = details.meanings.find((m: any) => m.primary_meaning)?.meaning || details.meanings[0]?.meaning || item.slug || '';
   const primaryReading = details.readings.find((r: any) => r.primary_reading)?.reading || details.readings[0]?.reading || '';
 
-  return {
+  const fullItem = {
     ...item,
     meanings: details.meanings,
     readings: details.readings,
@@ -275,12 +295,27 @@ export async function fetchItemByIdentifier(type: ItemType, identifier: string) 
     primary_meaning: primaryMeaning,
     primary_reading: primaryReading,
   };
+
+  itemIdentifierCache.set(cacheKey, fullItem);
+  if (fullItem.character) {
+    itemIdentifierCache.set(`${type}_${fullItem.character.toLowerCase()}`, fullItem);
+  }
+  if (fullItem.slug) {
+    itemIdentifierCache.set(`${type}_${fullItem.slug.toLowerCase()}`, fullItem);
+  }
+
+  return fullItem;
 }
 
 /**
  * Fetches previous and next items of the same type within the same level.
  */
 export async function fetchAdjacentItems(type: ItemType, level: number, currentId: string) {
+  const cacheKey = `${type}_${level}_${currentId}`;
+  if (adjacentItemsCache.has(cacheKey)) {
+    return adjacentItemsCache.get(cacheKey);
+  }
+
   const { data: levelItems, error } = await supabase
     .from('items')
     .select('id, character, slug, level, type, lesson_position')
@@ -300,8 +335,10 @@ export async function fetchAdjacentItems(type: ItemType, level: number, currentI
 
   const prev = currentIndex > 0 ? levelItems[currentIndex - 1] : null;
   const next = currentIndex < levelItems.length - 1 ? levelItems[currentIndex + 1] : null;
+  const result = { prev, next };
 
-  return { prev, next };
+  adjacentItemsCache.set(cacheKey, result);
+  return result;
 }
 
 /**
@@ -547,6 +584,7 @@ export async function saveItemFullData(formItem: import('@/lib/types').ItemInput
       }
     }
 
+    invalidateItemCache();
     return { success: true, itemId };
   } catch (err: any) {
     console.error('Error in saveItemFullData:', err);

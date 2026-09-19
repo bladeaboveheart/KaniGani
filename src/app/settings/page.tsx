@@ -44,15 +44,65 @@ export default function SettingsPage() {
         return;
       }
 
-      // 1. Fetch user profile
-      const { data: profile, error: profErr } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .maybeSingle();
+      // Fast SWR hydration (0ms) from dashboard snapshot if available
+      const cacheKey = `dashboard_snapshot_${user.id}`;
+      let cachedSnapshot: any = null;
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem(cacheKey);
+          if (stored) cachedSnapshot = JSON.parse(stored);
+        } catch {}
+      }
 
-      if (profErr) throw profErr;
+      if (cachedSnapshot) {
+        const cStats = cachedSnapshot.stats;
+        const dist = cStats?.distribution || {};
+        const app = (dist[1] || 0) + (dist[2] || 0) + (dist[3] || 0) + (dist[4] || 0);
+        const gur = (dist[5] || 0) + (dist[6] || 0);
+        const mas = dist[7] || 0;
+        const enl = dist[8] || 0;
+        const bur = dist[9] || 0;
+        const tot = app + gur + mas + enl + bur;
 
+        setUserProfile({
+          id: user.id,
+          username: cachedSnapshot.username || 'User',
+          email: user.email || ''
+        });
+        setNewUsername(cachedSnapshot.username || 'User');
+        setStats(prev => ({
+          ...prev,
+          totalStudied: tot,
+          apprentice: app,
+          guru: gur,
+          master: mas,
+          enlightened: enl,
+          burned: bur,
+          level: cStats?.level || 1,
+        }));
+        setLoading(false);
+      }
+
+      // Parallel fetch for fresh updates
+      let allKanjiPromise: Promise<any>;
+      const storedKanji = typeof window !== 'undefined' ? localStorage.getItem('catalog_kanji_all') : null;
+      if (storedKanji) {
+        try {
+          allKanjiPromise = Promise.resolve(JSON.parse(storedKanji));
+        } catch {
+          allKanjiPromise = fetchAllKanjiItems('id, level');
+        }
+      } else {
+        allKanjiPromise = fetchAllKanjiItems('id, level');
+      }
+
+      const [profileRes, progresses, allKanji] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+        fetchAllUserProgress(user.id, 'item_id, srs_stage, next_review'),
+        allKanjiPromise,
+      ]);
+
+      const profile = profileRes.data;
       const currentUsername = profile?.username || user.user_metadata?.username || user.email?.split('@')[0] || 'User';
       setUserProfile({
         id: user.id,
@@ -61,12 +111,6 @@ export default function SettingsPage() {
       });
       setNewUsername(currentUsername);
 
-      // 2. Fetch user progress statistics & all Kanji to calculate dynamic user level
-      const [progresses, allKanji] = await Promise.all([
-        fetchAllUserProgress(user.id, 'item_id, srs_stage, next_review'),
-        fetchAllKanjiItems('id, level')
-      ]);
-
       let apprentice = 0;
       let guru = 0;
       let master = 0;
@@ -74,7 +118,7 @@ export default function SettingsPage() {
       let burned = 0;
       let totalStudied = 0;
 
-      progresses.forEach((row: any) => {
+      (progresses || []).forEach((row: any) => {
         const stage = row.srs_stage;
         if (stage >= 1 && stage <= 4) apprentice++;
         else if (stage >= 5 && stage <= 6) guru++;
@@ -88,14 +132,13 @@ export default function SettingsPage() {
       });
 
       const progressGuruSet = new Set(
-        progresses
+        (progresses || [])
           .filter((p: any) => p.srs_stage >= 5)
           .map((p: any) => p.item_id)
       );
 
       const userLevel = calculateUserLevel(allKanji || [], progressGuruSet, profile?.level);
 
-      // Format Joined Date
       const joinedAt = new Date(profile?.created_at || user.created_at);
       const joinedString = joinedAt.toLocaleDateString('id-ID', {
         year: 'numeric',

@@ -130,82 +130,23 @@ export default function ReviewPage() {
         const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
         const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
 
-        // Fetch detail meanings, readings, sentences, radical kanji relations, similar kanji, and audios
-        const [meaningsRes, readingsRes, sentencesRes, prereqsRes, similarRes, audiosRes] = await Promise.all([
+        // 1. FAST INITIAL FETCH: Only meanings, readings, and audios needed to start quiz instantly (<350ms)
+        const [meaningsRes, readingsRes, audiosRes] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
-          radicalIds.length > 0
-            ? supabase
-                .from('item_prerequisites')
-                .select('requires_item_id, items!item_id(id, character, slug, level, type)')
-                .in('requires_item_id', radicalIds)
-            : Promise.resolve({ data: [] }),
-          kanjiIds.length > 0
-            ? supabase
-                .from('item_similar_kanji')
-                .select(`
-                  item_id,
-                  similar_item_id,
-                  items!similar_item_id(
-                    id, character, slug, level, type,
-                    item_meanings(meaning, primary_meaning),
-                    item_readings(reading, primary_reading)
-                  )
-                `)
-                .in('item_id', kanjiIds)
-            : Promise.resolve({ data: [] }),
           supabase.from('item_audios').select('*').in('item_id', itemIds),
         ]);
 
         const meanings = meaningsRes.data || [];
         const readings = readingsRes.data || [];
-        const sentences = sentencesRes.data || [];
-        const prereqs = prereqsRes.data || [];
+        const audios = audiosRes.data || [];
 
-        // Map radical kanji dependencies (strictly Kanji items only)
-        const kanjisMap = new Map<string, any[]>();
-        prereqs.forEach((row: any) => {
-          const reqId = row.requires_item_id;
-          const kanjiItem = row.items;
-          if (kanjiItem && kanjiItem.type === 'kanji') {
-            if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
-            kanjisMap.get(reqId)!.push(kanjiItem);
-          }
-        });
-
-        kanjisMap.forEach((list) => {
-          list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
-        });
-
-        // Map similar kanji
-        const similarKanjiMap = new Map<string, SimilarKanji[]>();
-        similarRes.data?.forEach((row: any) => {
-          const it = row.items;
-          if (!it) return;
-          const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
-          const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
-          if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
-          similarKanjiMap.get(row.item_id)!.push({
-            id: it.id,
-            character: it.character,
-            slug: it.slug,
-            level: it.level,
-            type: it.type,
-            primary_meaning: primaryMeaning,
-            primary_reading: primaryReading,
-          });
-        });
-
-        // Combine details
-        const itemsWithDetails: Item[] = rawItems.map((item: any) => {
+        // Build initial items immediately
+        const initialItemsWithDetails: Item[] = rawItems.map((item: any) => {
           const mList = meanings.filter((m) => m.item_id === item.id);
           const rList = readings.filter((r) => r.item_id === item.id);
-          const sList = sentences.filter((s) => s.item_id === item.id);
-
           const primaryMeaning = mList.find((m) => m.primary_meaning)?.meaning || '';
           const primaryReading = rList.find((r) => r.primary_reading)?.reading || null;
-
           const progressRow = data.find((row: any) => row.item_id === item.id);
           const srsStage = progressRow ? progressRow.srs_stage : 1;
 
@@ -214,22 +155,89 @@ export default function ReviewPage() {
             srs_stage: srsStage,
             meanings: mList,
             readings: rList,
-            context_sentences: sList,
+            context_sentences: [],
             primary_meaning: primaryMeaning,
             primary_reading: primaryReading,
             accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
             accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
-            kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : undefined,
-            similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : undefined,
-            audios: (audiosRes.data || []).filter((a: any) => a.item_id === item.id),
+            audios: audios.filter((a: any) => a.item_id === item.id),
           };
         });
 
-        setTotalItemsCount(itemsWithDetails.length);
-        initializeSession(itemsWithDetails, 'review');
+        setTotalItemsCount(initialItemsWithDetails.length);
+        initializeSession(initialItemsWithDetails, 'review');
+        setLoading(false); // User can immediately start reviewing!
 
+        // 2. BACKGROUND PREFETCH: Load heavy sentences, prerequisites & similar kanji for drawer quietly
+        setTimeout(async () => {
+          try {
+            const [sentencesRes, prereqsRes, similarRes] = await Promise.all([
+              supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
+              radicalIds.length > 0
+                ? supabase
+                    .from('item_prerequisites')
+                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                    .in('requires_item_id', radicalIds)
+                : Promise.resolve({ data: [] }),
+              kanjiIds.length > 0
+                ? supabase
+                    .from('item_similar_kanji')
+                    .select(`
+                      item_id,
+                      similar_item_id,
+                      items!similar_item_id(
+                        id, character, slug, level, type,
+                        item_meanings(meaning, primary_meaning),
+                        item_readings(reading, primary_reading)
+                      )
+                    `)
+                    .in('item_id', kanjiIds)
+                : Promise.resolve({ data: [] }),
+            ]);
+
+            const sentences = sentencesRes.data || [];
+            const prereqs = prereqsRes.data || [];
+
+            const kanjisMap = new Map<string, any[]>();
+            prereqs.forEach((row: any) => {
+              const reqId = row.requires_item_id;
+              const kanjiItem = row.items;
+              if (kanjiItem && kanjiItem.type === 'kanji') {
+                if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
+                kanjisMap.get(reqId)!.push(kanjiItem);
+              }
+            });
+
+            const similarKanjiMap = new Map<string, SimilarKanji[]>();
+            similarRes.data?.forEach((row: any) => {
+              const it = row.items;
+              if (!it) return;
+              const pM = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+              const pR = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+              if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
+              similarKanjiMap.get(row.item_id)!.push({
+                id: it.id,
+                character: it.character,
+                slug: it.slug,
+                level: it.level,
+                type: it.type,
+                primary_meaning: pM,
+                primary_reading: pR,
+              });
+            });
+
+            // Enrich session items in memory so QuizInfoDrawer displays complete details
+            initialItemsWithDetails.forEach(item => {
+              item.context_sentences = sentences.filter((s: any) => s.item_id === item.id);
+              if (item.type === 'radical') item.kanjis = kanjisMap.get(item.id) || [];
+              if (item.type === 'kanji') item.similar_kanjis = similarKanjiMap.get(item.id) || [];
+            });
+          } catch (bgErr) {
+            console.warn('Background drawer enrich deferred:', bgErr);
+          }
+        }, 100);
       } catch (err) {
-        console.error('Error loading reviews:', err);
+        console.error('Error fetching reviews:', err);
       } finally {
         setLoading(false);
       }
