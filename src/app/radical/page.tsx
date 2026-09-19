@@ -6,7 +6,6 @@ import Footer from '@/components/Footer';
 import { useDictionaryItems } from '@/hooks/useDictionaryItems';
 import { ITEM_THEMES } from '@/lib/srs';
 import LevelTierBar from '@/components/dictionary/LevelTierBar';
-import DictionaryFilterBar from '@/components/dictionary/DictionaryFilterBar';
 import LevelGroupSection from '@/components/dictionary/LevelGroupSection';
 import ItemDetailModal from '@/components/dictionary/ItemDetailModal';
 import { Loader2 } from 'lucide-react';
@@ -70,18 +69,6 @@ export default function RadicalPage() {
           selectedTier={selectedTier}
           onTierChange={setSelectedTier}
           itemType="radical"
-        />
-
-        {/* Filter, Search & Display Toggle Bar */}
-        <DictionaryFilterBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          srsFilter={srsFilter}
-          onSrsFilterChange={setSrsFilter}
-          displayMode={displayMode}
-          onDisplayModeChange={setDisplayMode}
-          itemType="radical"
-          totalResults={filteredItems.length}
         />
 
         {/* Radicals Grouped by Level Layout */}

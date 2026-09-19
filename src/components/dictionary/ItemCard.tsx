@@ -14,7 +14,6 @@ interface ItemCardProps {
 export default function ItemCard({
   item,
   onClick,
-  displayMode = 'reading',
 }: ItemCardProps) {
   const stage = item.srs_stage || 0;
   const isLocked = stage === 0;
@@ -23,52 +22,49 @@ export default function ItemCard({
   // Base theme classes per item type
   let cardBg = '';
   let charColor = '';
-  let subtextColor = '';
+  let kanaColor = '';
+  let meaningColor = '';
 
   if (type === 'radical') {
     if (isLocked) {
-      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 opacity-75 hover:opacity-90';
       charColor = 'text-slate-500 dark:text-slate-400';
-      subtextColor = 'text-slate-400 dark:text-slate-500';
+      meaningColor = 'text-slate-400 dark:text-slate-500';
     } else {
       cardBg = 'bg-radical text-white border-radical shadow-xs hover:shadow-md hover:brightness-105';
       charColor = 'text-white';
-      subtextColor = 'text-white/90';
+      meaningColor = 'text-white/90';
     }
   } else if (type === 'kanji') {
     if (isLocked) {
-      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 opacity-75 hover:opacity-90';
       charColor = 'text-slate-500 dark:text-slate-400';
-      subtextColor = 'text-slate-400 dark:text-slate-500';
+      kanaColor = 'text-slate-400 dark:text-slate-500';
+      meaningColor = 'text-slate-400 dark:text-slate-500';
     } else {
       cardBg = 'bg-kanji text-white border-kanji shadow-xs hover:shadow-md hover:brightness-105';
       charColor = 'text-white';
-      subtextColor = 'text-white/90';
+      kanaColor = 'text-white/95';
+      meaningColor = 'text-white/80';
     }
   } else {
     // Vocabulary
     if (isLocked) {
-      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-400 opacity-75 hover:opacity-90';
+      cardBg = 'bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-850 text-slate-400 opacity-75 hover:opacity-90';
       charColor = 'text-slate-500 dark:text-slate-400';
-      subtextColor = 'text-slate-400 dark:text-slate-500';
+      kanaColor = 'text-slate-400 dark:text-slate-500';
+      meaningColor = 'text-slate-400 dark:text-slate-500';
     } else {
       cardBg = 'bg-vocab text-white border-vocab shadow-xs hover:shadow-md hover:brightness-105';
       charColor = 'text-white';
-      subtextColor = 'text-white/90';
+      kanaColor = 'text-white/95';
+      meaningColor = 'text-white/80';
     }
   }
 
-  // Determine subtext content (Reading vs Meaning)
-  let subtext = '';
-  if (type === 'radical') {
-    subtext = item.primary_meaning || item.slug || '';
-  } else {
-    if (displayMode === 'meaning') {
-      subtext = item.primary_meaning || item.slug || '';
-    } else {
-      subtext = item.primary_reading || item.primary_meaning || item.slug || '';
-    }
-  }
+  // Determine content
+  const reading = type !== 'radical' ? (item.primary_reading || '') : '';
+  const meaning = item.primary_meaning || item.slug || '';
 
   // Bottom SRS Indicator Bar (WaniKani Style)
   let srsIndicatorBg = 'bg-transparent';
@@ -87,21 +83,24 @@ export default function ItemCard({
   return (
     <div
       onClick={() => onClick(item)}
-      className={`group relative rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:scale-102 cursor-pointer select-none flex flex-col justify-between items-center text-center overflow-hidden shrink-0 ${
-        type === 'vocabulary'
-          ? 'w-[88px] sm:w-[96px] h-[78px] sm:h-[84px] px-2 py-2'
-          : 'w-[72px] sm:w-[80px] h-[78px] sm:h-[84px] px-1.5 py-2'
-      } ${cardBg}`}
-      title={`${item.character || item.slug} • ${item.primary_meaning || ''}`}
+      className={`group relative rounded-2xl border transition-all duration-200 hover:-translate-y-1 hover:scale-102 cursor-pointer select-none flex flex-col items-center justify-center text-center overflow-hidden shrink-0 w-auto min-w-[76px] sm:min-w-[84px] px-3.5 sm:px-4 py-2.5 sm:py-3 whitespace-nowrap ${cardBg}`}
+      title={`${item.character || item.slug}${reading ? ` (${reading})` : ''} • ${meaning}`}
     >
       {/* Top Character */}
-      <div className={`font-japanese font-black text-2xl sm:text-3xl leading-none flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${charColor}`}>
-        <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-6 h-6" />
+      <div className={`font-japanese font-black text-2xl sm:text-3xl leading-none flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${charColor} mb-1.5`}>
+        <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-7 h-7" />
       </div>
 
-      {/* Subtext (Reading or Meaning) */}
-      <div className={`text-3xs sm:text-xxs font-bold leading-tight truncate w-full px-1 ${subtextColor}`}>
-        {subtext}
+      {/* Kana Reading (Kanji & Vocab) */}
+      {reading && (
+        <div className={`text-3xs sm:text-xxs font-bold leading-tight font-japanese ${kanaColor}`}>
+          {reading}
+        </div>
+      )}
+
+      {/* Meaning / Translation */}
+      <div className={`text-3xs sm:text-xxs font-medium leading-tight ${meaningColor} ${reading ? 'mt-0.5' : 'mt-1'}`}>
+        {meaning}
       </div>
 
       {/* Lock Icon for Locked items */}

@@ -3,7 +3,6 @@
 import React from 'react';
 import ItemCard from './ItemCard';
 import { DictionaryItem } from '@/hooks/useDictionaryItems';
-import { WANIKANI_TIERS } from './LevelTierBar';
 
 interface LevelGroupSectionProps {
   allItems: DictionaryItem[];
@@ -46,11 +45,6 @@ export default function LevelGroupSection({
         ).length;
         const totalCount = levelTotalItems.length;
 
-        // Find tier for this level
-        const tier = WANIKANI_TIERS.find(
-          (t) => lvl >= t.range[0] && lvl <= t.range[1]
-        );
-
         return (
           <div key={lvl} className="space-y-3.5">
             {/* Level Header Panel */}
@@ -59,12 +53,6 @@ export default function LevelGroupSection({
                 <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                   Level {lvl}
                 </span>
-
-                {tier && (
-                  <span className={`px-2 py-0.5 text-4xs font-black uppercase tracking-wider rounded-md ${tier.badgeBg} ${tier.badgeText}`}>
-                    {tier.name}
-                  </span>
-                )}
               </div>
 
               <div className="flex items-center space-x-2">

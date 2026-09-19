@@ -119,7 +119,7 @@ export default function LevelTierBar({
               : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
           }`}
         >
-          Semua (1–60)
+          Semua
         </button>
 
         {WANIKANI_TIERS.map((tier) => {
@@ -132,16 +132,13 @@ export default function LevelTierBar({
                 onTierChange(tier.id);
                 onLevelChange('all');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border flex items-center space-x-1.5 ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border flex items-center justify-center ${
                 isTierActive
                   ? tier.activeBorder
                   : `${tier.badgeBg} ${tier.badgeText} border-transparent`
               }`}
             >
-              <span>{tier.name}</span>
-              <span className="text-4xs opacity-75 font-semibold hidden sm:inline">
-                ({tier.range[0]}–{tier.range[1]})
-              </span>
+              <span>{tier.range[0]}–{tier.range[1]}</span>
             </button>
           );
         })}
