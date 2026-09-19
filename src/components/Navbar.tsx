@@ -4,8 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import ThemeToggle from './ThemeToggle';
-import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database } from 'lucide-react';
+import { LogOut, User, BookOpen, Settings, HelpCircle, FlaskConical, Database, Sun, Moon } from 'lucide-react';
 
 export default function Navbar() {
   const [username, setUsername] = useState<string>('');
@@ -13,6 +12,7 @@ export default function Navbar() {
   const [devMode, setDevMode] = useState<boolean>(false);
   const [betaTester, setBetaTester] = useState<boolean>(false);
   const [_betaResetting, setBetaResetting] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +50,27 @@ export default function Navbar() {
     setDevMode(nextVal);
     localStorage.setItem('kanigani-dev-mode', String(nextVal));
     window.dispatchEvent(new Event('storage'));
+  };
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      setTimeout(() => {
+        setTheme('dark');
+      }, 0);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setTheme('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setTheme('light');
+    }
   };
 
   const toggleBetaTester = () => {
@@ -189,7 +210,19 @@ export default function Navbar() {
 
           {/* User Settings, Theme, Logout */}
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
+            {!isLoading && !username && (
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-all duration-200 shadow-sm border border-slate-200 dark:border-slate-700 cursor-pointer"
+                aria-label="Toggle tema gelap/terang"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-5 h-5 text-indigo-600" />
+                ) : (
+                  <Sun className="w-5 h-5 text-amber-400" />
+                )}
+              </button>
+            )}
 
             {!isLoading && username ? (
               <div className="flex items-center space-x-3">
@@ -236,6 +269,27 @@ export default function Navbar() {
                           <Database className="w-4 h-4 text-emerald-500" />
                           <span className="font-bold">Database Studio</span>
                         </Link>
+                        {/* Theme Toggle inside Menu Akun */}
+                        <button
+                          onClick={toggleTheme}
+                          className="w-full flex items-center justify-between px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white transition-colors text-left border-t border-slate-100 dark:border-slate-800 cursor-pointer"
+                        >
+                          <span className="flex items-center space-x-2">
+                            {theme === 'dark' ? (
+                              <Moon className="w-4 h-4 text-indigo-400" />
+                            ) : (
+                              <Sun className="w-4 h-4 text-amber-500" />
+                            )}
+                            <span>Mode Tema</span>
+                          </span>
+                          <span className={`px-1.5 py-0.5 text-xxs font-extrabold rounded-md uppercase tracking-wider ${
+                            theme === 'dark'
+                              ? 'bg-indigo-500/10 text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/30'
+                              : 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30'
+                          }`}>
+                            {theme === 'dark' ? 'GELAP' : 'TERANG'}
+                          </span>
+                        </button>
                         {/* Beta Tester Toggle */}
                         <button
                           onClick={toggleBetaTester}
