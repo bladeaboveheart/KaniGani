@@ -144,54 +144,47 @@ export default function Navbar() {
           </div>
 
           {/* Navigation Links - Colorful like KaniGani */}
-          <nav className="hidden md:flex items-center space-x-1 text-sm font-medium">
-            <Link
-              href="/dashboard"
-              className={`px-3 py-2 rounded-lg transition-colors ${pathname === '/dashboard'
-                ? 'text-indigo-600 bg-indigo-50 dark:text-indigo-400 dark:bg-slate-800 font-bold'
-                : 'text-slate-650 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-            >
-              Dashboard
-            </Link>
-
+          <nav className="flex items-center space-x-1 sm:space-x-1.5 text-xs sm:text-sm font-medium">
             {/* Radical (Cyan) */}
             <Link
               href="/radical"
-              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/radical'
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center ${pathname === '/radical'
                 ? 'text-radical font-bold bg-radical/10 dark:bg-slate-800 border border-radical/20 dark:border-slate-700 shadow-xs'
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-radical/20 hover:shadow-[0_0_10px_rgba(0,160,240,0.2)] border border-transparent hover:border-radical/30'
                 }`}
             >
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-radical mr-2"></span>
-              Radikal
+              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-radical mr-1 sm:mr-1.5 shrink-0"></span>
+              <span>部首</span>
+              <span className="hidden sm:inline ml-1">Radikal</span>
             </Link>
 
             {/* Kanji (Pink) */}
             <Link
               href="/kanji"
-              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/kanji'
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center ${pathname === '/kanji'
                 ? 'text-kanji font-bold bg-kanji/10 dark:bg-slate-800 border border-kanji/20 dark:border-slate-700 shadow-xs'
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-kanji/20 hover:shadow-[0_0_10px_rgba(240,0,160,0.2)] border border-transparent hover:border-kanji/30'
                 }`}
             >
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-kanji mr-2"></span>
-              漢字 Kanji
+              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-kanji mr-1 sm:mr-1.5 shrink-0"></span>
+              <span>漢字</span>
+              <span className="hidden sm:inline ml-1">Kanji</span>
             </Link>
 
             {/* Vocabulary (Purple) */}
             <Link
               href="/vocabulary"
-              className={`px-3 py-2 rounded-lg transition-all duration-200 cursor-pointer ${pathname === '/vocabulary'
+              className={`px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 cursor-pointer flex items-center ${pathname === '/vocabulary'
                 ? 'text-vocab font-bold bg-vocab/10 dark:bg-slate-800 border border-vocab/20 dark:border-slate-700 shadow-xs'
                 : 'text-slate-650 dark:text-slate-300 hover:text-white hover:bg-vocab/20 hover:shadow-[0_0_10px_rgba(160,0,240,0.2)] border border-transparent hover:border-vocab/30'
                 }`}
             >
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-vocab mr-2"></span>
-              Kosakata
+              <span className="inline-block w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-vocab mr-1 sm:mr-1.5 shrink-0"></span>
+              <span>語彙</span>
+              <span className="hidden sm:inline ml-1">Kosakata</span>
             </Link>
 
-            <span className="px-3 py-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center space-x-1">
+            <span className="hidden md:flex px-3 py-2 rounded-lg text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer items-center space-x-1">
               <HelpCircle className="w-4 h-4" />
               <span>Bantuan</span>
             </span>
