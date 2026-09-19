@@ -311,22 +311,33 @@ export default function ItemDetailModal({
           {/* Relations: Radicals composed in Kanji */}
           {item.radicals && item.radicals.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
-                <Layers className="w-3.5 h-3.5 text-cyan-500" />
-                <span>Terdiri Dari Radikal</span>
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-cyan-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Terdiri Dari Radikal</span>
+                </h3>
+                <span className="text-xxs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-200/60 dark:border-cyan-900/50">
+                  {item.radicals.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {item.radicals.map((rd: any) => (
                   <div
                     key={rd.id}
                     onClick={() => {
-                      onClose();
-                      router.push(`/radical?character=${encodeURIComponent(rd.character || rd.slug)}`);
+                      if (onNavigateItem) {
+                        onNavigateItem(rd);
+                      } else {
+                        onClose();
+                        router.push(`/radical?character=${encodeURIComponent(rd.character || rd.slug)}`);
+                      }
                     }}
-                    className="p-2.5 bg-radical/5 border border-radical/15 hover:border-radical/35 dark:bg-radical/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left cursor-pointer transition-all duration-200"
+                    className="p-3 bg-radical/5 border border-radical/15 hover:border-radical/40 dark:bg-radical/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <span className="text-xl font-black text-radical">{rd.character}</span>
-                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-[60px]">
+                    <span className="text-2xl font-black text-radical group-hover:scale-110 transition-transform leading-tight block">
+                      <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-7 h-7" />
+                    </span>
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
                       {rd.slug}
                     </span>
                   </div>
@@ -339,8 +350,8 @@ export default function ItemDetailModal({
           {item.kanjis && item.kanjis.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
-                  <Layers className="w-3.5 h-3.5 text-pink-500" />
+                <h3 className="text-xxs font-bold text-pink-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
                   <span>
                     {type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}
                   </span>
@@ -349,29 +360,26 @@ export default function ItemDetailModal({
                   {item.kanjis.length}
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 max-h-[188px] overflow-y-auto pr-1.5 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {item.kanjis.map((kj: any) => (
                   <div
                     key={kj.id}
                     onClick={() => {
-                      onClose();
-                      router.push(`/kanji?character=${encodeURIComponent(kj.character)}`);
+                      if (onNavigateItem) {
+                        onNavigateItem(kj);
+                      } else {
+                        onClose();
+                        router.push(`/kanji?character=${encodeURIComponent(kj.character)}`);
+                      }
                     }}
-                    className="p-2.5 bg-kanji/5 border border-kanji/15 hover:border-kanji/35 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group/kj cursor-pointer transition-all duration-200"
+                    className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <div>
-                      <span className="text-xl font-black text-kanji group-hover/kj:scale-105 transition-transform duration-200 block leading-tight">
-                        {kj.character}
-                      </span>
-                      <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5">
-                        {kj.slug}
-                      </span>
-                    </div>
-                    {kj.level && (
-                      <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                        Lvl {kj.level}
-                      </span>
-                    )}
+                    <span className="text-2xl font-black font-japanese text-kanji group-hover:scale-110 transition-transform leading-tight block">
+                      {kj.character}
+                    </span>
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
+                      {kj.slug}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -382,32 +390,34 @@ export default function ItemDetailModal({
           {item.vocabularies && item.vocabularies.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1">
-                  <Layers className="w-3.5 h-3.5 text-purple-500" />
+                <h3 className="text-xxs font-bold text-purple-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
                   <span>Ditemukan di Kosakata</span>
                 </h3>
                 <span className="text-xxs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-900/50">
                   {item.vocabularies.length}
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-2 gap-2 max-h-[148px] overflow-y-auto pr-1.5 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {item.vocabularies.map((vc: any) => (
                   <div
                     key={vc.id}
                     onClick={() => {
-                      onClose();
-                      router.push(`/vocabulary?character=${encodeURIComponent(vc.character)}`);
+                      if (onNavigateItem) {
+                        onNavigateItem(vc);
+                      } else {
+                        onClose();
+                        router.push(`/vocabulary?character=${encodeURIComponent(vc.character)}`);
+                      }
                     }}
-                    className="p-2.5 bg-vocab/5 border border-vocab/15 hover:border-vocab/35 dark:bg-vocab/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left cursor-pointer transition-all duration-200"
+                    className="p-3 bg-vocab/5 border border-vocab/15 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <span className="text-base font-japanese font-black text-vocab truncate max-w-[90px]">
+                    <span className="text-xl font-black font-japanese text-vocab group-hover:scale-110 transition-transform leading-tight block truncate max-w-full px-1">
                       {vc.character}
                     </span>
-                    {vc.level && (
-                      <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                        Lvl {vc.level}
-                      </span>
-                    )}
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
+                      {vc.slug}
+                    </span>
                   </div>
                 ))}
               </div>

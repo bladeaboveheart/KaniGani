@@ -486,23 +486,28 @@ export default function ItemFullPageView({
         <div className="space-y-6">
 
           {/* Radicals composed in Kanji */}
-          {item.radicals && item.radicals.length > 0 && (
+          {itemToDisplay.radicals && itemToDisplay.radicals.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 space-y-3 shadow-sm">
-              <h3 className="text-xxs font-bold text-cyan-500 uppercase tracking-widest flex items-center space-x-1.5">
-                <Layers className="w-3.5 h-3.5" />
-                <span>Terdiri Dari Radikal</span>
-              </h3>
-              <div className="grid grid-cols-2 gap-2.5">
-                {item.radicals.map((rd: any) => (
+              <div className="flex items-center justify-between">
+                <h3 className="text-xxs font-bold text-cyan-500 uppercase tracking-widest flex items-center space-x-1.5">
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Terdiri Dari Radikal</span>
+                </h3>
+                <span className="text-xxs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-200/60 dark:border-cyan-900/50">
+                  {itemToDisplay.radicals.length}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1.5 custom-scrollbar">
+                {itemToDisplay.radicals.map((rd: any) => (
                   <Link
                     key={rd.id}
                     href={`/radical/${encodeURIComponent(rd.slug || rd.character)}`}
-                    className="p-3 bg-radical/5 border border-radical/15 hover:border-radical/40 dark:bg-radical/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group cursor-pointer transition-all duration-200"
+                    className="p-3.5 bg-radical/5 border border-radical/15 hover:border-radical/40 dark:bg-radical/10 hover:shadow-md rounded-2xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <span className="text-2xl font-black text-radical group-hover:scale-105 transition-transform">
-                      {rd.character || '—'}
+                    <span className="text-3xl font-black text-radical group-hover:scale-110 transition-transform leading-tight block">
+                      <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-8 h-8" />
                     </span>
-                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-[65px]">
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1.5">
                       {rd.slug}
                     </span>
                   </Link>
@@ -523,26 +528,19 @@ export default function ItemFullPageView({
                   {itemToDisplay.kanjis.length}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 max-h-[224px] overflow-y-auto pr-1.5 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {itemToDisplay.kanjis.map((kj: any) => (
                   <Link
                     key={kj.id}
                     href={`/kanji/${encodeURIComponent(kj.character)}`}
-                    className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group cursor-pointer transition-all duration-200"
+                    className="p-3.5 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <div>
-                      <span className="text-2xl font-black text-kanji group-hover:scale-105 transition-transform block leading-tight">
-                        {kj.character}
-                      </span>
-                      <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider block truncate max-w-[65px] font-semibold mt-0.5">
-                        {kj.slug}
-                      </span>
-                    </div>
-                    {kj.level && (
-                      <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                        Lvl {kj.level}
-                      </span>
-                    )}
+                    <span className="text-3xl font-black font-japanese text-kanji group-hover:scale-110 transition-transform leading-tight block">
+                      {kj.character}
+                    </span>
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1.5">
+                      {kj.slug}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -561,21 +559,19 @@ export default function ItemFullPageView({
                   {itemToDisplay.vocabularies.length}
                 </span>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[168px] overflow-y-auto pr-1.5 custom-scrollbar">
+              <div className="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-1.5 custom-scrollbar">
                 {itemToDisplay.vocabularies.map((vc: any) => (
                   <Link
                     key={vc.id}
                     href={`/vocabulary/${encodeURIComponent(vc.character)}`}
-                    className="p-2.5 bg-vocab/5 border border-vocab/15 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-sm rounded-xl flex items-center justify-between text-left group cursor-pointer transition-all duration-200"
+                    className="p-3.5 bg-vocab/5 border border-vocab/15 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-md rounded-2xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
-                    <span className="text-sm font-japanese font-black text-vocab group-hover:scale-105 transition-transform truncate max-w-[95px]">
+                    <span className="text-2xl font-black font-japanese text-vocab group-hover:scale-110 transition-transform leading-tight block truncate max-w-full px-1">
                       {vc.character}
                     </span>
-                    {vc.level && (
-                      <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
-                        Lvl {vc.level}
-                      </span>
-                    )}
+                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1.5">
+                      {vc.slug}
+                    </span>
                   </Link>
                 ))}
               </div>
