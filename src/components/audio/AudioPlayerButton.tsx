@@ -143,7 +143,7 @@ export default function AudioPlayerButton({
           ) : (
             <Volume2 className={`w-4 h-4 ${isPlaying ? 'text-amber-300 animate-pulse' : 'text-white'}`} />
           )}
-          <span>{isPlaying ? 'Memutar...' : 'Suara'}</span>
+          <span>Suara</span>
         </button>
 
         {/* Voice Actor Selector Pills */}
@@ -196,7 +196,7 @@ export default function AudioPlayerButton({
         ) : (
           <Volume2 className={`w-3.5 h-3.5 ${isPlaying ? 'text-vocab animate-pulse' : 'text-slate-500'}`} />
         )}
-        <span className="text-3xs uppercase tracking-wider">{isPlaying ? 'Play...' : 'Audio'}</span>
+        <span className="text-3xs uppercase tracking-wider">Audio</span>
       </button>
 
       <div className="h-3 w-px bg-slate-300 dark:bg-slate-700" />

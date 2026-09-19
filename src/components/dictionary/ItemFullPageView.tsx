@@ -283,22 +283,39 @@ export default function ItemFullPageView({
       {/* Hero Display Section */}
       <section className={`${headerGradient} rounded-3xl p-8 sm:p-12 text-white relative shadow-xl overflow-hidden`}>
         {/* Background Subtle Watermark */}
-        <div className="absolute right-4 -bottom-10 opacity-10 pointer-events-none select-none font-japanese font-black text-9xl">
-          {item.character || item.slug}
-        </div>
+        {(!item.character || item.character.length <= 4) && (
+          <div className="absolute right-4 -bottom-10 opacity-10 pointer-events-none select-none font-japanese font-black text-9xl">
+            {item.character || item.slug}
+          </div>
+        )}
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
             {/* Big Character Display */}
-            <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner shrink-0">
-              <span className="text-6xl sm:text-8xl font-black select-all flex items-center justify-center">
-                <CharacterDisplay
-                  character={item.character}
-                  slug={item.slug}
-                  imgClassName="w-24 h-24 sm:w-32 sm:h-32"
-                />
-              </span>
-            </div>
+            {(() => {
+              const charLength = (item.character || item.slug || '').length;
+              let textSize = 'text-6xl sm:text-8xl';
+              let imgSize = 'w-24 h-24 sm:w-32 sm:h-32';
+              if (charLength >= 5) {
+                textSize = 'text-2xl sm:text-4xl';
+                imgSize = 'w-16 h-16 sm:w-20 sm:h-20';
+              } else if (charLength >= 3) {
+                textSize = 'text-4xl sm:text-6xl';
+                imgSize = 'w-20 h-20 sm:w-24 sm:h-24';
+              }
+
+              return (
+                <div className="w-auto min-w-[112px] sm:min-w-[144px] max-w-full px-5 py-4 min-h-[112px] sm:min-h-[144px] rounded-3xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center shadow-inner shrink-0">
+                  <span className={`${textSize} font-black font-japanese select-all flex items-center justify-center text-center leading-tight tracking-normal whitespace-nowrap`}>
+                    <CharacterDisplay
+                      character={item.character}
+                      slug={item.slug}
+                      imgClassName={imgSize}
+                    />
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Core Info */}
             <div className="space-y-2">
@@ -338,11 +355,11 @@ export default function ItemFullPageView({
               <span className={`inline-block text-xs font-black px-3 py-1 rounded-xl shadow-sm ${getSrsColorClass(srsStage)}`}>
                 {srsStage === 0 ? 'Terkunci (Belum Belajar)' : getSrsLabel(srsStage)}
               </span>
-              <p className="text-4xs opacity-80 mt-1.5 font-medium">
-                {srsStage === 0
-                  ? 'Item ini akan terbuka otomatis saat radikal pembentuknya tuntas.'
-                  : `Tahap SRS ${srsStage} dari 9.`}
-              </p>
+              {srsStage > 0 && (
+                <p className="text-4xs opacity-80 mt-1.5 font-medium">
+                  Tahap SRS {srsStage} dari 9.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -360,9 +377,6 @@ export default function ItemFullPageView({
                   <Languages className="w-4 h-4 text-pink-500" />
                   <span>Cara Baca (Readings)</span>
                 </h2>
-                {type === 'vocabulary' && item.audios && item.audios.length > 0 && (
-                  <AudioPlayerButton audios={item.audios} variant="compact" />
-                )}
               </div>
 
               {type === 'kanji' ? (

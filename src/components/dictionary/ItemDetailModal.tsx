@@ -146,9 +146,24 @@ export default function ItemDetailModal({
             </button>
           </div>
 
-          <h1 className="text-7xl font-black select-all flex items-center justify-center">
-            <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-20 h-20" />
-          </h1>
+          {(() => {
+            const charLength = (item.character || item.slug || '').length;
+            let textSize = 'text-6xl sm:text-7xl';
+            let imgSize = 'w-20 h-20';
+            if (charLength >= 5) {
+              textSize = 'text-3xl sm:text-4xl';
+              imgSize = 'w-14 h-14';
+            } else if (charLength >= 3) {
+              textSize = 'text-4xl sm:text-5xl';
+              imgSize = 'w-16 h-16';
+            }
+
+            return (
+              <h1 className={`${textSize} font-black font-japanese select-all flex items-center justify-center text-center px-4 leading-tight break-words`}>
+                <CharacterDisplay character={item.character} slug={item.slug} imgClassName={imgSize} />
+              </h1>
+            );
+          })()}
 
           {type !== 'radical' && primaryReading && (
             <div className="flex flex-wrap items-center justify-center gap-2.5 mt-2">
@@ -194,12 +209,6 @@ export default function ItemDetailModal({
                   <Languages className="w-3.5 h-3.5 text-pink-500" />
                   <span>Cara Baca (Readings)</span>
                 </h3>
-                {type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
-                  <AudioPlayerButton
-                    audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
-                    variant="compact"
-                  />
-                )}
               </div>
 
               {type === 'kanji' ? (

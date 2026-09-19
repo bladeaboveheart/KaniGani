@@ -87,9 +87,24 @@ export default function ItemCard({
       title={`${item.character || item.slug}${reading ? ` (${reading})` : ''} • ${meaning}`}
     >
       {/* Top Character */}
-      <div className={`font-japanese font-black text-2xl sm:text-3xl leading-none flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${charColor} mb-1.5`}>
-        <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-7 h-7" />
-      </div>
+      {(() => {
+        const charLength = (item.character || item.slug || '').length;
+        let charSize = 'text-2xl sm:text-3xl';
+        let imgSize = 'w-7 h-7';
+        if (charLength >= 5) {
+          charSize = 'text-base sm:text-lg';
+          imgSize = 'w-5 h-5';
+        } else if (charLength >= 3) {
+          charSize = 'text-xl sm:text-2xl';
+          imgSize = 'w-6 h-6';
+        }
+
+        return (
+          <div className={`font-japanese font-black ${charSize} leading-tight flex items-center justify-center transition-transform duration-200 group-hover:scale-105 ${charColor} mb-1.5`}>
+            <CharacterDisplay character={item.character} slug={item.slug} imgClassName={imgSize} />
+          </div>
+        );
+      })()}
 
       {/* Kana Reading (Kanji & Vocab) */}
       {reading && (
