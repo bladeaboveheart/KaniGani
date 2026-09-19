@@ -223,14 +223,14 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Meaning Mnemonic */}
-          {item.meaning_mnemonic && (
+          {/* Meaning Mnemonic / Radical Description */}
+          {(item.meaning_mnemonic || item.description) && (
             <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
               <h3 className="text-xxs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block mb-1">
-                Mnemonic Arti (Jembatan Keledai)
+                {type === 'radical' ? 'Mnemonic & Penjelasan Radikal' : 'Mnemonic Arti (Jembatan Keledai)'}
               </h3>
               <p className="text-teal-900 dark:text-teal-300 font-medium text-xs leading-relaxed">
-                <FormattedText text={item.meaning_mnemonic} />
+                <FormattedText text={item.meaning_mnemonic || item.description} />
               </p>
             </div>
           )}
@@ -247,17 +247,19 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Description */}
-          {item.description && (
-            <div className="space-y-1">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                Deskripsi Detail
-              </h3>
-              <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">
-                <FormattedText text={item.description} />
-              </p>
-            </div>
-          )}
+          {/* Description if both exist and differ */}
+          {item.description &&
+            item.meaning_mnemonic &&
+            item.description.trim() !== item.meaning_mnemonic.trim() && (
+              <div className="space-y-1">
+                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                  Deskripsi Detail
+                </h3>
+                <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">
+                  <FormattedText text={item.description} />
+                </p>
+              </div>
+            )}
 
           {/* Relations: Visually Similar Kanji (Prominently Placed) */}
           {type === 'kanji' && ((item.similar_kanji && item.similar_kanji.length > 0) || localSimilar.length > 0) && (

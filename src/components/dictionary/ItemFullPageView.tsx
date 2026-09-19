@@ -168,15 +168,18 @@ export default function ItemFullPageView({
 
   // Visual gradients & theme labels
   let headerGradient = 'bg-radical-gradient';
+  let typeLabel = 'Radikal';
   let catalogPath = '/radical';
   let catalogName = 'Pustaka Radikal';
 
   if (type === 'kanji') {
     headerGradient = 'bg-kanji-gradient';
+    typeLabel = 'Kanji';
     catalogPath = '/kanji';
     catalogName = 'Pustaka Kanji';
   } else if (type === 'vocabulary') {
     headerGradient = 'bg-vocab-gradient';
+    typeLabel = 'Kosakata';
     catalogPath = '/vocabulary';
     catalogName = 'Pustaka Kosakata';
   }
@@ -299,6 +302,15 @@ export default function ItemFullPageView({
 
             {/* Core Info */}
             <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+                  {typeLabel} • Level {itemToDisplay.level}
+                </span>
+                <span className="text-4xs font-black uppercase tracking-widest bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
+                  WaniKani Kurikulum
+                </span>
+              </div>
+
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight capitalize">{primaryMeaning}</h1>
 
               {type !== 'radical' && primaryReading && (
@@ -381,28 +393,44 @@ export default function ItemFullPageView({
 
           {/* Meaning & Readings Mnemonics */}
           <div className="space-y-4">
-            {/* Meaning Mnemonic */}
-            {item.meaning_mnemonic && (
+            {/* Meaning Mnemonic / Radical Description */}
+            {(itemToDisplay.meaning_mnemonic || itemToDisplay.description) && (
               <div className="bg-teal-50/70 dark:bg-teal-950/20 border border-teal-200/70 dark:border-teal-900/50 rounded-3xl p-6 sm:p-7 space-y-2">
                 <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest flex items-center space-x-2">
                   <Sparkles className="w-4 h-4 text-teal-500" />
-                  <span>Mnemonic Arti (Jembatan Keledai)</span>
+                  <span>
+                    {type === 'radical' ? 'Mnemonic & Penjelasan Radikal' : 'Mnemonic Arti (Jembatan Keledai)'}
+                  </span>
                 </h3>
                 <p className="text-teal-950 dark:text-teal-200 text-sm leading-relaxed font-medium">
-                  <FormattedText text={item.meaning_mnemonic} />
+                  <FormattedText text={itemToDisplay.meaning_mnemonic || itemToDisplay.description} />
                 </p>
               </div>
             )}
 
+            {/* Additional Description if both exist and differ */}
+            {itemToDisplay.meaning_mnemonic &&
+              itemToDisplay.description &&
+              itemToDisplay.meaning_mnemonic.trim() !== itemToDisplay.description.trim() && (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-2 shadow-sm">
+                  <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                    Deskripsi Tambahan
+                  </h3>
+                  <p className="text-slate-650 dark:text-slate-350 text-sm leading-relaxed">
+                    <FormattedText text={itemToDisplay.description} />
+                  </p>
+                </div>
+              )}
+
             {/* Reading Mnemonic (Kanji & Vocab) */}
-            {item.reading_mnemonic && (
+            {itemToDisplay.reading_mnemonic && (
               <div className="bg-pink-50/70 dark:bg-pink-950/20 border border-pink-200/70 dark:border-pink-900/50 rounded-3xl p-6 sm:p-7 space-y-2">
                 <h3 className="text-xs font-bold text-pink-700 dark:text-pink-400 uppercase tracking-widest flex items-center space-x-2">
                   <Languages className="w-4 h-4 text-pink-500" />
                   <span>Mnemonic Cara Baca</span>
                 </h3>
                 <p className="text-pink-950 dark:text-pink-200 text-sm leading-relaxed font-medium">
-                  <FormattedText text={item.reading_mnemonic} />
+                  <FormattedText text={itemToDisplay.reading_mnemonic} />
                 </p>
               </div>
             )}
@@ -456,17 +484,6 @@ export default function ItemFullPageView({
 
         {/* Right 1 Column: Component Hierarchy (Radicals, Kanji, Vocabularies) */}
         <div className="space-y-6">
-          {/* Detailed Description if any */}
-          {item.description && (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 space-y-2 shadow-sm">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                Deskripsi
-              </h3>
-              <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">
-                <FormattedText text={item.description} />
-              </p>
-            </div>
-          )}
 
           {/* Radicals composed in Kanji */}
           {item.radicals && item.radicals.length > 0 && (
