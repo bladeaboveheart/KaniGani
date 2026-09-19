@@ -104,13 +104,10 @@ export default function ItemDetailModal({
 
   // Gradient styles per type
   let headerGradient = 'bg-radical-gradient';
-  let typeLabel = 'Radikal Kamus';
   if (type === 'kanji') {
     headerGradient = 'bg-kanji-gradient';
-    typeLabel = 'Kanji Kamus';
   } else if (type === 'vocabulary') {
     headerGradient = 'bg-vocab-gradient';
-    typeLabel = 'Kosakata Kamus';
   }
 
   const primaryMeaning = item.primary_meaning || item.slug || '';
@@ -148,10 +145,6 @@ export default function ItemDetailModal({
               <X className="w-5 h-5" />
             </button>
           </div>
-
-          <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 mb-3 block">
-            {typeLabel} • Level {item.level}
-          </span>
 
           <h1 className="text-7xl font-black select-all flex items-center justify-center">
             <CharacterDisplay character={item.character} slug={item.slug} imgClassName="w-20 h-20" />

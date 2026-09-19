@@ -168,18 +168,15 @@ export default function ItemFullPageView({
 
   // Visual gradients & theme labels
   let headerGradient = 'bg-radical-gradient';
-  let typeLabel = 'Radikal';
   let catalogPath = '/radical';
   let catalogName = 'Pustaka Radikal';
 
   if (type === 'kanji') {
     headerGradient = 'bg-kanji-gradient';
-    typeLabel = 'Kanji';
     catalogPath = '/kanji';
     catalogName = 'Pustaka Kanji';
   } else if (type === 'vocabulary') {
     headerGradient = 'bg-vocab-gradient';
-    typeLabel = 'Kosakata';
     catalogPath = '/vocabulary';
     catalogName = 'Pustaka Kosakata';
   }
@@ -302,15 +299,6 @@ export default function ItemFullPageView({
 
             {/* Core Info */}
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-                  {typeLabel} • Level {item.level}
-                </span>
-                <span className="text-4xs font-black uppercase tracking-widest bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-                  WaniKani Kurikulum
-                </span>
-              </div>
-
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight capitalize">{primaryMeaning}</h1>
 
               {type !== 'radical' && primaryReading && (
