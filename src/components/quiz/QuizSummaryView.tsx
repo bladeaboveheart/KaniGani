@@ -13,6 +13,7 @@ interface QuizSummaryViewProps {
   remainingLessonsCount?: number;
   onNextBatch?: () => void;
   onFinish: () => void;
+  levelUpLevel?: number;
 }
 
 export default function QuizSummaryView({
@@ -24,6 +25,7 @@ export default function QuizSummaryView({
   remainingLessonsCount = 0,
   onNextBatch,
   onFinish,
+  levelUpLevel,
 }: QuizSummaryViewProps) {
   const isLesson = type === 'lesson';
 
@@ -47,6 +49,13 @@ export default function QuizSummaryView({
             : 'Anda telah menyelesaikan semua sesi kuis review dengan sukses.'}
         </p>
       </div>
+
+      {/* Level Up Banner if achieved in this session */}
+      {levelUpLevel && (
+        <div className="p-4 bg-gradient-to-r from-amber-500/15 via-amber-400/25 to-pink-500/15 border border-amber-300 dark:border-amber-700/60 rounded-2xl text-amber-900 dark:text-amber-200 text-sm font-extrabold flex items-center justify-center space-x-2 shadow-sm">
+          <span>🏆 Selamat! Anda telah naik ke Level {levelUpLevel}!</span>
+        </div>
+      )}
 
       {/* Review Mode Stats */}
       {!isLesson && accuracyPct !== undefined && (

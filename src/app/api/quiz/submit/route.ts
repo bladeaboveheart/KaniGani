@@ -353,6 +353,8 @@ export async function POST(request: Request) {
       newStage,
       nextReview,
       unlockedDependents,
+      levelUpOccurred,
+      newLevel: levelUpOccurred ? newLevel : undefined,
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

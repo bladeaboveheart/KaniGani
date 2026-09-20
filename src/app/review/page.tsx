@@ -18,6 +18,7 @@ import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
+import LevelUpModal from '@/components/quiz/LevelUpModal';
 
 function ReviewPageContent() {
   const router = useRouter();
@@ -59,6 +60,8 @@ function ReviewPageContent() {
   // Track on-the-fly review submissions
   const [submittedItemIds, setSubmittedItemIds] = useState<string[]>([]);
   const [accuracyStats, setAccuracyStats] = useState({ correct: 0, wrong: 0 });
+  const [levelUpData, setLevelUpData] = useState<{ newLevel: number } | null>(null);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -370,7 +373,7 @@ function ReviewPageContent() {
             wrong: prev.wrong + (wrongCount > 0 ? 1 : 0)
           }));
 
-          await fetch('/api/quiz/submit', {
+          const res = await fetch('/api/quiz/submit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -383,6 +386,14 @@ function ReviewPageContent() {
               mode: isLeechMode ? 'leech' : 'normal',
             })
           });
+
+          if (res.ok) {
+            const resData = await res.json();
+            if (resData.levelUpOccurred && resData.newLevel) {
+              setLevelUpData({ newLevel: resData.newLevel });
+              setShowLevelUpModal(true);
+            }
+          }
 
         } catch (err) {
           console.error('Error progressively submitting review item:', err);
@@ -609,7 +620,17 @@ function ReviewPageContent() {
             items={[]}
             totalCompleted={submittedItemIds.length}
             accuracyPct={accuracyPct}
+            levelUpLevel={levelUpData?.newLevel}
             onFinish={() => router.push('/dashboard')}
+          />
+        )}
+
+        {/* LEVEL UP CELEBRATION MODAL */}
+        {levelUpData && (
+          <LevelUpModal
+            newLevel={levelUpData.newLevel}
+            isOpen={showLevelUpModal}
+            onClose={() => setShowLevelUpModal(false)}
           />
         )}
       </main>

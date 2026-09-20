@@ -92,10 +92,10 @@ export async function resetAllUserProgress(userId: string) {
 
   if (delError) throw delError;
 
-  // Reset profile to level 1
+  // Reset profile to null (dynamic level calculation)
   const { error: profileError } = await supabase
     .from('profiles')
-    .update({ level: 1 })
+    .update({ level: null })
     .eq('id', userId);
 
   if (profileError) throw profileError;
