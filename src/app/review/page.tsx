@@ -37,6 +37,7 @@ function ReviewPageContent() {
     incorrectActive,
     wrongCounts,
     wrapUpActive,
+    itemProgress,
     isAlmostCorrect,
     closestAcceptedMeaning,
     warningMsg,
@@ -538,6 +539,13 @@ function ReviewPageContent() {
           };
           const displayedSrsStage = getNewStage();
 
+          const prog = itemProgress[activeCard.itemId];
+          const isClosingCard = activeCard.type === 'radical'
+            ? true
+            : activeCard.cardType === 'meaning'
+              ? Boolean(prog?.readingCorrect)
+              : Boolean(prog?.meaningCorrect);
+
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
               {isLeechMode && (
@@ -587,7 +595,7 @@ function ReviewPageContent() {
               />
 
               <QuizActionButtons
-                onWrapUp={() => toggleWrapUp(submittedItemIds.length)}
+                onWrapUp={() => toggleWrapUp()}
                 wrapUpActive={wrapUpActive}
                 onUndo={undoActiveCard}
                 isUndoDisabled={!isAnswerSubmitted}
@@ -606,6 +614,7 @@ function ReviewPageContent() {
                 acceptedMeanings={activeCard.item.accepted_meanings}
                 acceptedReadings={activeCard.item.accepted_readings}
                 cardType={activeCard.cardType}
+                showSrs={isClosingCard}
               />
 
               {/* Sliding Detail Drawer Panel */}

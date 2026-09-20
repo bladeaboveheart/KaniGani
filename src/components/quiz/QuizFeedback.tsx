@@ -62,7 +62,7 @@ export default function QuizFeedback({
             </div>
           ) : (
             <span className="flex items-center flex-wrap justify-center gap-y-1">
-              <span>Sangat Bagus! Jawaban Anda Benar.</span>
+              <span>{showSrs ? 'Sangat Bagus! Jawaban Anda Benar.' : 'Benar!'}</span>
               {showSrs && srsStage !== undefined && (
                 <span className="relative inline-flex items-center ml-2">
                   <span className="px-2.5 py-0.5 bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1">

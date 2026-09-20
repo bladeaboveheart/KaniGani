@@ -519,19 +519,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       progress[itemId] = { ...progress[itemId], readingCorrect: true };
     }
 
-    let updatedQueue = queue.filter((_, idx) => idx !== 0);
-
-    if (wrapUpActive) {
-      const completedCount = Object.values(progress).filter(
-        (prog) => prog.meaningCorrect && prog.readingCorrect
-      ).length;
-      const remainingNeeded = Math.max(0, 10 - completedCount);
-      const remainingUniqueIds = Array.from(new Set(updatedQueue.map(c => c.itemId)));
-      if (remainingUniqueIds.length > remainingNeeded) {
-        const allowedIds = remainingUniqueIds.slice(0, remainingNeeded);
-        updatedQueue = updatedQueue.filter(c => allowedIds.includes(c.itemId));
-      }
-    }
+    const updatedQueue = queue.filter((_, idx) => idx !== 0);
 
     set({
       queue: updatedQueue,
@@ -548,53 +536,45 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     });
   },
 
-  toggleWrapUp: (completedCount?: number) => {
-    const { queue, wrapUpActive, untrimmedQueue, itemProgress } = get();
+  toggleWrapUp: () => {
+    const { queue, wrapUpActive, untrimmedQueue } = get();
     if (wrapUpActive) {
+      // Deactivating wrap up: restore remaining cards from untrimmedQueue
       if (untrimmedQueue) {
-        // Appending restored cards back to the end of the current queue
-        const currentIds = queue.map(c => c.itemId);
-        const restoredCards = untrimmedQueue.filter(c => !currentIds.includes(c.itemId));
+        const currentItemIds = new Set(queue.map(c => c.itemId));
+        const restoredCards = untrimmedQueue.filter(c => !currentItemIds.has(c.itemId));
         const restoredQueue = [...queue, ...restoredCards];
 
         set({
           queue: restoredQueue,
           wrapUpActive: false,
           untrimmedQueue: null,
-          sessionTotalCards: restoredQueue.length
+          sessionTotalCards: restoredQueue.length,
         });
       } else {
         set({ wrapUpActive: false });
       }
     } else {
+      // Activating wrap up: lock up to 10 unique items currently in queue
       const uniqueItemIds = Array.from(new Set(queue.map(c => c.itemId)));
-      
-      const actualCompletedCount = completedCount !== undefined
-        ? completedCount
-        : Object.values(itemProgress).filter(
-            (prog) => prog.meaningCorrect && prog.readingCorrect
-          ).length;
-
-      const remainingNeeded = Math.max(0, 10 - actualCompletedCount);
-
-      if (uniqueItemIds.length <= remainingNeeded) {
+      if (uniqueItemIds.length <= 10) {
         set({
           wrapUpActive: true,
           untrimmedQueue: queue,
-          sessionTotalCards: queue.length
+          sessionTotalCards: queue.length,
         });
         return;
       }
 
-      const firstNIds = uniqueItemIds.slice(0, remainingNeeded);
-      const trimmedQueue = queue.filter(c => firstNIds.includes(c.itemId));
+      const targetIds = new Set(uniqueItemIds.slice(0, 10));
+      const trimmedQueue = queue.filter(c => targetIds.has(c.itemId));
 
       set({
         untrimmedQueue: queue,
         queue: trimmedQueue,
         activeCard: trimmedQueue[0] || null,
         wrapUpActive: true,
-        sessionTotalCards: trimmedQueue.length
+        sessionTotalCards: trimmedQueue.length,
       });
     }
   },
