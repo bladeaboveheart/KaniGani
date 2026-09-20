@@ -83,7 +83,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: `Gagal menyinkronkan data ke Supabase: ${syncError.message}` }, { status: 500 });
     }
 
-    // 5. Update metadata integrasi (last_synced_at)
+    // 5. Fetch review statistics untuk melengkapi data Leech Tracker
+    try {
+      const { fetchAllWaniKaniReviewStatistics } = await import('@/lib/wanikani');
+      const reviewStats = await fetchAllWaniKaniReviewStatistics(apiKey);
+      if (reviewStats && reviewStats.length > 0) {
+        const { data: itemMap } = await userClient
+          .from('items')
+          .select('id, wanikani_id')
+          .not('wanikani_id', 'is', null);
+
+        if (itemMap && itemMap.length > 0) {
+          const wkToItemId = new Map(itemMap.map((it: any) => [it.wanikani_id, it.id]));
+          const updates: any[] = [];
+          for (const stat of reviewStats) {
+            const itemId = wkToItemId.get(stat.data.subject_id);
+            if (itemId) {
+              const d = stat.data;
+              const totalIncorrect = (d.meaning_incorrect || 0) + (d.reading_incorrect || 0);
+              const totalCorrect = (d.meaning_correct || 0) + (d.reading_correct || 0);
+              const currentStreak = Math.min(d.meaning_current_streak || 0, d.reading_current_streak || 0);
+              const maxStreak = Math.max(d.meaning_max_streak || 0, d.reading_max_streak || 0);
+              updates.push({
+                user_id: user.id,
+                item_id: itemId,
+                incorrect_count: totalIncorrect,
+                correct_count: totalCorrect,
+                current_streak: currentStreak,
+                max_streak: maxStreak,
+                meaning_incorrect: d.meaning_incorrect || 0,
+                reading_incorrect: d.reading_incorrect || 0,
+              });
+            }
+          }
+          if (updates.length > 0) {
+            for (let i = 0; i < updates.length; i += 200) {
+              const chunk = updates.slice(i, i + 200);
+              await userClient.from('user_progress').upsert(chunk, { onConflict: 'user_id,item_id' });
+            }
+          }
+        }
+      }
+    } catch (statErr) {
+      console.warn('Non-critical: Failed to sync review statistics:', statErr);
+    }
+
+    // 6. Update metadata integrasi (last_synced_at)
     await userClient
       .from('user_integrations')
       .upsert({

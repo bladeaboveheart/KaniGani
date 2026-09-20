@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState, useRef, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import CharacterDisplay from '@/components/CharacterDisplay';
 import { useQuizStore } from '@/store/useQuizStore';
@@ -9,7 +9,7 @@ import { Item, SimilarKanji } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
-import { Flame } from 'lucide-react';
+import { Flame, ShieldAlert } from 'lucide-react';
 
 // Modular Quiz Components
 import QuizHeader from '@/components/quiz/QuizHeader';
@@ -19,8 +19,10 @@ import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 
-export default function ReviewPage() {
+function ReviewPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isLeechMode = searchParams.get('mode') === 'leech';
   const { getAndResetSeconds } = useActiveTimer();
 
   // Zustand Store
@@ -108,24 +110,56 @@ export default function ReviewPage() {
           return;
         }
 
-        const now = new Date().toISOString();
+        let rawItems: any[] = [];
+        const progressMap = new Map<string, number>();
 
-        // Fetch review items due
-        const { data, error } = await supabase
-          .from('user_progress')
-          .select('item_id, srs_stage, next_review, items(*)')
-          .eq('user_id', user.id)
-          .gte('srs_stage', 1)
-          .lte('srs_stage', 8)
-          .lte('next_review', now);
+        if (isLeechMode) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) {
+            router.push('/');
+            return;
+          }
+          const res = await fetch('/api/leeches', {
+            headers: { Authorization: `Bearer ${session.access_token}` },
+          });
+          const json = await res.json();
+          const leeches = json.leeches || [];
+          if (leeches.length === 0) {
+            setLoading(false);
+            return;
+          }
 
-        if (error) throw error;
-        if (!data || data.length === 0) {
-          setLoading(false);
-          return;
+          const itemIds = leeches.map((l: any) => l.item_id);
+          const { data: itemsData, error: itemsError } = await supabase
+            .from('items')
+            .select('*')
+            .in('id', itemIds);
+
+          if (itemsError) throw itemsError;
+          rawItems = itemsData || [];
+          leeches.forEach((l: any) => progressMap.set(l.item_id, l.srs_stage));
+        } else {
+          const now = new Date().toISOString();
+
+          // Fetch review items due
+          const { data, error } = await supabase
+            .from('user_progress')
+            .select('item_id, srs_stage, next_review, items(*)')
+            .eq('user_id', user.id)
+            .gte('srs_stage', 1)
+            .lte('srs_stage', 8)
+            .lte('next_review', now);
+
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            setLoading(false);
+            return;
+          }
+
+          rawItems = data.map((row: any) => row.items).filter(Boolean);
+          data.forEach((row: any) => progressMap.set(row.item_id, row.srs_stage));
         }
 
-        const rawItems = data.map((row: any) => row.items).filter(Boolean);
         const itemIds = rawItems.map((i: any) => i.id);
         const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
         const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
@@ -147,8 +181,7 @@ export default function ReviewPage() {
           const rList = readings.filter((r) => r.item_id === item.id);
           const primaryMeaning = mList.find((m) => m.primary_meaning)?.meaning || '';
           const primaryReading = rList.find((r) => r.primary_reading)?.reading || null;
-          const progressRow = data.find((row: any) => row.item_id === item.id);
-          const srsStage = progressRow ? progressRow.srs_stage : 1;
+          const srsStage = progressMap.get(item.id) ?? 1;
 
           return {
             ...item,
@@ -343,7 +376,12 @@ export default function ReviewPage() {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({ itemId, wrongCount, durationSeconds })
+            body: JSON.stringify({
+              itemId,
+              wrongCount,
+              durationSeconds,
+              mode: isLeechMode ? 'leech' : 'normal',
+            })
           });
 
         } catch (err) {
@@ -393,9 +431,13 @@ export default function ReviewPage() {
         <CrabBackground />
         <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <Flame className="w-16 h-16 mx-auto text-pink-500 animate-bounce" />
-          <h2 className="text-2xl font-black">Semua Bersih! 🔥</h2>
+          <h2 className="text-2xl font-black">
+            {isLeechMode ? 'Hebat! Tidak Ada Leech 🔥' : 'Semua Bersih! 🔥'}
+          </h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Hebat! Tidak ada item review yang jatuh tempo saat ini. Silakan kembali ke dashboard atau pelajari lesson baru Anda.
+            {isLeechMode
+              ? 'Tidak ada item leech yang perlu dilatih saat ini. Seluruh materimu telah dikuasai dengan baik!'
+              : 'Hebat! Tidak ada item review yang jatuh tempo saat ini. Silakan kembali ke dashboard atau pelajari lesson baru Anda.'}
           </p>
           <button
             onClick={() => router.push('/dashboard')}
@@ -481,6 +523,12 @@ export default function ReviewPage() {
 
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
+              {isLeechMode && (
+                <div className="w-full bg-rose-500/15 dark:bg-rose-950/60 border-b border-rose-500/30 py-2 px-4 text-center text-xs text-rose-600 dark:text-rose-400 font-bold flex items-center justify-center space-x-2">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>Mode Latihan Leech (Self-Study) — Penguatan materi tanpa mengubah jadwal SRS resmi</span>
+                </div>
+              )}
               {/* Header Colorful Character with Integrated Navbar */}
               <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
                 <QuizHeader
@@ -489,7 +537,7 @@ export default function ReviewPage() {
                       router.push('/dashboard');
                     }
                   }}
-                  title="Review"
+                  title={isLeechMode ? 'Latihan Leech' : 'Review'}
                   accuracyPct={accuracyPct}
                   completedCount={submittedItemIds.length}
                   remainingCount={remainingItemsCount}
@@ -566,5 +614,19 @@ export default function ReviewPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function ReviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      }
+    >
+      <ReviewPageContent />
+    </Suspense>
   );
 }

@@ -21,6 +21,7 @@ import SrsDistribution from '@/components/dashboard/SrsDistribution';
 import LeaderboardCard from '@/components/dashboard/LeaderboardCard';
 import HeatmapCard from '@/components/dashboard/HeatmapCard';
 import LessonPickerModal from '@/components/dashboard/LessonPickerModal';
+import LeechTrackerCard from '@/components/dashboard/LeechTrackerCard';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -463,6 +464,9 @@ export default function Dashboard() {
           currentLevelKanjiList={currentLevelKanjiList}
           formatDueTime={formatDueTime}
         />
+
+        {/* Pelacak Leech (Item Kerap Keliru) */}
+        <LeechTrackerCard />
 
         {/* Dashboard Double Panels (Details & Leaderboards) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

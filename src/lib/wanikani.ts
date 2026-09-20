@@ -168,3 +168,53 @@ export function calculatePreviewStats(
 
   return stats;
 }
+
+export interface WaniKaniReviewStatistic {
+  id: number;
+  object: string;
+  data: {
+    subject_id: number;
+    subject_type: string;
+    meaning_correct: number;
+    meaning_incorrect: number;
+    meaning_max_streak: number;
+    meaning_current_streak: number;
+    reading_correct: number;
+    reading_incorrect: number;
+    reading_max_streak: number;
+    reading_current_streak: number;
+    percentage_correct: number;
+    hidden: boolean;
+  };
+}
+
+/**
+ * Mengambil seluruh review_statistics dari WaniKani API v2 dengan paginasi
+ */
+export async function fetchAllWaniKaniReviewStatistics(token: string): Promise<WaniKaniReviewStatistic[]> {
+  const allStats: WaniKaniReviewStatistic[] = [];
+  let nextUrl: string | null = `${WANIKANI_BASE_URL}/review_statistics`;
+
+  while (nextUrl) {
+    const res: Response = await fetch(nextUrl, {
+      headers: {
+        Authorization: `Bearer ${token.trim()}`,
+        'Wanikani-Revision': '20170710',
+      },
+    });
+
+    if (!res.ok) {
+      throw new Error(`WaniKani review_statistics API error: ${res.status} ${res.statusText}`);
+    }
+
+    const json: any = await res.json();
+    if (json.data && Array.isArray(json.data)) {
+      allStats.push(...(json.data as WaniKaniReviewStatistic[]));
+    }
+
+    nextUrl = json.pages?.next_url || null;
+  }
+
+  return allStats;
+}
+

@@ -217,7 +217,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { itemId, wrongCount, durationSeconds } = await request.json();
+    const { itemId, wrongCount, durationSeconds, mode, meaningWrongCount, readingWrongCount } = await request.json();
     if (!itemId || typeof wrongCount !== 'number') {
       return NextResponse.json({ error: 'Item ID dan wrongCount wajib diisi' }, { status: 400 });
     }
@@ -225,7 +225,7 @@ export async function POST(request: Request) {
     // 1. Query progres SRS saat ini menggunakan userClient
     const { data: progress, error: progError } = await userClient
       .from('user_progress')
-      .select('srs_stage')
+      .select('srs_stage, next_review, incorrect_count, correct_count, current_streak, max_streak, meaning_incorrect, reading_incorrect')
       .eq('user_id', user.id)
       .eq('item_id', itemId)
       .maybeSingle();
@@ -236,6 +236,58 @@ export async function POST(request: Request) {
 
     // Default ke stage 1 jika belum ada progresnya (atau error)
     const currentStage = progress ? progress.srs_stage : 1;
+
+    // Hitung akumulasi statistik ulasan & kesalahan
+    const prevIncorrect = Number(progress?.incorrect_count || 0);
+    const prevCorrect = Number(progress?.correct_count || 0);
+    const prevStreak = Number(progress?.current_streak || 0);
+    const prevMaxStreak = Number(progress?.max_streak || 0);
+    const prevMeaningInc = Number(progress?.meaning_incorrect || 0);
+    const prevReadingInc = Number(progress?.reading_incorrect || 0);
+
+    const isSuccess = wrongCount === 0;
+    const newCorrect = prevCorrect + (isSuccess ? 1 : 0);
+    const newIncorrect = prevIncorrect + (isSuccess ? 0 : wrongCount);
+    const newStreak = isSuccess ? prevStreak + 1 : 0;
+    const newMaxStreak = Math.max(prevMaxStreak, newStreak);
+    const newMeaningInc = prevMeaningInc + Number(meaningWrongCount || 0);
+    const newReadingInc = prevReadingInc + Number(readingWrongCount || 0);
+
+    // MODE LATIHAN LEECH (Self-Study Practice):
+    // Jangan ubah srs_stage atau jadwal next_review utama!
+    if (mode === 'leech') {
+      await userClient
+        .from('user_progress')
+        .upsert({
+          user_id: user.id,
+          item_id: itemId,
+          srs_stage: currentStage,
+          next_review: progress?.next_review || null,
+          incorrect_count: newIncorrect,
+          correct_count: newCorrect,
+          current_streak: newStreak,
+          max_streak: newMaxStreak,
+          meaning_incorrect: newMeaningInc,
+          reading_incorrect: newReadingInc,
+          last_reviewed_at: new Date().toISOString(),
+        }, { onConflict: 'user_id,item_id' });
+
+      // Catat log aktivitas latihan
+      await userClient.from('activity_logs').insert({
+        user_id: user.id,
+        activity_type: 'review',
+        item_count: 1,
+        duration_seconds: durationSeconds || 0,
+      });
+
+      return NextResponse.json({
+        success: true,
+        mode: 'leech',
+        srsStage: currentStage,
+        newStage: currentStage,
+        isPractice: true,
+      });
+    }
 
     // Fetch level before update (to prevent race condition during level up checks)
     const levelBefore = await getUserLevel(userClient, user.id);
@@ -252,7 +304,14 @@ export async function POST(request: Request) {
         item_id: itemId,
         srs_stage: newStage,
         next_review: nextReview,
-        unlocked_at: progress ? undefined : new Date().toISOString()
+        unlocked_at: progress ? undefined : new Date().toISOString(),
+        incorrect_count: newIncorrect,
+        correct_count: newCorrect,
+        current_streak: newStreak,
+        max_streak: newMaxStreak,
+        meaning_incorrect: newMeaningInc,
+        reading_incorrect: newReadingInc,
+        last_reviewed_at: new Date().toISOString(),
       }, { onConflict: 'user_id,item_id' });
 
     if (updateError) {
