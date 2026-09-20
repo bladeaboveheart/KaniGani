@@ -34,7 +34,14 @@ Tingkatan SRS KaniGani dirancang berjenjang, formal, dan mudah dipahami:
 - **24-Hour Review Forecast**: Jadwal perkiraan item yang akan jatuh tempo dalam 24 jam ke depan.
 - **Activity Heatmap & Leaderboard**: Kalender aktivitas harian (jumlah ulasan, lesson baru, durasi belajar) dan papan peringkat pengguna.
 
-### 5. 🧪 KaniGani Lab & Mode Pengembang
+### 5. 🩸 Pelacak Item Kerap Keliru (Leech Tracker)
+- **Kalkulasi Skor Leech Standar WaniKani**: $\text{Skor} = \frac{\text{incorrect\_count}}{\max(1, \text{current\_streak})^{1.5}}$ untuk mengidentifikasi item yang sering lupa dan sulit naik level.
+- **Severity Badge**: Pengelompokan visual tingkat keparahan (*Kritis*, *Waspada*, *Minor*).
+- **Modal Daftar Lengkap**: Fitur pencarian, pemfilteran berdasarkan tipe item (Radikal, Kanji, Kosakata), dan pengurutan cerdas (skor leech, total kesalahan, akurasi).
+- **Sesi Latihan Kilat (Cram Quiz)**: Mode latihan mandiri (`/review?mode=leech`) untuk melatih item-item lintah secara intensif tanpa memengaruhi tingkatan SRS resmi pengguna.
+- **Sinkronisasi Otomatis WaniKani**: Sinkronisasi riwayat `/review_statistics` dari akun WaniKani resmi pengguna ke database KaniGani.
+
+### 6. 🧪 KaniGani Lab & Mode Pengembang
 - **Mode Beta Tester**: Akses tombol percepat antrean review (*instant due*) untuk keperluan pengujian SRS (hingga tahap Lulus).
 - **Dev Mode Tools**: Shortcut `G` untuk mengaktifkan autofill kunci jawaban pengujian dan alat inspeksi progres admin.
 
