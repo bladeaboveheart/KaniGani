@@ -186,14 +186,16 @@ export function useDashboardData() {
           })));
 
         if (!healError) {
-          console.log('Successfully self-healed unlocked missing radicals:', idsToUnlock);
+          console.log('Successfully self-healed unlocked missing radicals and kana-only vocab:', idsToUnlock);
           const nowIso = new Date().toISOString();
-          for (const id of idsToUnlock) {
+          for (const item of lockedItemsToUnlock) {
             progresses.push({
-              item_id: id,
+              user_id: user.id,
+              item_id: item.id,
               srs_stage: 1,
               unlocked_at: nowIso,
-              next_review: null
+              next_review: null,
+              items: item as Item,
             });
           }
         }
