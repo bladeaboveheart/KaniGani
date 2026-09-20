@@ -3,42 +3,83 @@
 @variant dark (.dark &);
 
 @theme {
+  --font-sans: var(--font-outfit), 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* Semantic Theme Tokens mapped to CSS variables */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-card-muted: var(--card-muted);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+
+  /* KaniGani Pastel Brand Colors */
   --color-radical: #5dade2;
-  --color-kanji: #FF6961;
-  --color-vocab: #48c9b0;
-  
   --color-radical-hover: #4fa0d6;
+  --color-kanji: #FF6961;
   --color-kanji-hover: #e85c54;
+  --color-vocab: #48c9b0;
   --color-vocab-hover: #3bb39b;
 
-  --color-apprentice: #f03e3e;
-  --color-guru: #a000f0;
-  --color-master: #228be6;
-  --color-enlightened: #12b886;
-  --color-burned: #495057;
+  /* Standardized SRS Stages */
+  --color-srs-locked: #64748b;
+  --color-srs-apprentice: #f43f5e;
+  --color-srs-guru: #9333ea;
+  --color-srs-master: #2563eb;
+  --color-srs-enlightened: #0d9488;
+  --color-srs-burned: #475569;
+
+  /* Legacy utility fallbacks */
+  --color-slate-850: #172033;
+  --color-slate-55: #f8fafc;
+  --color-slate-450: #94a3b8;
+  --color-slate-650: #475569;
+
+  /* Backward compatibility for legacy SRS color references */
+  --color-apprentice: #f43f5e;
+  --color-guru: #9333ea;
+  --color-master: #2563eb;
+  --color-enlightened: #0d9488;
+  --color-burned: #475569;
 }
 
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
-  
+
   --card-bg: #ffffff;
   --card-border: #e2e8f0;
-  --navbar-bg: #1e293b;
-  
+  --card-muted: #f1f5f9;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+
+  --navbar-bg: rgba(255, 255, 255, 0.85);
+  --navbar-border: rgba(226, 232, 240, 0.8);
+
   --radical-bg: #5dade2;
   --kanji-bg: #FF6961;
   --vocab-bg: #48c9b0;
 }
 
 .dark {
-  --background: #0b0f19;
-  --foreground: #f1f5f9;
-  
+  --background: #090d16;
+  --foreground: #f8fafc;
+
   --card-bg: #131c2e;
-  --card-border: #1e293b;
-  --navbar-bg: #090d16;
-  
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-muted: #0d1524;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --navbar-bg: rgba(13, 19, 33, 0.85);
+  --navbar-border: rgba(255, 255, 255, 0.08);
+
   --radical-bg: #5dade2;
   --kanji-bg: #FF6961;
   --vocab-bg: #48c9b0;
@@ -47,50 +88,43 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
-  transition: background-color 0.3s ease, color 0.3s ease;
-  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  font-family: var(--font-sans);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
-/* Custom Card Classes */
-.bg-radical-gradient {
-  background: var(--radical-bg);
-}
-
-.bg-kanji-gradient {
-  background: var(--kanji-bg);
-}
-
-.bg-vocab-gradient {
-  background: var(--vocab-bg);
-}
-
-/* Glassmorphism card utilities */
+/* Glassmorphism Card Utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .dark .glass-panel {
-  background: rgba(19, 28, 46, 0.4);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(19, 28, 46, 0.65);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* Smooth fade-in animation */
+/* Smooth Fade In Animation */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Glowing effects */
+/* Glow Effects */
 .glow-radical {
   box-shadow: 0 4px 20px rgba(93, 173, 226, 0.3);
 }
@@ -103,54 +137,112 @@ body {
   box-shadow: 0 4px 20px rgba(72, 201, 176, 0.3);
 }
 
-/* Explicit custom brand overrides to bypass JIT compilation and stylesheet cache */
+/* Item Type Class Utilities (Without !important to respect composition) */
 .bg-radical {
-  background-color: #5dade2 !important;
+  background-color: #5dade2;
 }
 .bg-kanji {
-  background-color: #FF6961 !important;
+  background-color: #FF6961;
 }
 .bg-vocab {
-  background-color: #48c9b0 !important;
+  background-color: #48c9b0;
 }
 
 .text-radical {
-  color: #5dade2 !important;
+  color: #5dade2;
 }
 .text-kanji {
-  color: #FF6961 !important;
+  color: #FF6961;
 }
 .text-vocab {
-  color: #48c9b0 !important;
+  color: #48c9b0;
 }
 
+.border-radical {
+  border-color: #5dade2;
+}
+.border-kanji {
+  border-color: #FF6961;
+}
+.border-vocab {
+  border-color: #48c9b0;
+}
+
+/* Gradients */
 .bg-radical-gradient {
-  background: #5dade2 !important;
+  background: #5dade2;
 }
 .bg-kanji-gradient {
-  background: #FF6961 !important;
+  background: #FF6961;
 }
 .bg-vocab-gradient {
-  background: #48c9b0 !important;
+  background: #48c9b0;
 }
 
-/* Custom premium floating rising feedback animation */
+/* Hatched Patterns for Locked Items */
+.bg-hatched-radical {
+  background-color: rgba(93, 173, 226, 0.04);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(93, 173, 226, 0.12) 6px,
+    rgba(93, 173, 226, 0.12) 12px
+  );
+}
+
+.bg-hatched-kanji {
+  background-color: rgba(255, 105, 97, 0.04);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(255, 105, 97, 0.12) 6px,
+    rgba(255, 105, 97, 0.12) 12px
+  );
+}
+
+.bg-hatched-vocab {
+  background-color: rgba(72, 201, 176, 0.04);
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 6px,
+    rgba(72, 201, 176, 0.12) 6px,
+    rgba(72, 201, 176, 0.12) 12px
+  );
+}
+
+/* Burned Card Utility */
+.bg-burned-card {
+  background-color: #475569;
+  border-color: #64748b;
+  color: #ffffff;
+}
+
+.dark .bg-burned-card {
+  background-color: #334155;
+  border-color: #475569;
+  color: #f8fafc;
+}
+
+/* Floating Rising Feedback Animation */
 @keyframes floatUp {
   0% {
     opacity: 0;
-    transform: translateY(60px) scale(0.6);
+    transform: translateY(40px) scale(0.7);
   }
   20% {
     opacity: 1;
-    transform: translateY(20px) scale(1.1);
+    transform: translateY(15px) scale(1.05);
   }
   80% {
     opacity: 1;
-    transform: translateY(-20px) scale(1);
+    transform: translateY(-15px) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-60px) scale(0.8);
+    transform: translateY(-45px) scale(0.85);
   }
 }
 
@@ -158,55 +250,7 @@ body {
   animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* Premium Hatch Pattern for Locked Items (modeled to be contrast-safe in light/dark) */
-.bg-hatched-radical {
-  background-color: rgba(93, 173, 226, 0.02) !important;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 6px,
-    rgba(93, 173, 226, 0.08) 6px,
-    rgba(93, 173, 226, 0.08) 12px
-  ) !important;
-}
-
-.bg-hatched-kanji {
-  background-color: rgba(255, 105, 97, 0.02) !important;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 6px,
-    rgba(255, 105, 97, 0.08) 6px,
-    rgba(255, 105, 97, 0.08) 12px
-  ) !important;
-}
-
-.bg-hatched-vocab {
-  background-color: rgba(72, 201, 176, 0.02) !important;
-  background-image: repeating-linear-gradient(
-    -45deg,
-    transparent,
-    transparent 6px,
-    rgba(72, 201, 176, 0.08) 6px,
-    rgba(72, 201, 176, 0.08) 12px
-  ) !important;
-}
-
-/* Premium Burned Card Color overrides (kepiting rebus) with optimized dark mode contrast */
-.bg-burned-card {
-  background-color: #495057 !important;
-  border-color: #5a626a !important;
-  color: #ffffff !important;
-}
-
-.dark .bg-burned-card {
-  background-color: #5a626a !important; /* Lighter charcoal for better visibility against dark slate bg */
-  border-color: #6c757d !important;
-  color: #ffffff !important;
-}
-
-
-/* Premium bounce and glow effect for undo button press */
+/* Undo Button Animations */
 @keyframes undoPress {
   0% {
     transform: scale(1);
@@ -214,7 +258,7 @@ body {
   }
   30% {
     transform: scale(0.85);
-    box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.25);
+    box-shadow: 0 0 0 6px rgba(99, 102, 241, 0.25);
   }
   100% {
     transform: scale(1);
@@ -239,21 +283,22 @@ body {
   animation: undoRotate 0.35s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* Sleek subtle scrollbar utility */
+/* Subtle Scrollbar Utility */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.35) transparent;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
 }
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;
+  height: 5px;
 }
 .custom-scrollbar::-webkit-scrollbar-track {
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.3);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: rgba(148, 163, 184, 0.5);
 }

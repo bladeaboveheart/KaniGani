@@ -184,8 +184,15 @@ export function useDashboardData() {
 
         if (!healError) {
           console.log('Successfully self-healed unlocked missing radicals:', idsToUnlock);
-          window.location.reload();
-          return;
+          const nowIso = new Date().toISOString();
+          for (const id of idsToUnlock) {
+            progresses.push({
+              item_id: id,
+              srs_stage: 1,
+              unlocked_at: nowIso,
+              next_review: null
+            });
+          }
         }
       }
 

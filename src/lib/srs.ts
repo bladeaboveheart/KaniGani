@@ -27,19 +27,25 @@ export function getSrsGroup(stage: number): SrsLevelGroup {
 }
 
 /**
- * Returns CSS class for SRS stage badges (Radical / Generic blue palette).
+ * Returns CSS class for SRS stage badges adhering to KaniGani standardized 5 SRS stages.
  */
 export function getSrsColorClass(stage: number): string {
-  if (stage === 0) return 'bg-slate-200/50 text-slate-400 dark:bg-slate-800/40 dark:text-slate-500 border border-slate-350/10';
-  if (stage === 1) return 'bg-blue-100 text-blue-400 dark:bg-blue-950 dark:text-blue-300';
-  if (stage === 2) return 'bg-blue-200 text-blue-500 dark:bg-blue-900 dark:text-blue-300';
-  if (stage === 3) return 'bg-blue-300 text-blue-700 dark:bg-blue-800 dark:text-blue-200';
-  if (stage === 4) return 'bg-blue-400 text-white dark:bg-blue-700 dark:text-white';
-  if (stage === 5) return 'bg-blue-500 text-white dark:bg-blue-600 dark:text-white';
-  if (stage === 6) return 'bg-blue-600 text-white dark:bg-blue-500 dark:text-white';
-  if (stage === 7) return 'bg-blue-700 text-white dark:bg-blue-400 dark:text-blue-950';
-  if (stage === 8) return 'bg-blue-800 text-white dark:bg-blue-300 dark:text-blue-950';
-  return 'bg-blue-900 text-white dark:bg-blue-200 dark:text-blue-950';
+  if (stage === 0) {
+    return 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-900/60 dark:text-slate-400 dark:border-slate-800';
+  }
+  if (stage >= 1 && stage <= 4) {
+    return 'bg-rose-50 text-rose-600 border border-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-900/40';
+  }
+  if (stage === 5 || stage === 6) {
+    return 'bg-purple-50 text-purple-600 border border-purple-200/60 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-900/40';
+  }
+  if (stage === 7) {
+    return 'bg-blue-50 text-blue-600 border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40';
+  }
+  if (stage === 8) {
+    return 'bg-teal-50 text-teal-600 border border-teal-200/60 dark:bg-teal-950/40 dark:text-teal-400 dark:border-teal-900/40';
+  }
+  return 'bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
 }
 
 export interface ItemThemeConfig {
@@ -64,8 +70,8 @@ export const ITEM_THEMES: Record<ItemType, ItemThemeConfig> = {
     type: 'radical',
     title: 'Kamus Radikal',
     subtitle: 'Radikal (dikenal sebagai bushu dalam bahasa Jepang) adalah komponen pembentuk huruf Kanji. Mempelajari dan mengenali radikal adalah langkah dasar krusial sebelum Anda mulai memahami huruf Kanji yang rumit.',
-    bannerGradient: 'from-cyan-600 to-teal-600',
-    accentColor: '#00AAFF',
+    bannerGradient: 'from-sky-500 to-blue-600',
+    accentColor: '#5dade2',
     badgeBg: 'bg-radical/10 text-radical',
     badgeText: 'text-radical',
     hatchedBg: 'bg-hatched-radical',
@@ -79,8 +85,8 @@ export const ITEM_THEMES: Record<ItemType, ItemThemeConfig> = {
     type: 'kanji',
     title: 'Kamus Kanji',
     subtitle: 'Kanji adalah karakter logografis yang diadaptasi dari aksara Tionghoa. Pelajari makna, cara baca On\'yomi & Kun\'yomi, serta jembatan keledai untuk menguasai ribuan kanji secara sistematis.',
-    bannerGradient: 'from-pink-600 to-rose-600',
-    accentColor: '#FF00AA',
+    bannerGradient: 'from-rose-500 to-pink-600',
+    accentColor: '#FF6961',
     badgeBg: 'bg-kanji/10 text-kanji',
     badgeText: 'text-kanji',
     hatchedBg: 'bg-hatched-kanji',
@@ -94,8 +100,8 @@ export const ITEM_THEMES: Record<ItemType, ItemThemeConfig> = {
     type: 'vocabulary',
     title: 'Kamus Kosakata',
     subtitle: 'Kosakata menghubungkan kanji dan radikal menjadi kata nyata dalam bahasa Jepang. Pahami cara baca dan contoh kalimat konteks untuk memperkaya perbendaharaan kata Anda.',
-    bannerGradient: 'from-purple-600 to-indigo-600',
-    accentColor: '#AA00FF',
+    bannerGradient: 'from-teal-500 to-emerald-600',
+    accentColor: '#48c9b0',
     badgeBg: 'bg-vocab/10 text-vocab',
     badgeText: 'text-vocab',
     hatchedBg: 'bg-hatched-vocab',

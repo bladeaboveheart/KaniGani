@@ -8,10 +8,21 @@ import { calculateUserLevel } from '@/lib/levelLogic';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import {
-  User, Mail, Settings, Save, Award, BarChart2,
-  Calendar, CheckCircle, Loader2, AlertCircle
+  User,
+  Mail,
+  Settings,
+  Save,
+  Award,
+  BarChart2,
+  Calendar,
+  CheckCircle,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
-
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import WaniKaniIntegrationCard from '@/components/settings/WaniKaniIntegrationCard';
 
 export default function SettingsPage() {
@@ -22,7 +33,7 @@ export default function SettingsPage() {
   // Username form states
   const [newUsername, setNewUsername] = useState('');
   const [saveLoading, setSaveLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Stats states
   const [stats, setStats] = useState({
@@ -33,7 +44,7 @@ export default function SettingsPage() {
     enlightened: 0,
     burned: 0,
     level: 1,
-    joinedDate: ''
+    joinedDate: '',
   });
 
   const loadUserData = async () => {
@@ -67,10 +78,10 @@ export default function SettingsPage() {
         setUserProfile({
           id: user.id,
           username: cachedSnapshot.username || 'User',
-          email: user.email || ''
+          email: user.email || '',
         });
         setNewUsername(cachedSnapshot.username || 'User');
-        setStats(prev => ({
+        setStats((prev) => ({
           ...prev,
           totalStudied: tot,
           apprentice: app,
@@ -107,7 +118,7 @@ export default function SettingsPage() {
       setUserProfile({
         id: user.id,
         username: currentUsername,
-        email: user.email || ''
+        email: user.email || '',
       });
       setNewUsername(currentUsername);
 
@@ -120,14 +131,14 @@ export default function SettingsPage() {
 
       (progresses || []).forEach((row: any) => {
         const stage = row.srs_stage;
-        if (stage >= 1 && stage <= 4) apprentice++;
-        else if (stage >= 5 && stage <= 6) guru++;
-        else if (stage === 7) master++;
-        else if (stage === 8) enlightened++;
-        else if (stage === 9) burned++;
-
-        if (stage > 1 || (stage === 1 && row.next_review)) {
+        const isStudied = stage > 1 || (stage === 1 && row.next_review);
+        if (isStudied) {
           totalStudied++;
+          if (stage >= 1 && stage <= 4) apprentice++;
+          else if (stage >= 5 && stage <= 6) guru++;
+          else if (stage === 7) master++;
+          else if (stage === 8) enlightened++;
+          else if (stage === 9) burned++;
         }
       });
 
@@ -143,7 +154,7 @@ export default function SettingsPage() {
       const joinedString = joinedAt.toLocaleDateString('id-ID', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
 
       setStats({
@@ -154,9 +165,8 @@ export default function SettingsPage() {
         enlightened,
         burned,
         level: userLevel,
-        joinedDate: joinedString
+        joinedDate: joinedString,
       });
-
     } catch (err) {
       console.error('Error loading settings page:', err);
     } finally {
@@ -199,24 +209,22 @@ export default function SettingsPage() {
 
       if (error) {
         if (error.code === '23505') {
-          // Unique key violation in postgres
           throw new Error('Username sudah digunakan oleh pembelajar lain. Silakan pilih nama lain!');
         }
         throw error;
       }
 
-      setUserProfile(prev => prev ? { ...prev, username: cleanUsername } : null);
+      setUserProfile((prev) => (prev ? { ...prev, username: cleanUsername } : null));
       setMessage({ type: 'success', text: 'Username Anda berhasil diperbarui!' });
 
       // Dispatch storage event to force Navbar update in real time
       localStorage.setItem('kanigani-username-update', cleanUsername);
       window.dispatchEvent(new Event('storage'));
-
     } catch (err) {
       console.error('Error saving username:', err);
       setMessage({
         type: 'error',
-        text: err instanceof Error ? err.message : 'Terjadi kesalahan sistem saat memperbarui profil.'
+        text: err instanceof Error ? err.message : 'Terjadi kesalahan sistem saat memperbarui profil.',
       });
     } finally {
       setSaveLoading(false);
@@ -225,34 +233,33 @@ export default function SettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-text-primary">
         <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
-          <p className="font-semibold text-sm">Menyiapkan Pengaturan Akun...</p>
+          <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
+          <p className="font-semibold text-sm text-text-muted">Menyiapkan Pengaturan Akun...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-background text-text-primary transition-colors duration-200">
       <Navbar />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
-
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8 animate-fade-in">
         {/* Banner Title */}
-        <section className="flex items-center space-x-3 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm shrink-0">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
-            <Settings className="w-8 h-8 text-indigo-500" />
+        <section className="flex items-center space-x-3 sm:space-x-4 bg-card/60 backdrop-blur-md p-5 sm:p-7 rounded-2xl sm:rounded-3xl border border-card-border shadow-xs">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-900/50 rounded-2xl shrink-0">
+            <Settings className="w-7 h-7 sm:w-8 sm:h-8 text-indigo-600 dark:text-indigo-400" />
           </div>
           <div>
-            <div className="flex items-center space-x-1.5 text-indigo-500">
+            <div className="flex items-center space-x-1.5 text-indigo-600 dark:text-indigo-400">
               <User className="w-4 h-4" />
-              <span className="text-xs font-bold uppercase tracking-widest">Informasi Pengguna</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-widest">Informasi Pengguna</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight">Pengaturan Akun</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Kelola profil KaniGani Anda, atur preferensi nama, dan pantau kemajuan belajar SRS komprehensif Anda.
+            <h2 className="text-xl sm:text-3xl font-black tracking-tight text-text-primary">Pengaturan Akun</h2>
+            <p className="text-xs sm:text-sm text-text-muted mt-0.5">
+              Kelola profil KaniGani Anda, atur nama pengguna, dan pantau kemajuan belajar SRS komprehensif Anda.
             </p>
           </div>
         </section>
@@ -262,148 +269,176 @@ export default function SettingsPage() {
           <WaniKaniIntegrationCard />
         </section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* LEFT COLUMN: PROFILE FORM AND ACCOUNT DATA */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-
-              <div className="text-center pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white font-black text-3xl shadow-md">
+            <Card className="space-y-6">
+              <div className="text-center pb-5 border-b border-card-border/60">
+                <div className="w-20 h-20 bg-gradient-to-br from-pink-500 to-indigo-500 rounded-2xl mx-auto flex items-center justify-center text-white font-black text-2xl shadow-md">
                   {userProfile?.username.slice(0, 2).toUpperCase()}
                 </div>
-                <h3 className="font-extrabold text-lg mt-3 select-all">{userProfile?.username}</h3>
-                <span className="text-3xs font-extrabold px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/55 rounded-full mt-1.5 inline-block">
+                <h3 className="font-extrabold text-lg mt-3 select-all text-text-primary">
+                  {userProfile?.username}
+                </h3>
+                <Badge variant="indigo" size="sm" className="mt-2">
                   Level {stats.level} Pembelajar
-                </span>
+                </Badge>
               </div>
 
               {/* Form edit username */}
               <form onSubmit={handleSaveUsername} className="space-y-4">
+                <Input
+                  label="Username Akun"
+                  leftIcon={<User className="w-4 h-4" />}
+                  placeholder="Username baru..."
+                  value={newUsername}
+                  onChange={(e) => setNewUsername(e.target.value)}
+                />
 
-                {/* Username Input */}
-                <div>
-                  <label className="text-3xs font-black text-slate-400 uppercase tracking-widest mb-1.5 block">Username Akun</label>
-                  <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Username baru..."
-                      value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs font-bold rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                    />
-                  </div>
-                </div>
-
-                {/* Email (Readonly) */}
-                <div>
-                  <label className="text-3xs font-black text-slate-450 uppercase tracking-widest mb-1.5 block">Alamat Email (Permanen)</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400" />
-                    <input
-                      type="email"
-                      value={userProfile?.email}
-                      readOnly
-                      className="w-full pl-10 pr-4 py-2.5 bg-slate-100/50 dark:bg-slate-950/50 border border-slate-200/50 dark:border-slate-850 text-xs font-semibold rounded-xl text-slate-455 cursor-not-allowed outline-none"
-                    />
-                  </div>
-                </div>
+                <Input
+                  label="Alamat Email (Permanen)"
+                  leftIcon={<Mail className="w-4 h-4" />}
+                  type="email"
+                  value={userProfile?.email}
+                  readOnly
+                  disabled
+                />
 
                 {/* Joined date info */}
-                <div className="flex items-center space-x-2 text-xxs text-slate-450 font-bold">
-                  <Calendar className="w-4 h-4 text-slate-400" />
+                <div className="flex items-center space-x-2 text-xs text-text-muted font-bold pt-1">
+                  <Calendar className="w-4 h-4" />
                   <span>Terdaftar: {stats.joinedDate}</span>
                 </div>
 
                 {/* Success/Error message banner */}
                 {message && (
-                  <div className={`p-3 text-xxs font-bold rounded-xl border flex items-center space-x-2 animate-fade-in ${message.type === 'success'
-                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
-                    }`}>
+                  <div
+                    className={`p-3 text-xs font-bold rounded-xl border flex items-center space-x-2 animate-fade-in ${
+                      message.type === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                    }`}
+                  >
                     {message.type === 'success' ? (
-                      <CheckCircle className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <CheckCircle className="w-4 h-4 shrink-0" />
                     ) : (
-                      <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                      <AlertCircle className="w-4 h-4 shrink-0" />
                     )}
                     <span>{message.text}</span>
                   </div>
                 )}
 
                 {/* Submit button */}
-                <button
+                <Button
                   type="submit"
                   disabled={saveLoading || newUsername.trim() === userProfile?.username}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-100 dark:disabled:bg-slate-800 disabled:text-slate-400 dark:disabled:text-slate-600 text-white font-extrabold rounded-xl text-xs flex items-center justify-center space-x-1.5 shadow-md shadow-indigo-600/5 transition-all cursor-pointer disabled:cursor-not-allowed"
+                  loading={saveLoading}
+                  className="w-full"
                 >
-                  {saveLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      <span>Menyimpan...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>Simpan Username</span>
-                    </>
-                  )}
-                </button>
-
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Username</span>
+                </Button>
               </form>
-
-            </div>
+            </Card>
           </div>
 
           {/* RIGHT COLUMN: STATS AND LEARNING PROGRESS CARDS */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
-
-              <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3">
-                <BarChart2 className="w-5 h-5 text-indigo-500" />
-                <h3 className="font-extrabold text-base">Statistik Kemajuan SRS Pembelajaran</h3>
-              </div>
+            <Card className="space-y-6">
+              <CardHeader>
+                <div className="flex items-center space-x-2">
+                  <BarChart2 className="w-5 h-5 text-indigo-500" />
+                  <CardTitle>Statistik Kemajuan SRS Pembelajaran</CardTitle>
+                </div>
+                <CardDescription>
+                  Ringkasan item yang telah Anda kuasai dalam sistem Spaced Repetition KaniGani.
+                </CardDescription>
+              </CardHeader>
 
               {/* Progress Summary Big Widgets */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-4">
                 {[
-                  { label: 'Item Dipelajari', count: stats.totalStudied, color: 'text-indigo-600 bg-indigo-50 dark:bg-indigo-950/20' },
-                  { label: 'Progres Lulus/Tuntas', count: stats.guru + stats.master + stats.enlightened + stats.burned, color: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20' },
-                  { label: 'Item Pemula', count: stats.apprentice, color: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20' },
+                  {
+                    label: 'Item Dipelajari',
+                    count: stats.totalStudied,
+                    style: 'text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200/50 dark:border-indigo-900/40',
+                  },
+                  {
+                    label: 'Progres Lulus/Tuntas',
+                    count: stats.guru + stats.master + stats.enlightened + stats.burned,
+                    style: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200/50 dark:border-emerald-900/40',
+                  },
+                  {
+                    label: 'Item Pemula',
+                    count: stats.apprentice,
+                    style: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 border-rose-200/50 dark:border-rose-900/40',
+                  },
                 ].map((stat, idx) => (
-                  <div key={idx} className={`p-4.5 rounded-2xl border border-transparent shadow-3xs text-center space-y-1 ${stat.color}`}>
-                    <span className="text-3xs font-extrabold uppercase tracking-widest text-slate-450 block">{stat.label}</span>
-                    <span className="text-2xl font-black block">{stat.count}</span>
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-2xl border text-center space-y-1 ${stat.style}`}
+                  >
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest opacity-80 block">
+                      {stat.label}
+                    </span>
+                    <span className="text-2xl sm:text-3xl font-black block">{stat.count}</span>
                   </div>
                 ))}
               </div>
 
               {/* SRS Stage Detail Grid */}
-              <div className="space-y-4">
-                <h4 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Distribusi Tahapan SRS</h4>
+              <div className="space-y-4 pt-2">
+                <h4 className="text-xs font-bold text-text-muted uppercase tracking-wider block">
+                  Distribusi Tahapan SRS
+                </h4>
 
                 <div className="space-y-3.5">
                   {[
-                    { label: 'Pemula (Tahap 1 - 4)', count: stats.apprentice, total: stats.totalStudied, color: 'bg-rose-500' },
-                    { label: 'Lulus (Tahap 5 - 6)', count: stats.guru, total: stats.totalStudied, color: 'bg-purple-600' },
-                    { label: 'Mahir (Tahap 7)', count: stats.master, total: stats.totalStudied, color: 'bg-blue-600' },
-                    { label: 'Ahli (Tahap 8)', count: stats.enlightened, total: stats.totalStudied, color: 'bg-teal-600' },
-                    { label: 'Tuntas (Tahap 9)', count: stats.burned, total: stats.totalStudied, color: 'bg-slate-700' }
+                    {
+                      label: 'Pemula (Tahap 1 - 4)',
+                      count: stats.apprentice,
+                      total: stats.totalStudied,
+                      color: 'bg-rose-500',
+                    },
+                    {
+                      label: 'Lulus (Tahap 5 - 6)',
+                      count: stats.guru,
+                      total: stats.totalStudied,
+                      color: 'bg-purple-600',
+                    },
+                    {
+                      label: 'Mahir (Tahap 7)',
+                      count: stats.master,
+                      total: stats.totalStudied,
+                      color: 'bg-blue-600',
+                    },
+                    {
+                      label: 'Ahli (Tahap 8)',
+                      count: stats.enlightened,
+                      total: stats.totalStudied,
+                      color: 'bg-teal-600',
+                    },
+                    {
+                      label: 'Tuntas (Tahap 9)',
+                      count: stats.burned,
+                      total: stats.totalStudied,
+                      color: 'bg-slate-600 dark:bg-slate-500',
+                    },
                   ].map((stage, idx) => {
                     const pct = stage.total > 0 ? Math.round((stage.count / stage.total) * 100) : 0;
                     return (
                       <div key={idx} className="space-y-1.5 text-xs font-semibold leading-relaxed">
-                        <div className="flex items-center justify-between text-slate-650 dark:text-slate-350">
-                          <span className="font-extrabold">{stage.label}</span>
-                          <span className="text-xxs text-slate-500 font-black">
-                            {stage.count} item <span className="opacity-60">({pct}%)</span>
+                        <div className="flex items-center justify-between text-text-secondary">
+                          <span className="font-extrabold text-text-primary">{stage.label}</span>
+                          <span className="text-xs text-text-muted font-black">
+                            {stage.count} item <span className="opacity-70">({pct}%)</span>
                           </span>
                         </div>
-                        <div className="w-full bg-slate-100 dark:bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-850">
+                        <div className="w-full bg-card-muted h-3 rounded-full overflow-hidden border border-card-border/60">
                           <div
                             className={`h-full rounded-full transition-all duration-500 ${stage.color}`}
                             style={{ width: `${pct}%` }}
-                          ></div>
+                          />
                         </div>
                       </div>
                     );
@@ -412,18 +447,17 @@ export default function SettingsPage() {
               </div>
 
               {/* Info Tips */}
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl text-xxs text-slate-500 dark:text-slate-400 flex items-center space-x-3 leading-relaxed">
-                <Award className="w-8 h-8 text-indigo-500 shrink-0" />
+              <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/40 rounded-2xl text-xs text-text-muted flex items-center space-x-3 leading-relaxed">
+                <Award className="w-7 h-7 text-indigo-500 shrink-0" />
                 <p>
-                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan **SRS Review** tepat waktu untuk menaikkan stage item kamus Anda menuju status **Tuntas**!
+                  Kemajuan Anda disinkronkan secara realtime dengan server Supabase. Pastikan Anda menyelesaikan{' '}
+                  <strong className="text-text-primary">SRS Review</strong> tepat waktu untuk menaikkan stage item kamus Anda menuju status{' '}
+                  <strong className="text-text-primary">Tuntas</strong>!
                 </p>
               </div>
-
-            </div>
+            </Card>
           </div>
-
         </div>
-
       </main>
 
       <Footer />

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, use } from 'react';
 import { useParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -15,25 +15,14 @@ interface PageProps {
 
 export default function RadicalDetailPage({ params }: PageProps) {
   const routeParams = useParams<{ slug: string }>();
-  const [slugParam, setSlugParam] = useState<string>(routeParams?.slug || '');
+  const resolvedParams = params ? use(params) : null;
+  const slugParam = resolvedParams?.slug || routeParams?.slug || '';
+
   const [item, setItem] = useState<any | null>(null);
   const [prevItem, setPrevItem] = useState<any | null>(null);
   const [nextItem, setNextItem] = useState<any | null>(null);
   const [userProgress, setUserProgress] = useState<any | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-
-  // Unwrap params if passed as a promise (Next.js 15/16 App Router standard)
-  useEffect(() => {
-    if (params) {
-      params.then((res) => {
-        if (res?.slug) {
-          setSlugParam(res.slug);
-        }
-      });
-    } else if (routeParams?.slug) {
-      setSlugParam(routeParams.slug);
-    }
-  }, [params, routeParams?.slug]);
 
   useEffect(() => {
     if (!slugParam) return;
@@ -86,11 +75,11 @@ export default function RadicalDetailPage({ params }: PageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="min-h-screen flex flex-col bg-background text-primary">
         <Navbar />
         <div className="flex-1 flex flex-col items-center justify-center py-24 space-y-4">
           <Loader2 className="w-10 h-10 text-radical animate-spin" />
-          <p className="font-semibold text-xs text-slate-500 dark:text-slate-400">
+          <p className="font-semibold text-xs text-muted">
             Memuat Rincian Radikal...
           </p>
         </div>
@@ -100,7 +89,7 @@ export default function RadicalDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-background text-primary transition-colors duration-300">
       <Navbar />
       <main className="flex-1">
         <ItemFullPageView

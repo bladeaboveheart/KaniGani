@@ -7,6 +7,7 @@ import CharacterDisplay from '@/components/CharacterDisplay';
 import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item, SimilarKanji } from '@/lib/types';
+import { ensureLevel1RadicalsUnlocked } from '@/lib/userProgress';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
@@ -174,13 +175,34 @@ export default function LessonPage() {
           query = query.in('item_id', customQueueIds);
         }
 
-        const { data, error } = await query;
+        const { data: initialData, error } = await query;
+        let data = initialData;
 
         if (error) throw error;
         if (!data || data.length === 0) {
-          setLessons([]);
-          setLoading(false);
-          return;
+          // Self-healing check for brand new users entering /lesson directly
+          if (!customQueueIds || customQueueIds.length === 0) {
+            const { count } = await supabase
+              .from('user_progress')
+              .select('item_id', { count: 'exact', head: true })
+              .eq('user_id', user.id);
+
+            if (count === 0) {
+              const unlockedIds = await ensureLevel1RadicalsUnlocked(user.id);
+              if (unlockedIds.length > 0) {
+                const retryRes = await query;
+                if (!retryRes.error && retryRes.data && retryRes.data.length > 0) {
+                  data = retryRes.data;
+                }
+              }
+            }
+          }
+
+          if (!data || data.length === 0) {
+            setLessons([]);
+            setLoading(false);
+            return;
+          }
         }
 
         const rawItems = data.map((row: any) => row.items).filter(Boolean);
@@ -532,7 +554,7 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
         <div className="flex flex-col items-center space-y-4 select-none">
           <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>

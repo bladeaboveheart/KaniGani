@@ -48,22 +48,22 @@ export default function DictionaryFilterBar({
   ];
 
   return (
-    <section className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-850 shadow-xs flex flex-col md:flex-row gap-3 sm:gap-4 items-stretch md:items-center justify-between">
+    <section className="bg-card p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-card-border shadow-xs flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
       {/* 1. Search Input */}
       <div className="relative flex-1">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
         <input
           type="text"
           placeholder={placeholder}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className={`w-full pl-10 pr-9 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xs sm:text-sm font-semibold rounded-2xl focus:outline-none focus:ring-2 ${ringFocusColor} focus:border-transparent transition-all`}
+          className={`w-full pl-10 pr-9 py-2.5 min-h-[44px] bg-card-muted/50 border border-card-border text-xs sm:text-sm font-semibold rounded-xl sm:rounded-2xl focus:outline-none focus:ring-2 ${ringFocusColor} text-primary placeholder-muted focus:border-transparent transition-all`}
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => onSearchChange('')}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 min-h-[32px] min-w-[32px] flex items-center justify-center text-muted hover:text-primary transition-colors"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -74,28 +74,28 @@ export default function DictionaryFilterBar({
       <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0">
         {/* Display Mode Toggle (Kanji & Vocab only) */}
         {itemType !== 'radical' && (
-          <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl">
+          <div className="flex items-center p-1 bg-card-muted/50 border border-card-border rounded-xl sm:rounded-2xl">
             <button
               type="button"
               onClick={() => onDisplayModeChange('reading')}
-              className={`px-3 py-1.5 rounded-xl text-xxs font-black transition-all cursor-pointer ${
+              className={`px-3 py-1.5 min-h-[36px] rounded-lg sm:rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 displayMode === 'reading'
-                  ? 'bg-white dark:bg-slate-850 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'bg-card text-primary shadow-xs'
+                  : 'text-muted hover:text-primary'
               }`}
             >
-              Cara Baca (Kana)
+              Cara Baca
             </button>
             <button
               type="button"
               onClick={() => onDisplayModeChange('meaning')}
-              className={`px-3 py-1.5 rounded-xl text-xxs font-black transition-all cursor-pointer ${
+              className={`px-3 py-1.5 min-h-[36px] rounded-lg sm:rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 displayMode === 'meaning'
-                  ? 'bg-white dark:bg-slate-850 text-slate-900 dark:text-white shadow-xs'
-                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+                  ? 'bg-card text-primary shadow-xs'
+                  : 'text-muted hover:text-primary'
               }`}
             >
-              Arti (Indonesia)
+              Arti
             </button>
           </div>
         )}
@@ -105,10 +105,10 @@ export default function DictionaryFilterBar({
           <select
             value={srsFilter}
             onChange={(e) => onSrsFilterChange(e.target.value)}
-            className={`py-2 px-3 sm:px-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-850 text-xxs sm:text-xs font-bold rounded-2xl focus:outline-none focus:ring-1 ${ringFocusColor} text-slate-700 dark:text-slate-200 cursor-pointer`}
+            className={`py-2 px-3 sm:px-4 min-h-[44px] bg-card-muted/50 border border-card-border text-xs font-bold rounded-xl sm:rounded-2xl focus:outline-none focus:ring-1 ${ringFocusColor} text-primary cursor-pointer`}
           >
             {srsOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
+              <option key={opt.value} value={opt.value} className="bg-card text-primary">
                 {opt.label}
               </option>
             ))}
@@ -116,7 +116,7 @@ export default function DictionaryFilterBar({
         </div>
 
         {/* Results Counter Badge */}
-        <span className="text-4xs sm:text-3xs font-extrabold px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+        <span className="text-xs font-bold px-3 py-2 rounded-xl bg-card-muted text-muted border border-card-border">
           {totalResults.toLocaleString()} item
         </span>
       </div>

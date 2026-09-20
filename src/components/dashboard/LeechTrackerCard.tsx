@@ -77,11 +77,11 @@ export default function LeechTrackerCard() {
 
   if (loading) {
     return (
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse">
-        <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded-lg mb-4" />
+      <div className="bg-card rounded-2xl sm:rounded-3xl p-5 border border-card-border shadow-xs animate-pulse">
+        <div className="h-6 w-48 bg-card-muted rounded-lg mb-4" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800/60 rounded-xl" />
+            <div key={i} className="h-20 bg-card-muted/60 rounded-xl" />
           ))}
         </div>
       </div>
@@ -91,17 +91,17 @@ export default function LeechTrackerCard() {
   // Jika tidak ada leech sama sekali
   if (leeches.length === 0) {
     return (
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="bg-card rounded-2xl sm:rounded-3xl p-5 border border-card-border shadow-xs">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center space-x-2.5">
             <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-500 dark:bg-emerald-500/20 dark:text-emerald-400">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+              <h3 className="font-bold text-text-primary text-base">
                 Pelacak Leech (Item Kerap Keliru)
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="text-xs text-text-muted">
                 Memantau huruf atau kata yang sering gagal diingat
               </p>
             </div>
@@ -111,7 +111,7 @@ export default function LeechTrackerCard() {
             <span>0 Leech</span>
           </span>
         </div>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-850 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center space-x-2">
+        <p className="text-xs sm:text-sm text-text-secondary bg-card-muted/70 p-3.5 rounded-xl border border-card-border flex items-center space-x-2">
           <span>🎉</span>
           <span>Luar biasa! Tidak ada item leech yang tersendat. Daya ingat dan penguasaan materimu sangat stabil.</span>
         </p>
@@ -124,7 +124,7 @@ export default function LeechTrackerCard() {
 
   return (
     <>
-      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+      <div className="bg-card rounded-2xl sm:rounded-3xl p-5 border border-card-border shadow-xs">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-4">
           <div className="flex items-center space-x-2.5">
@@ -133,29 +133,27 @@ export default function LeechTrackerCard() {
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                <h3 className="font-bold text-text-primary text-base">
                   Pelacak Leech (Item Kerap Keliru)
                 </h3>
                 <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-900/60">
                   {leeches.length} Item
                 </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Item aktif yang sering salah dijawab dan butuh latihan penguatan ekstra
+              <p className="text-xs text-text-muted">
+                Item yang rasio salahnya tinggi. Latih sesering mungkin agar ingatan kembali kuat.
               </p>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center space-x-2 shrink-0">
-            {leeches.length > 6 && (
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              >
-                Lihat Semua ({leeches.length})
-              </button>
-            )}
+          <div className="flex items-center space-x-2 self-start sm:self-auto">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl text-xs font-bold text-text-secondary hover:text-text-primary hover:bg-card-muted border border-card-border transition-colors flex items-center space-x-1 cursor-pointer"
+            >
+              <span>Lihat Semua</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
             <button
               onClick={() => router.push('/review?mode=leech')}
               className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white shadow-xs hover:shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
@@ -172,7 +170,7 @@ export default function LeechTrackerCard() {
             <Link
               key={item.id}
               href={`/${item.type}/${encodeURIComponent(item.character)}`}
-              className="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200/70 dark:border-slate-800 hover:border-rose-400/50 dark:hover:border-rose-500/50 hover:bg-white dark:hover:bg-slate-850 transition-all flex items-center space-x-3 group"
+              className="p-3 rounded-xl bg-card-muted/70 border border-card-border hover:border-rose-400/50 dark:hover:border-rose-500/50 hover:bg-card transition-all flex items-center space-x-3 group"
             >
               <div
                 className={`w-11 h-11 rounded-lg flex items-center justify-center font-japanese text-lg font-bold shrink-0 shadow-xs ${getItemTypeBadge(

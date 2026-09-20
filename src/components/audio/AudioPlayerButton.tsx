@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Loader2, User } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 import { ItemAudio } from '@/lib/types';
 
 interface AudioPlayerButtonProps {
@@ -17,20 +17,19 @@ export default function AudioPlayerButton({
   className = '',
   autoPlay = false,
 }: AudioPlayerButtonProps) {
-  const [preferredActor, setPreferredActor] = useState<'Kyoko' | 'Kenichi'>('Kyoko');
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // Load preferred voice actor from localStorage
-  useEffect(() => {
+  const [preferredActor, setPreferredActor] = useState<'Kyoko' | 'Kenichi'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('kanigani-preferred-voice');
       if (saved === 'Kenichi' || saved === 'Kyoko') {
-        setPreferredActor(saved);
+        return saved;
       }
     }
-  }, []);
+    return 'Kyoko';
+  });
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [hasError, setHasError] = useState<boolean>(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Filter available voice actors
   const kyokoAudio = audios.find(
@@ -50,11 +49,12 @@ export default function AudioPlayerButton({
     }
   };
 
-  const playAudio = (e?: React.MouseEvent) => {
+  const playAudio = useCallback((e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!currentAudio?.url) return;
 
     try {
+      setHasError(false);
       if (!audioRef.current) {
         audioRef.current = new Audio();
       }
@@ -76,23 +76,29 @@ export default function AudioPlayerButton({
       audio.onerror = () => {
         setIsPlaying(false);
         setIsLoading(false);
+        setHasError(true);
       };
 
       audio.play().catch((err) => {
         console.error('Playback error:', err);
         setIsPlaying(false);
         setIsLoading(false);
+        setHasError(true);
       });
     } catch (err) {
       console.error('Audio init error:', err);
       setIsPlaying(false);
       setIsLoading(false);
+      setHasError(true);
     }
-  };
+  }, [currentAudio]);
 
   useEffect(() => {
     if (autoPlay && currentAudio?.url) {
-      playAudio();
+      const timer = setTimeout(() => {
+        playAudio();
+      }, 50);
+      return () => clearTimeout(timer);
     }
     return () => {
       if (audioRef.current) {
@@ -100,7 +106,7 @@ export default function AudioPlayerButton({
         audioRef.current = null;
       }
     };
-  }, [autoPlay, currentAudio?.url]);
+  }, [autoPlay, currentAudio?.url, playAudio]);
 
   if (!audios || audios.length === 0 || !currentAudio) {
     return null;
@@ -120,6 +126,8 @@ export default function AudioPlayerButton({
       >
         {isLoading ? (
           <Loader2 className="w-4 h-4 animate-spin" />
+        ) : hasError ? (
+          <VolumeX className="w-4 h-4 text-rose-400" />
         ) : (
           <Volume2 className="w-4 h-4" />
         )}
@@ -140,6 +148,8 @@ export default function AudioPlayerButton({
         >
           {isLoading ? (
             <Loader2 className="w-4 h-4 animate-spin" />
+          ) : hasError ? (
+            <VolumeX className="w-4 h-4 text-rose-300" />
           ) : (
             <Volume2 className={`w-4 h-4 ${isPlaying ? 'text-amber-300 animate-pulse' : 'text-white'}`} />
           )}
@@ -193,6 +203,8 @@ export default function AudioPlayerButton({
       >
         {isLoading ? (
           <Loader2 className="w-3.5 h-3.5 animate-spin text-vocab" />
+        ) : hasError ? (
+          <VolumeX className="w-3.5 h-3.5 text-rose-500" />
         ) : (
           <Volume2 className={`w-3.5 h-3.5 ${isPlaying ? 'text-vocab animate-pulse' : 'text-slate-500'}`} />
         )}

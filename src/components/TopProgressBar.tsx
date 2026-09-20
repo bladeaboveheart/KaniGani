@@ -13,14 +13,19 @@ export function TopProgressBar() {
   // Complete progress on pathname or searchParams change
   useEffect(() => {
     if (active) {
-      setProgress(100);
+      const stepTimer = setTimeout(() => {
+        setProgress(100);
+      }, 0);
       const doneTimer = setTimeout(() => {
         setActive(false);
         setProgress(0);
       }, 250);
-      return () => clearTimeout(doneTimer);
+      return () => {
+        clearTimeout(stepTimer);
+        clearTimeout(doneTimer);
+      };
     }
-  }, [pathname, searchParams]);
+  }, [pathname, searchParams, active]);
 
   // Intercept clicks on internal links to provide instant navigation feedback
   useEffect(() => {

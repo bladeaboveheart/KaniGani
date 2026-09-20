@@ -22,6 +22,7 @@ import LeaderboardCard from '@/components/dashboard/LeaderboardCard';
 import HeatmapCard from '@/components/dashboard/HeatmapCard';
 import LessonPickerModal from '@/components/dashboard/LessonPickerModal';
 import LeechTrackerCard from '@/components/dashboard/LeechTrackerCard';
+import { SrsBadge } from '@/components/ui';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -159,17 +160,17 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-text-primary">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="font-semibold text-sm">Menyiapkan Halaman Beranda...</p>
+          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="font-semibold text-sm text-text-muted">Menyiapkan Halaman Beranda...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-background text-text-primary transition-colors duration-200">
       <Navbar />
       <CrabBackground />
 
@@ -187,31 +188,31 @@ export default function Dashboard() {
         </div>
       )}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-8 animate-fade-in">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-6 sm:space-y-8 animate-fade-in">
         {/* User Welcome Section */}
-        <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/50 dark:bg-slate-900/50 backdrop-blur-md p-6 sm:p-8 rounded-3xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
+        <section className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-card/75 backdrop-blur-md p-5 sm:p-7 lg:p-8 rounded-2xl sm:rounded-3xl border border-card-border shadow-xs">
           <div>
             <div className="flex items-center space-x-2 select-none">
               <Sparkles className="w-5 h-5 text-amber-500 animate-spin" style={{ animationDuration: '6s' }} />
               <span className="text-xs font-bold uppercase tracking-widest text-indigo-500">Beranda</span>
             </div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1">
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mt-1 text-text-primary">
               Selamat Belajar, <span className="bg-gradient-to-r from-pink-500 to-indigo-500 bg-clip-text text-transparent">{username}</span>!
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-text-muted mt-1">
               Semoga latihan hari ini menyenangkan. Tetap jaga konsistensi SRS Anda!
             </p>
           </div>
 
-          <div className="flex items-center space-x-4 select-none">
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 text-center">
-              <span className="text-xxs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Level Saat Ini</span>
+          <div className="flex items-center space-x-3 sm:space-x-4 select-none">
+            <div className="p-3.5 sm:p-4 bg-indigo-50/70 dark:bg-indigo-950/30 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 text-center">
+              <span className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest block">Level Saat Ini</span>
               <span className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
                 {stats?.level || 1}
               </span>
             </div>
-            <div className="p-4 bg-rose-50 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/50 text-center">
-              <span className="text-xxs font-bold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Hari Berlalu</span>
+            <div className="p-3.5 sm:p-4 bg-rose-50/70 dark:bg-rose-950/30 rounded-2xl border border-rose-100 dark:border-rose-900/40 text-center">
+              <span className="text-[10px] font-extrabold text-rose-600 dark:text-rose-400 uppercase tracking-widest block">Hari Berlalu</span>
               <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
                 {stats?.daysSinceLevelUp !== undefined ? stats.daysSinceLevelUp : 0}
               </span>
@@ -220,9 +221,9 @@ export default function Dashboard() {
         </section>
 
         {/* Big Action Buttons (Lessons & Reviews) */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Lessons Card */}
-          <div className="relative group overflow-hidden bg-gradient-to-br from-cyan-500 to-teal-600 dark:from-cyan-600 dark:to-teal-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+          <div className="relative group overflow-hidden bg-gradient-to-br from-cyan-500 to-teal-600 dark:from-cyan-600 dark:to-teal-700 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute right-0 bottom-0 translate-x-10 translate-y-10 opacity-10 group-hover:scale-110 transition-transform duration-300 select-none pointer-events-none">
               <BookOpen className="w-60 h-60" />
             </div>
@@ -231,8 +232,8 @@ export default function Dashboard() {
                 <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-2 select-none">
                   Lesson
                 </span>
-                <h3 className="text-2xl font-bold tracking-tight mt-1 select-none">Belajar Item Baru</h3>
-                <p className="text-xs text-cyan-50 dark:text-cyan-100 mt-2 max-w-sm">
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-1 select-none">Belajar Item Baru</h3>
+                <p className="text-xs text-cyan-50 dark:text-cyan-100 mt-1.5 max-w-sm">
                   Pelajari arti dan bacaan karakter linear baru secara berkelompok (5 item per batch) sebelum memulai kuis.
                 </p>
               </div>
@@ -252,21 +253,21 @@ export default function Dashboard() {
                         setSelectedLessonIds([]);
                         setPickerOpen(true);
                       }}
-                      className="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold rounded-xl shadow-md flex items-center space-x-1.5 transition-all duration-200 select-none cursor-pointer text-xs sm:text-sm"
+                      className="min-h-[44px] px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold rounded-xl shadow-xs flex items-center space-x-1.5 transition-all duration-200 select-none cursor-pointer text-xs sm:text-sm"
                     >
                       <span>Advanced</span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => router.push('/lesson')}
-                      className="px-5 py-2.5 bg-white text-teal-600 font-bold rounded-xl shadow-md hover:bg-cyan-50 flex items-center space-x-1.5 transition-all duration-200 cursor-pointer text-xs sm:text-sm"
+                      className="min-h-[44px] px-5 py-2.5 bg-white text-teal-600 font-bold rounded-xl shadow-xs hover:bg-cyan-50 flex items-center space-x-1.5 transition-all duration-200 cursor-pointer text-xs sm:text-sm"
                     >
                       <span>Mulai</span>
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
                   </div>
                 ) : (
-                  <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md text-cyan-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed select-none">
+                  <div className="min-h-[44px] px-5 py-2.5 bg-white/10 backdrop-blur-md text-cyan-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed select-none">
                     <span>Selesai</span>
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   </div>
@@ -276,7 +277,7 @@ export default function Dashboard() {
           </div>
 
           {/* Reviews Card */}
-          <div className="relative group overflow-hidden bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 dark:from-pink-600 dark:via-purple-600 dark:to-indigo-700 text-white rounded-3xl p-6 sm:p-8 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+          <div className="relative group overflow-hidden bg-gradient-to-br from-pink-500 via-purple-500 to-indigo-600 dark:from-pink-600 dark:via-purple-600 dark:to-indigo-700 text-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 lg:p-8 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
             <div className="absolute right-0 bottom-0 translate-x-10 translate-y-10 opacity-10 group-hover:scale-110 transition-transform duration-300 select-none pointer-events-none">
               <Flame className="w-60 h-60" />
             </div>
@@ -285,8 +286,8 @@ export default function Dashboard() {
                 <span className="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-2 select-none">
                   Review
                 </span>
-                <h3 className="text-2xl font-bold tracking-tight mt-1 select-none">Latihan Harian</h3>
-                <p className="text-xs text-pink-50 dark:text-pink-100 mt-2 max-w-sm">
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight mt-1 select-none">Latihan Harian</h3>
+                <p className="text-xs text-pink-50 dark:text-pink-100 mt-1.5 max-w-sm">
                   Uji ingatan Anda pada item-item yang jatuh tempo. Menjawab dengan benar memperpanjang waktu review berikutnya.
                 </p>
               </div>
@@ -305,7 +306,7 @@ export default function Dashboard() {
                       onClick={handleResetTimers}
                       disabled={resetting}
                       title="Percepat Semua Review (Beta Tester)"
-                      className="px-3 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-bold rounded-xl flex items-center space-x-1.5 transition-all duration-200 disabled:opacity-50 border border-white/20 cursor-pointer"
+                      className="min-h-[44px] px-3.5 py-2.5 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white font-bold rounded-xl flex items-center space-x-1.5 transition-all duration-200 disabled:opacity-50 border border-white/20 cursor-pointer"
                     >
                       <Zap className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
                       <span className="text-xs hidden sm:inline">{resetting ? 'Memproses...' : 'Percepat'}</span>
@@ -315,13 +316,13 @@ export default function Dashboard() {
                   {stats && stats.reviewsDue > 0 ? (
                     <button
                       onClick={() => router.push('/review')}
-                      className="px-5 py-2.5 bg-white text-indigo-600 font-bold rounded-xl shadow-md hover:bg-pink-50 flex items-center space-x-1.5 transition-all duration-200 cursor-pointer text-xs sm:text-sm"
+                      className="min-h-[44px] px-5 py-2.5 bg-white text-indigo-600 font-bold rounded-xl shadow-xs hover:bg-pink-50 flex items-center space-x-1.5 transition-all duration-200 cursor-pointer text-xs sm:text-sm"
                     >
                       <span>Mulai</span>
                       <ArrowUpRight className="w-4 h-4" />
                     </button>
                   ) : (
-                    <div className="px-5 py-2.5 bg-white/10 backdrop-blur-md text-pink-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed select-none">
+                    <div className="min-h-[44px] px-5 py-2.5 bg-white/10 backdrop-blur-md text-pink-200 font-bold rounded-xl flex items-center space-x-1.5 cursor-not-allowed select-none">
                       <span>Semua Bersih</span>
                       <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                     </div>
@@ -333,36 +334,36 @@ export default function Dashboard() {
         </section>
 
         {/* KaniGani Laboratory — Beta Tester Card */}
-        <section className="bg-gradient-to-br from-white via-slate-50/50 to-white dark:from-slate-900 dark:via-slate-900/80 dark:to-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-3xl shadow-sm hover:shadow-md transition-all duration-300 space-y-5 relative overflow-hidden group">
+        <section className="bg-card border border-card-border p-5 sm:p-7 lg:p-8 rounded-2xl sm:rounded-3xl shadow-xs hover:shadow-md transition-all duration-300 space-y-5 relative overflow-hidden group">
           <div className="absolute right-0 top-0 -translate-y-12 translate-x-12 w-48 h-48 bg-violet-500/5 dark:bg-violet-500/10 rounded-full blur-3xl pointer-events-none group-hover:scale-110 transition-transform duration-500" />
 
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800/80 pb-4 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-card-border/60 pb-4 relative z-10">
             <div className="flex items-start space-x-3.5">
               <div
-                className={`p-2.5 rounded-2xl transition-all duration-350 ${
+                className={`p-2.5 rounded-2xl transition-all duration-300 ${
                   betaTester
-                    ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-500 border border-violet-100 dark:border-violet-900/40 shadow-sm'
-                    : 'bg-slate-50 dark:bg-slate-950 text-slate-400 border border-slate-100 dark:border-slate-800'
+                    ? 'bg-violet-50 dark:bg-violet-950/40 text-violet-500 border border-violet-200/50 dark:border-violet-900/40 shadow-xs'
+                    : 'bg-card-muted text-text-muted border border-card-border'
                 }`}
               >
                 <FlaskConical className={`w-6 h-6 ${betaTester ? 'animate-pulse' : ''}`} />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h3 className="text-base font-extrabold tracking-tight text-slate-800 dark:text-slate-100">
+                  <h3 className="text-base font-extrabold tracking-tight text-text-primary">
                     🧪 KaniGani Lab: Mode Beta Tester
                   </h3>
                   <span
-                    className={`px-2 py-0.5 text-[9px] font-black rounded-md uppercase tracking-wider ${
+                    className={`px-2 py-0.5 text-[10px] font-black rounded-md uppercase tracking-wider ${
                       betaTester
-                        ? 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400 border border-violet-200/30 dark:border-violet-500/20'
-                        : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/40 dark:border-slate-700/50'
+                        ? 'bg-violet-500/15 text-violet-600 dark:text-violet-400 border border-violet-500/30'
+                        : 'bg-card-muted text-text-muted border border-card-border'
                     }`}
                   >
                     {betaTester ? 'Aktif' : 'Nonaktif'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p className="text-xs text-text-muted mt-0.5">
                   Ikut serta menguji fitur-fitur eksperimental terbaru sebelum dirilis secara publik.
                 </p>
               </div>
@@ -370,14 +371,14 @@ export default function Dashboard() {
 
             {/* Toggle Button */}
             <div className="flex items-center space-x-3 self-end sm:self-center shrink-0">
-              <span className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest hidden xs:inline">
+              <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider hidden xs:inline">
                 Status Pengujian
               </span>
               <button
                 type="button"
                 onClick={toggleBetaTester}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${
-                  betaTester ? 'bg-violet-600 dark:bg-violet-500' : 'bg-slate-200 dark:bg-slate-800'
+                  betaTester ? 'bg-violet-600' : 'bg-card-muted border border-card-border'
                 }`}
               >
                 <span
@@ -390,30 +391,30 @@ export default function Dashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
-            <div className="space-y-2 text-xxs font-semibold leading-relaxed text-slate-600 dark:text-slate-350">
+            <div className="space-y-2 text-xs font-semibold leading-relaxed text-text-secondary">
               <p>
                 Mode Beta Tester membuka akses laboratorium pengembang bagi seluruh pengguna. Fitur ini dirancang khusus agar pembelajar dapat mempercepat jalannya proses uji coba sistem pembelajaran KaniGani.
               </p>
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 italic font-medium">
+              <p className="text-[11px] text-text-muted italic font-medium">
                 *Catatan: Anda dapat menonaktifkan fitur ini kapan saja dari tombol di atas atau melalui menu Akun jika ingin kembali ke mode belajar reguler.
               </p>
             </div>
 
-            <div className="p-4 bg-violet-50/40 dark:bg-violet-950/10 border border-violet-100/40 dark:border-violet-900/20 rounded-2xl space-y-2.5">
+            <div className="p-4 bg-violet-50/40 dark:bg-violet-950/15 border border-violet-100/60 dark:border-violet-900/30 rounded-2xl space-y-2.5">
               <span className="text-[10px] font-black text-violet-600 dark:text-violet-400 uppercase tracking-widest block select-none">
                 💡 Fitur Khusus Yang Didapatkan:
               </span>
-              <ul className="space-y-2 text-xxs font-bold leading-relaxed text-slate-650 dark:text-slate-300">
+              <ul className="space-y-2 text-xs font-bold leading-relaxed text-text-secondary">
                 <li className="flex items-start space-x-2">
                   <span className="text-violet-500 select-none">⚡</span>
                   <span>
-                    <strong className="text-slate-800 dark:text-slate-200">Tombol Percepat Review:</strong> Memunculkan opsi <span className="text-violet-600 dark:text-violet-400 font-black">&quot;Percepat&quot; ⚡</span> di kartu kuis latihan di bawah untuk mereset antrean review secara instan.
+                    <strong className="text-text-primary">Tombol Percepat Review:</strong> Memunculkan opsi <span className="text-violet-600 dark:text-violet-400 font-black">&quot;Percepat&quot; ⚡</span> di kartu kuis latihan di atas untuk mereset antrean review secara instan.
                   </span>
                 </li>
                 <li className="flex items-start space-x-2">
                   <span className="text-violet-500 select-none">🧪</span>
                   <span>
-                    <strong className="text-slate-800 dark:text-slate-200">Eksperimental Labs:</strong> Mencoba pembaruan antarmuka dan sistem kuis lebih cepat dibanding pengguna reguler.
+                    <strong className="text-text-primary">Eksperimental Labs:</strong> Mencoba pembaruan antarmuka dan sistem kuis lebih cepat dibanding pengguna reguler.
                   </span>
                 </li>
               </ul>
@@ -472,15 +473,15 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Schedule & Item Grid */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-2xl sm:rounded-3xl border border-card-border shadow-xs overflow-hidden">
               {/* Tab Header */}
-              <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+              <div className="flex border-b border-card-border bg-card-muted/60">
                 <button
                   onClick={() => setActiveTab('schedule')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
+                  className={`flex-1 py-3.5 sm:py-4 text-center text-xs sm:text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
                     activeTab === 'schedule'
-                      ? 'border-indigo-500 text-indigo-500'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <div className="flex items-center justify-center space-x-1.5">
@@ -490,21 +491,21 @@ export default function Dashboard() {
                 </button>
                 <button
                   onClick={() => setActiveTab('items')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
+                  className={`flex-1 py-3.5 sm:py-4 text-center text-xs sm:text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
                     activeTab === 'items'
-                      ? 'border-indigo-500 text-indigo-500'
-                      : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                      ? 'border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                      : 'border-transparent text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <div className="flex items-center justify-center space-x-1.5">
                     <Calendar className="w-4 h-4" />
-                    <span>Daftar Item Aktif ({itemDetails.filter(i => i.srs_stage > 0).length})</span>
+                    <span>Daftar Item Aktif ({itemDetails.filter((i) => i.srs_stage > 0).length})</span>
                   </div>
                 </button>
               </div>
 
               {/* Tab Content */}
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {activeTab === 'schedule' ? (
                   <HourlySchedule
                     schedule={schedule}
@@ -513,36 +514,39 @@ export default function Dashboard() {
                   />
                 ) : (
                   <div>
-                    {itemDetails.filter(i => i.srs_stage > 0).length > 0 ? (
+                    {itemDetails.filter((i) => i.srs_stage > 0).length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {itemDetails.filter(i => i.srs_stage > 0).slice(0, 15).map((item, idx) => (
-                          <div
-                            key={idx}
-                            className={`p-3 rounded-2xl flex flex-col justify-between items-center text-center border shadow-xxs ${
-                              item.type === 'radical'
-                                ? 'bg-[#00a0f0]/5 border-[#00a0f0]/10 text-[#00a0f0] dark:bg-[#00a0f0]/10'
-                                : item.type === 'kanji'
-                                ? 'bg-[#f03e64]/5 border-[#f03e64]/10 text-[#f03e64] dark:bg-[#f03e64]/10'
-                                : 'bg-[#a000f0]/5 border-[#a000f0]/10 text-[#a000f0] dark:bg-[#a000f0]/10'
-                            }`}
-                          >
-                            <span className="text-2xl font-black">{item.character}</span>
-                            <span className="text-xxs font-semibold mt-1 text-slate-500 dark:text-slate-400 truncate max-w-full uppercase tracking-wider">
-                              {item.name}
-                            </span>
-                            <span className={`text-3xs font-extrabold px-2 py-0.5 rounded-full mt-2 ${getSrsColorClass(item.srs_stage)}`}>
-                              {getSrsLabel(item.srs_stage)}
-                            </span>
-                          </div>
-                        ))}
-                        {itemDetails.filter(i => i.srs_stage > 0).length > 15 && (
-                          <div className="col-span-full text-center text-xs text-slate-400 mt-2 font-medium select-none">
-                            + dan {itemDetails.filter(i => i.srs_stage > 0).length - 15} item aktif lainnya...
+                        {itemDetails
+                          .filter((i) => i.srs_stage > 0)
+                          .slice(0, 15)
+                          .map((item, idx) => (
+                            <div
+                              key={idx}
+                              className={`p-3 sm:p-3.5 rounded-2xl flex flex-col justify-between items-center text-center border shadow-xs transition-transform hover:scale-105 ${
+                                item.type === 'radical'
+                                  ? 'bg-radical/10 border-radical/30 text-radical'
+                                  : item.type === 'kanji'
+                                  ? 'bg-kanji/10 border-kanji/30 text-kanji'
+                                  : 'bg-vocab/10 border-vocab/30 text-vocab'
+                              }`}
+                            >
+                              <span className="text-2xl sm:text-3xl font-black font-japanese leading-tight">
+                                {item.character}
+                              </span>
+                              <span className="text-[11px] font-bold mt-1 text-text-muted truncate max-w-full uppercase tracking-wider">
+                                {item.name}
+                              </span>
+                              <SrsBadge stage={item.srs_stage} size="sm" className="mt-2" />
+                            </div>
+                          ))}
+                        {itemDetails.filter((i) => i.srs_stage > 0).length > 15 && (
+                          <div className="col-span-full text-center text-xs text-text-muted mt-2 font-medium select-none">
+                            + dan {itemDetails.filter((i) => i.srs_stage > 0).length - 15} item aktif lainnya...
                           </div>
                         )}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-slate-400 dark:text-slate-500 select-none">
+                      <div className="text-center py-8 text-text-muted select-none">
                         <Calendar className="w-10 h-10 mx-auto opacity-30 mb-2" />
                         <p className="text-sm">Belum ada item aktif. Silakan mulai Lesson!</p>
                       </div>

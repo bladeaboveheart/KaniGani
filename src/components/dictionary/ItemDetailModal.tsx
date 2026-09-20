@@ -27,37 +27,33 @@ export default function ItemDetailModal({
   onItemUpdated,
 }: ItemDetailModalProps) {
   const router = useRouter();
-  const [localSimilar, setLocalSimilar] = useState<any[]>(item?.similar_kanji || []);
-  const [localAudios, setLocalAudios] = useState<any[]>(item?.audios || []);
+  const [fallbackSimilar, setFallbackSimilar] = useState<any[]>([]);
+  const [fallbackAudios, setFallbackAudios] = useState<any[]>([]);
   const type = item?.type || 'radical';
 
-  useEffect(() => {
-    if (!item) {
-      setLocalSimilar([]);
-      setLocalAudios([]);
-      return;
-    }
-    if (item.similar_kanji && item.similar_kanji.length > 0) {
-      setLocalSimilar(item.similar_kanji);
-    } else if (type !== 'kanji') {
-      setLocalSimilar([]);
-    }
+  const localSimilar = (item?.similar_kanji && item.similar_kanji.length > 0)
+    ? item.similar_kanji
+    : fallbackSimilar;
 
-    if (item.audios && item.audios.length > 0) {
-      setLocalAudios(item.audios);
-    } else if (type === 'vocabulary') {
+  const localAudios = (item?.audios && item.audios.length > 0)
+    ? item.audios
+    : fallbackAudios;
+
+  useEffect(() => {
+    if (!item) return;
+
+    let isMounted = true;
+
+    if (type === 'vocabulary' && (!item.audios || item.audios.length === 0)) {
       supabase
         .from('item_audios')
         .select('*')
         .eq('item_id', item.id)
         .then(({ data }) => {
-          if (data) setLocalAudios(data);
+          if (isMounted && data) setFallbackAudios(data);
         });
-    } else {
-      setLocalAudios([]);
     }
 
-    let isMounted = true;
     async function loadFallbackSimilar() {
       if (type !== 'kanji' || (item!.similar_kanji && item!.similar_kanji.length > 0)) return;
       try {
@@ -90,7 +86,7 @@ export default function ItemDetailModal({
           };
         }).filter(Boolean);
 
-        setLocalSimilar(list);
+        setFallbackSimilar(list);
       } catch (e) {
         console.error('Error in fallback similar kanji fetch:', e);
       }
@@ -116,14 +112,17 @@ export default function ItemDetailModal({
   return (
     <div
       onClick={onClose}
-      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 transition-all duration-300"
+      className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 transition-all duration-300"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col animate-fade-in my-8 max-h-[90vh]"
+        className="bg-card text-primary w-full max-w-lg rounded-t-3xl sm:rounded-3xl border-t sm:border border-card-border shadow-2xl overflow-hidden flex flex-col animate-fade-in max-h-[92vh] sm:max-h-[90vh] my-0 sm:my-8"
       >
         {/* Header Banner */}
-        <div className={`${headerGradient} p-8 text-white flex flex-col items-center justify-center relative shrink-0`}>
+        <div className={`${headerGradient} p-6 sm:p-8 text-white flex flex-col items-center justify-center relative shrink-0`}>
+          {/* Mobile Drag Handle Indicator */}
+          <div className="w-12 h-1.5 bg-white/40 rounded-full mx-auto mb-3 sm:hidden shrink-0" />
+
           <div className="absolute top-4 right-4 flex items-center space-x-1.5">
             <button
               onClick={() => {
@@ -131,15 +130,15 @@ export default function ItemDetailModal({
                 const identifier = encodeURIComponent(item.character || item.slug || '');
                 router.push(`/${type}/${identifier}`);
               }}
-              className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors flex items-center space-x-1 text-xs font-semibold px-2"
+              className="min-h-[44px] px-3 py-2 hover:bg-white/20 rounded-xl text-white transition-colors flex items-center space-x-1.5 text-xs font-semibold"
               title="Buka Halaman Lengkap"
             >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-4xs uppercase tracking-wider">Halaman Penuh</span>
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline text-[10px] uppercase tracking-wider">Halaman Penuh</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 hover:bg-white/20 rounded-lg text-white transition-colors"
+              className="min-h-[44px] min-w-[44px] p-2.5 hover:bg-white/20 rounded-xl text-white transition-colors flex items-center justify-center"
               title="Tutup"
             >
               <X className="w-5 h-5" />
@@ -185,18 +184,18 @@ export default function ItemDetailModal({
         {/* Content Body */}
         <div className="p-6 sm:p-8 space-y-6 text-sm leading-relaxed text-left overflow-y-auto flex-1">
           {loading && (
-            <div className="flex items-center justify-center py-4 space-x-2 text-slate-400">
-              <Loader2 className="w-5 h-5 animate-spin" />
+            <div className="flex items-center justify-center py-4 space-x-2 text-muted">
+              <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
               <span className="text-xs font-semibold">Memuat rincian relasi...</span>
             </div>
           )}
 
           {/* SRS Stage Status */}
-          <div className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200/50 dark:border-slate-850 rounded-2xl">
-            <span className="text-xxs font-bold text-slate-450 uppercase tracking-widest block">
+          <div className="flex items-center justify-between p-3.5 bg-card-muted/50 border border-card-border rounded-2xl">
+            <span className="text-xs font-bold text-muted uppercase tracking-widest block">
               Status Belajar SRS
             </span>
-            <span className={`text-xxs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(item.srs_stage || 0)}`}>
+            <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${getSrsColorClass(item.srs_stage || 0)}`}>
               {item.srs_stage === 0 ? 'Terkunci (Belum Dipelajari)' : getSrsLabel(item.srs_stage || 0)}
             </span>
           </div>
@@ -205,7 +204,7 @@ export default function ItemDetailModal({
           {item.readings && item.readings.length > 0 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-1.5">
+                <h3 className="text-xs font-bold text-muted uppercase tracking-widest flex items-center space-x-1.5">
                   <Languages className="w-3.5 h-3.5 text-pink-500" />
                   <span>Cara Baca (Readings)</span>
                 </h3>
@@ -220,10 +219,10 @@ export default function ItemDetailModal({
                   const nanoriList = item.readings.filter((r: any) => r.reading_type === 'nanori');
 
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50/70 dark:bg-slate-850/50 p-3.5 rounded-2xl border border-slate-200/70 dark:border-slate-800/70">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-card-muted/40 p-3.5 rounded-2xl border border-card-border">
                       {/* On'yomi */}
                       <div className="space-y-1.5">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
                           On’yomi
                         </span>
                         {onyomiList.length > 0 ? (
@@ -233,13 +232,13 @@ export default function ItemDetailModal({
                                 key={idx}
                                 className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -247,7 +246,7 @@ export default function ItemDetailModal({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-xs font-medium text-muted italic block">
                             None
                           </span>
                         )}
@@ -255,7 +254,7 @@ export default function ItemDetailModal({
 
                       {/* Kun'yomi */}
                       <div className="space-y-1.5">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
                           Kun’yomi
                         </span>
                         {kunyomiList.length > 0 ? (
@@ -265,13 +264,13 @@ export default function ItemDetailModal({
                                 key={idx}
                                 className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -279,7 +278,7 @@ export default function ItemDetailModal({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-xs font-medium text-muted italic block">
                             None
                           </span>
                         )}
@@ -287,7 +286,7 @@ export default function ItemDetailModal({
 
                       {/* Nanori */}
                       <div className="space-y-1.5">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
                           Nanori
                         </span>
                         {nanoriList.length > 0 ? (
@@ -297,13 +296,13 @@ export default function ItemDetailModal({
                                 key={idx}
                                 className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -311,7 +310,7 @@ export default function ItemDetailModal({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-xs font-medium text-muted italic block">
                             None
                           </span>
                         )}
@@ -324,7 +323,7 @@ export default function ItemDetailModal({
                   {item.readings.map((r: any, idx: number) => (
                     <div
                       key={idx}
-                      className="px-3 py-1.5 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-2 bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-900/60 text-purple-700 dark:text-purple-300 shadow-xs"
+                      className="px-3 py-1.5 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-2 bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300 shadow-xs"
                     >
                       <span>{r.reading}</span>
                     </div>
@@ -336,11 +335,11 @@ export default function ItemDetailModal({
 
           {/* Meaning Mnemonic / Radical Description */}
           {(item.meaning_mnemonic || item.description) && (
-            <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
-              <h3 className="text-xxs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block mb-1">
+            <div className="p-4 bg-teal-500/10 border border-teal-500/20 rounded-2xl">
+              <h3 className="text-xs font-bold text-teal-700 dark:text-teal-300 uppercase tracking-widest block mb-1">
                 {type === 'radical' ? 'Mnemonic & Penjelasan Radikal' : 'Mnemonic Arti (Jembatan Keledai)'}
               </h3>
-              <p className="text-teal-900 dark:text-teal-300 font-medium text-xs leading-relaxed">
+              <p className="text-primary font-medium text-xs leading-relaxed">
                 <FormattedText text={item.meaning_mnemonic || item.description} />
               </p>
             </div>
@@ -348,11 +347,11 @@ export default function ItemDetailModal({
 
           {/* Reading Mnemonic (Kanji & Vocab) */}
           {item.reading_mnemonic && (
-            <div className="p-4 bg-pink-50 dark:bg-pink-950/20 border border-pink-100 dark:border-pink-900/50 rounded-2xl">
-              <h3 className="text-xxs font-bold text-pink-700 dark:text-pink-400 uppercase tracking-widest block mb-1">
+            <div className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-2xl">
+              <h3 className="text-xs font-bold text-pink-700 dark:text-pink-300 uppercase tracking-widest block mb-1">
                 Mnemonic Cara Baca
               </h3>
-              <p className="text-pink-900 dark:text-pink-300 font-medium text-xs leading-relaxed">
+              <p className="text-primary font-medium text-xs leading-relaxed">
                 <FormattedText text={item.reading_mnemonic} />
               </p>
             </div>
@@ -363,10 +362,10 @@ export default function ItemDetailModal({
             item.meaning_mnemonic &&
             item.description.trim() !== item.meaning_mnemonic.trim() && (
               <div className="space-y-1">
-                <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
                   Deskripsi Detail
                 </h3>
-                <p className="text-slate-650 dark:text-slate-350 text-xs leading-relaxed">
+                <p className="text-primary/90 text-xs leading-relaxed">
                   <FormattedText text={item.description} />
                 </p>
               </div>
@@ -396,8 +395,8 @@ export default function ItemDetailModal({
 
           {/* Context Sentences (Vocabulary) */}
           {item.sentences && item.sentences.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
-              <h3 className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block flex items-center space-x-1.5">
+            <div className="space-y-3 pt-4 border-t border-card-border">
+              <h3 className="text-xs font-bold text-muted uppercase tracking-widest block flex items-center space-x-1.5">
                 <FileText className="w-3.5 h-3.5 text-purple-500" />
                 <span>Contoh Kalimat Konteks</span>
               </h3>
@@ -405,12 +404,12 @@ export default function ItemDetailModal({
                 {item.sentences.map((st: any, idx: number) => (
                   <div
                     key={idx}
-                    className="p-3 bg-purple-50/50 dark:bg-purple-950/10 border border-purple-100 dark:border-purple-900/30 rounded-2xl space-y-1"
+                    className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-2xl space-y-1"
                   >
-                    <p className="font-japanese font-bold text-sm text-slate-900 dark:text-slate-100">
+                    <p className="font-japanese font-bold text-sm text-primary">
                       {st.japanese}
                     </p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <p className="text-xs text-muted font-medium">
                       {st.indonesian || st.english}
                     </p>
                   </div>
@@ -421,13 +420,13 @@ export default function ItemDetailModal({
 
           {/* Relations: Radicals composed in Kanji */}
           {item.radicals && item.radicals.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="space-y-3 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-cyan-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                <h3 className="text-xs font-bold text-cyan-500 uppercase tracking-widest block flex items-center space-x-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   <span>Terdiri Dari Radikal</span>
                 </h3>
-                <span className="text-xxs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-full border border-cyan-200/60 dark:border-cyan-900/50">
+                <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
                   {item.radicals.length}
                 </span>
               </div>
@@ -443,12 +442,12 @@ export default function ItemDetailModal({
                         router.push(`/radical?character=${encodeURIComponent(rd.character || rd.slug)}`);
                       }
                     }}
-                    className="p-3 bg-radical/5 border border-radical/15 hover:border-radical/40 dark:bg-radical/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                    className="p-3 bg-radical/5 border border-radical/20 hover:border-radical/40 dark:bg-radical/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
                     <span className="text-2xl font-black text-radical group-hover:scale-110 transition-transform leading-tight block">
                       <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-7 h-7" />
                     </span>
-                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
+                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
                       {rd.slug}
                     </span>
                   </div>
@@ -459,15 +458,15 @@ export default function ItemDetailModal({
 
           {/* Relations: Found in Kanji (Radical) */}
           {item.kanjis && item.kanjis.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="space-y-3 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-pink-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                <h3 className="text-xs font-bold text-pink-500 uppercase tracking-widest block flex items-center space-x-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   <span>
                     {type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}
                   </span>
                 </h3>
-                <span className="text-xxs font-bold text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/40 px-2 py-0.5 rounded-full border border-pink-200/60 dark:border-pink-900/50">
+                <span className="text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">
                   {item.kanjis.length}
                 </span>
               </div>
@@ -483,12 +482,12 @@ export default function ItemDetailModal({
                         router.push(`/kanji?character=${encodeURIComponent(kj.character)}`);
                       }
                     }}
-                    className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                    className="p-3 bg-kanji/5 border border-kanji/20 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
                     <span className="text-2xl font-black font-japanese text-kanji group-hover:scale-110 transition-transform leading-tight block">
                       {kj.character}
                     </span>
-                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
+                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
                       {kj.slug}
                     </span>
                   </div>
@@ -499,13 +498,13 @@ export default function ItemDetailModal({
 
           {/* Relations: Found in Vocabulary (Kanji) */}
           {item.vocabularies && item.vocabularies.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-slate-200/50 dark:border-slate-800/50">
+            <div className="space-y-3 pt-4 border-t border-card-border">
               <div className="flex items-center justify-between">
-                <h3 className="text-xxs font-bold text-purple-500 uppercase tracking-widest block flex items-center space-x-1.5">
+                <h3 className="text-xs font-bold text-purple-500 uppercase tracking-widest block flex items-center space-x-1.5">
                   <Layers className="w-3.5 h-3.5" />
                   <span>Ditemukan di Kosakata</span>
                 </h3>
-                <span className="text-xxs font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 px-2 py-0.5 rounded-full border border-purple-200/60 dark:border-purple-900/50">
+                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
                   {item.vocabularies.length}
                 </span>
               </div>
@@ -521,12 +520,12 @@ export default function ItemDetailModal({
                         router.push(`/vocabulary?character=${encodeURIComponent(vc.character)}`);
                       }
                     }}
-                    className="p-3 bg-vocab/5 border border-vocab/15 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-sm rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
+                    className="p-3 bg-vocab/5 border border-vocab/20 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
                   >
                     <span className="text-xl font-black font-japanese text-vocab group-hover:scale-110 transition-transform leading-tight block truncate max-w-full px-1">
                       {vc.character}
                     </span>
-                    <span className="text-4xs text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
+                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
                       {vc.slug}
                     </span>
                   </div>
@@ -538,21 +537,21 @@ export default function ItemDetailModal({
         </div>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-950 flex items-center justify-between shrink-0">
+        <div className="p-4 border-t border-card-border bg-card-muted/50 flex items-center justify-between shrink-0">
           <button
             onClick={() => {
               onClose();
               const identifier = encodeURIComponent(item.character || item.slug || '');
               router.push(`/${type}/${identifier}`);
             }}
-            className="flex items-center space-x-1.5 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors px-2 py-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-800/50"
+            className="min-h-[44px] flex items-center space-x-1.5 text-xs font-bold text-muted hover:text-primary transition-colors px-3 py-2 rounded-xl hover:bg-card-muted"
           >
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-4 h-4" />
             <span>Buka Halaman Lengkap</span>
           </button>
           <button
             onClick={onClose}
-            className="px-6 py-2 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 font-bold rounded-xl text-xs transition-colors"
+            className="min-h-[44px] px-6 py-2 bg-card-muted hover:bg-card-muted/80 text-primary font-bold rounded-xl text-xs transition-colors border border-card-border"
           >
             Tutup Detail
           </button>

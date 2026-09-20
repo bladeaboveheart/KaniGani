@@ -46,7 +46,8 @@ export default function ItemFullPageView({
   onItemUpdated,
 }: ItemFullPageViewProps) {
   const router = useRouter();
-  const [currentItem, setCurrentItem] = useState(item);
+  const [editedItem, setEditedItem] = useState<any | null>(null);
+  const currentItem = editedItem || item;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [referenceItems, setReferenceItems] = useState<any[]>([]);
@@ -93,10 +94,6 @@ export default function ItemFullPageView({
     };
   }, []);
 
-  useEffect(() => {
-    setCurrentItem(item);
-  }, [item]);
-
   const handleOpenEdit = async () => {
     if (!devMode || !currentItem) return;
     try {
@@ -129,7 +126,7 @@ export default function ItemFullPageView({
         formItem.character || formItem.slug
       );
       if (updated) {
-        setCurrentItem(updated);
+        setEditedItem(updated);
         if (onItemUpdated) {
           onItemUpdated(updated);
         }
@@ -229,15 +226,15 @@ export default function ItemFullPageView({
           {prevItem ? (
             <Link
               href={getItemLink(prevItem)}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
+              className="min-h-[44px] flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-card-border hover:bg-card-muted text-xs font-bold text-primary transition-colors"
               title={`Sebelumnya: ${prevItem.character || prevItem.slug}`}
             >
               <ChevronLeft className="w-4 h-4" />
               <span className="font-japanese text-sm">{prevItem.character || prevItem.slug}</span>
-              <span className="hidden md:inline text-4xs uppercase tracking-wider text-slate-400">Prev</span>
+              <span className="hidden md:inline text-[10px] uppercase tracking-wider text-muted">Prev</span>
             </Link>
           ) : (
-            <span className="px-3 py-1.5 rounded-xl border border-transparent text-xs font-bold text-slate-300 dark:text-slate-700 cursor-not-allowed">
+            <span className="min-h-[44px] flex items-center px-3 py-1.5 rounded-xl border border-transparent text-xs font-bold text-muted opacity-50 cursor-not-allowed">
               Awal Level
             </span>
           )}
@@ -246,29 +243,29 @@ export default function ItemFullPageView({
             <button
               type="button"
               onClick={handleOpenEdit}
-              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-amber-300/80 dark:border-amber-700/60 bg-amber-50/50 dark:bg-amber-950/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 text-xs font-bold text-amber-700 dark:text-amber-300 transition-colors cursor-pointer"
+              className="min-h-[44px] flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 hover:bg-amber-500/20 text-xs font-bold text-amber-700 dark:text-amber-300 transition-colors cursor-pointer"
               title="Edit Item Langsung"
             >
               <Edit3 className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden sm:inline text-4xs uppercase tracking-wider">Edit</span>
+              <span className="hidden sm:inline text-[10px] uppercase tracking-wider">Edit</span>
             </button>
           )}
 
           <button
             onClick={handleCopyLink}
-            className="p-2 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 text-slate-500 dark:text-slate-400 transition-colors"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center p-2 rounded-xl border border-card-border hover:bg-card-muted text-muted hover:text-primary transition-colors"
             title="Salin Tautan"
           >
-            <Share2 className="w-3.5 h-3.5" />
+            <Share2 className="w-4 h-4" />
           </button>
 
           {nextItem ? (
             <Link
               href={getItemLink(nextItem)}
-              className="flex items-center space-x-1 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 transition-colors"
+              className="min-h-[44px] flex items-center space-x-1.5 px-3 py-1.5 rounded-xl border border-card-border hover:bg-card-muted text-xs font-bold text-primary transition-colors"
               title={`Selanjutnya: ${nextItem.character || nextItem.slug}`}
             >
-              <span className="hidden md:inline text-4xs uppercase tracking-wider text-slate-400">Next</span>
+              <span className="hidden md:inline text-[10px] uppercase tracking-wider text-muted">Next</span>
               <span className="font-japanese text-sm">{nextItem.character || nextItem.slug}</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
@@ -385,10 +382,10 @@ export default function ItemFullPageView({
                   const nanoriList = item.readings.filter((r: any) => r.reading_type === 'nanori');
 
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50/70 dark:bg-slate-850/50 p-4 sm:p-5 rounded-2xl border border-slate-200/70 dark:border-slate-800/70">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-card-muted/40 p-4 sm:p-5 rounded-2xl border border-card-border">
                       {/* On'yomi */}
                       <div className="space-y-2">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-xs font-bold text-muted uppercase tracking-widest block">
                           On’yomi
                         </span>
                         {onyomiList.length > 0 ? (
@@ -398,13 +395,13 @@ export default function ItemFullPageView({
                                 key={idx}
                                 className={`px-3 py-1.5 rounded-xl border text-sm font-japanese font-bold flex items-center space-x-2 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="text-base leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1.5 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -412,7 +409,7 @@ export default function ItemFullPageView({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-sm font-medium text-muted italic block">
                             None
                           </span>
                         )}
@@ -420,7 +417,7 @@ export default function ItemFullPageView({
 
                       {/* Kun'yomi */}
                       <div className="space-y-2">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-xs font-bold text-muted uppercase tracking-widest block">
                           Kun’yomi
                         </span>
                         {kunyomiList.length > 0 ? (
@@ -430,13 +427,13 @@ export default function ItemFullPageView({
                                 key={idx}
                                 className={`px-3 py-1.5 rounded-xl border text-sm font-japanese font-bold flex items-center space-x-2 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="text-base leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1.5 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -444,7 +441,7 @@ export default function ItemFullPageView({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-sm font-medium text-muted italic block">
                             None
                           </span>
                         )}
@@ -452,7 +449,7 @@ export default function ItemFullPageView({
 
                       {/* Nanori */}
                       <div className="space-y-2">
-                        <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        <span className="text-xs font-bold text-muted uppercase tracking-widest block">
                           Nanori
                         </span>
                         {nanoriList.length > 0 ? (
@@ -462,13 +459,13 @@ export default function ItemFullPageView({
                                 key={idx}
                                 className={`px-3 py-1.5 rounded-xl border text-sm font-japanese font-bold flex items-center space-x-2 transition-all ${
                                   r.primary_reading
-                                    ? 'bg-pink-50 dark:bg-pink-950/40 border-pink-200 dark:border-pink-900/60 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                    : 'bg-card border-card-border text-primary'
                                 }`}
                               >
                                 <span className="text-base leading-none">{r.reading}</span>
                                 {r.primary_reading && (
-                                  <span className="text-4xs font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-900/50 px-1.5 py-0.5 rounded">
+                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1.5 py-0.5 rounded">
                                     Utama
                                   </span>
                                 )}
@@ -476,7 +473,7 @@ export default function ItemFullPageView({
                             ))}
                           </div>
                         ) : (
-                          <span className="text-sm font-medium text-slate-400 dark:text-slate-500 italic block">
+                          <span className="text-sm font-medium text-muted italic block">
                             None
                           </span>
                         )}

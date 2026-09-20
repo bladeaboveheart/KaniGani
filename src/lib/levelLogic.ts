@@ -113,6 +113,20 @@ export function calculateUserLevel(
 }
 
 /**
+ * Checks whether user has completed Level 60 (curriculum mastered):
+ * At least 90% (>= 0.9) of Level 60 Kanji have reached Guru stage (stage >= 5).
+ */
+export function isLevel60Master(
+  allKanji: KanjiItem[],
+  guruKanjiIdSet: Set<string>
+): boolean {
+  const level60Kanji = allKanji.filter((k) => k.level === MAX_LEVEL);
+  if (level60Kanji.length === 0) return false;
+  const passedCount = level60Kanji.filter((k) => guruKanjiIdSet.has(k.id)).length;
+  return passedCount / level60Kanji.length >= LEVEL_UP_RATIO_THRESHOLD;
+}
+
+/**
  * Checks whether all required prerequisite items have reached Guru stage (stage >= 5).
  */
 export function checkPrerequisitesMet(

@@ -2,6 +2,7 @@
 
 import { BarChart2 } from 'lucide-react';
 import { DashboardStats } from '@/lib/types';
+import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 
 interface SrsDistributionProps {
   stats: DashboardStats | null;
@@ -15,54 +16,60 @@ export default function SrsDistribution({ stats }: SrsDistributionProps) {
   const stages = [
     {
       label: 'Pemula',
-      count: (distribution[1] || 0) + (distribution[2] || 0) + (distribution[3] || 0) + (distribution[4] || 0),
-      color: 'bg-rose-500'
+      count:
+        (distribution[1] || 0) +
+        (distribution[2] || 0) +
+        (distribution[3] || 0) +
+        (distribution[4] || 0),
+      dotColor: 'bg-rose-500',
     },
     {
       label: 'Lulus',
       count: (distribution[5] || 0) + (distribution[6] || 0),
-      color: 'bg-purple-600'
+      dotColor: 'bg-purple-600',
     },
     {
       label: 'Mahir',
       count: distribution[7] || 0,
-      color: 'bg-blue-600'
+      dotColor: 'bg-blue-600',
     },
     {
       label: 'Ahli',
       count: distribution[8] || 0,
-      color: 'bg-teal-600'
+      dotColor: 'bg-teal-600',
     },
     {
       label: 'Tuntas',
       count: distribution[9] || 0,
-      color: 'bg-slate-700 text-amber-400 border border-amber-500/20'
-    }
+      dotColor: 'bg-slate-600 dark:bg-slate-400',
+    },
   ];
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
-      <div className="flex items-center space-x-2 border-b border-slate-100 dark:border-slate-800 pb-3 select-none">
-        <BarChart2 className="w-5 h-5 text-indigo-500" />
-        <h3 className="font-extrabold text-lg tracking-tight">Status Tahap Belajar (SRS Stage)</h3>
-      </div>
+    <Card className="space-y-6">
+      <CardHeader>
+        <div className="flex items-center space-x-2 select-none">
+          <BarChart2 className="w-5 h-5 text-indigo-500" />
+          <CardTitle>Status Tahap Belajar (SRS Stage)</CardTitle>
+        </div>
+      </CardHeader>
 
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4">
         {stages.map((stage, idx) => (
           <div
             key={idx}
-            className="flex flex-col items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 text-center"
+            className="flex flex-col items-center justify-between p-3.5 sm:p-4 bg-card-muted/70 rounded-2xl border border-card-border/60 text-center hover:border-card-border transition-colors"
           >
-            <span className="text-xxs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-normal">
+            <span className="text-[10px] sm:text-xs font-bold text-text-muted uppercase tracking-wider leading-normal">
               {stage.label}
             </span>
-            <span className="text-2xl font-black text-slate-800 dark:text-slate-200 my-2">
+            <span className="text-2xl sm:text-3xl font-black text-text-primary my-1.5 sm:my-2">
               {stage.count}
             </span>
-            <div className={`w-3 h-3 rounded-full ${stage.color.split(' ')[0]}`}></div>
+            <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full ${stage.dotColor}`} />
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }

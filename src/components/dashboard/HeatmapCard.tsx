@@ -149,14 +149,14 @@ export default function HeatmapCard({
         setSelectedType('year');
         setSelectedValue(null);
       }}
-      className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6 cursor-default"
+      className="bg-card rounded-2xl sm:rounded-3xl border border-card-border shadow-xs p-5 sm:p-7 lg:p-8 space-y-6 cursor-default"
     >
       {/* Header Row */}
       <div className="flex items-center justify-between select-none">
-        <h3 className="font-extrabold text-slate-800 dark:text-slate-100 text-lg tracking-tight">Heat Map</h3>
+        <h3 className="font-extrabold text-text-primary text-base sm:text-lg tracking-tight">Heat Map</h3>
 
         {/* Year navigation */}
-        <div className="flex items-center space-x-2 text-sm font-extrabold text-slate-500 dark:text-slate-400">
+        <div className="flex items-center space-x-2 text-sm font-extrabold text-text-muted">
           <button
             onClick={(e) => {
               e.stopPropagation();

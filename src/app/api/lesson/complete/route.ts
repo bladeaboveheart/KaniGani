@@ -35,11 +35,20 @@ export async function POST(request: Request) {
     const now = new Date().toISOString();
     const nextReview = getNextReviewDate(1);
 
+    // Ambil unlocked_at yang sudah ada agar tidak tertimpa
+    const { data: existingRows } = await userClient
+      .from('user_progress')
+      .select('item_id, unlocked_at')
+      .eq('user_id', user.id)
+      .in('item_id', itemIds);
+
+    const existingUnlockMap = new Map((existingRows || []).map((r: any) => [r.item_id, r.unlocked_at]));
+
     const updates = itemIds.map((itemId) => ({
       user_id: user.id,
       item_id: itemId,
       srs_stage: 1,
-      unlocked_at: now,
+      unlocked_at: existingUnlockMap.get(itemId) || now,
       next_review: nextReview,
     }));
 

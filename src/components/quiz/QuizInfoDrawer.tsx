@@ -15,46 +15,34 @@ interface QuizInfoDrawerProps {
 
 export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
-  const [prevItemId, setPrevItemId] = useState(item?.id);
-  const [similarKanjis, setSimilarKanjis] = useState<SimilarKanji[]>(item?.similar_kanjis || []);
-  const [localAudios, setLocalAudios] = useState<any[]>(item?.audios || []);
+  const [fallbackSimilar, setFallbackSimilar] = useState<SimilarKanji[]>([]);
+  const [fallbackAudios, setFallbackAudios] = useState<any[]>([]);
 
-  if (item?.id !== prevItemId) {
-    setPrevItemId(item?.id);
-    setShowAllKanjis(false);
-  }
+  const similarKanjis = (item?.similar_kanjis && item.similar_kanjis.length > 0)
+    ? item.similar_kanjis
+    : fallbackSimilar;
+
+  const localAudios = (item?.audios && item.audios.length > 0)
+    ? item.audios
+    : fallbackAudios;
 
   useEffect(() => {
-    if (!item) {
-      setSimilarKanjis([]);
-      setLocalAudios([]);
-      return;
-    }
-    if (item.audios && item.audios.length > 0) {
-      setLocalAudios(item.audios);
-    } else if (item.type === 'vocabulary') {
+    if (!item) return;
+
+    let isMounted = true;
+
+    if (item.type === 'vocabulary' && (!item.audios || item.audios.length === 0)) {
       supabase
         .from('item_audios')
         .select('*')
         .eq('item_id', item.id)
         .then(({ data }) => {
-          if (data) setLocalAudios(data);
+          if (isMounted && data) setFallbackAudios(data);
         });
-    } else {
-      setLocalAudios([]);
     }
 
-    if (item.similar_kanjis && item.similar_kanjis.length > 0) {
-      setSimilarKanjis(item.similar_kanjis);
-      return;
-    }
-    if (item.type !== 'kanji') {
-      setSimilarKanjis([]);
-      return;
-    }
-
-    let isMounted = true;
     async function loadSimilar() {
+      if (item!.type !== 'kanji' || (item!.similar_kanjis && item!.similar_kanjis.length > 0)) return;
       try {
         const { data } = await supabase
           .from('item_similar_kanji')
@@ -89,7 +77,7 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
           }
         }
 
-        setSimilarKanjis(list);
+        setFallbackSimilar(list);
       } catch (e) {
         console.error('Error loading similar kanji in drawer:', e);
       }
@@ -97,7 +85,7 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
 
     loadSimilar();
     return () => { isMounted = false; };
-  }, [item?.id, item?.type, item?.similar_kanjis]);
+  }, [item?.id, item?.type, item?.similar_kanjis, item?.audios]);
 
   if (!item) return null;
 

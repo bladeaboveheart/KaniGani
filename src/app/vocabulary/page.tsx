@@ -35,28 +35,28 @@ export default function VocabularyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center bg-background text-primary">
         <div className="flex flex-col items-center space-y-4">
           <Loader2 className="w-12 h-12 text-vocab animate-spin" />
-          <p className="font-semibold text-sm">Menyiapkan Halaman Kosakata...</p>
+          <p className="font-semibold text-sm text-muted">Menyiapkan Halaman Kosakata...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col bg-background text-primary transition-colors duration-300">
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-fade-in">
         {/* Simple & Clean Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-card-border">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight flex items-center gap-2.5">
+            <h1 className="text-2xl sm:text-3xl font-black text-primary tracking-tight flex items-center gap-2.5">
               <span className="w-3.5 h-3.5 rounded-full bg-vocab inline-block" />
               {theme.title}
             </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            <p className="text-xs text-muted mt-1">
               Kurikulum Level 1–60 • Menampilkan {filteredItems.length} kosakata
             </p>
           </div>

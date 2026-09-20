@@ -1,24 +1,16 @@
 import { supabase } from '@/lib/supabase';
 import { UserProgress } from '@/lib/types';
+import { generateChunkRanges } from '@/lib/userProgress';
 
 /**
- * Fetches all user_progress records for a user across all 60 levels (up to 10,000 items)
- * bypassing the default PostgREST 1,000 rows limit via parallel chunking.
+ * Fetches all user_progress records for a user across all 60 levels (up to 12,000+ items)
+ * bypassing the default PostgREST 1,000 rows limit via adaptive parallel chunking.
  */
 export async function fetchAllUserProgress(
   userId: string,
   selectQuery: string = 'item_id, srs_stage, unlocked_at, next_review',
   activeOnly: boolean = true
 ): Promise<UserProgress[]> {
-  const chunkRanges = [
-    [0, 999],
-    [1000, 1999],
-    [2000, 2999],
-    [3000, 3999],
-    [4000, 4999],
-    [5000, 5999],
-  ];
-
   let baseQuery = supabase
     .from('user_progress')
     .select(selectQuery as any)
@@ -38,8 +30,25 @@ export async function fetchAllUserProgress(
     return firstData;
   }
 
-  // If there are 1000+ items, fetch remaining in parallel
-  const remainingRanges = chunkRanges.slice(1);
+  // Dynamic chunk sizing based on user_progress count
+  let countQuery = supabase
+    .from('user_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (activeOnly) {
+    countQuery = countQuery.gt('srs_stage', 0);
+  }
+
+  const { count, error: countErr } = await countQuery;
+  const totalCount = countErr || count === null || count === undefined ? 12000 : count;
+
+  // Generate dynamic ranges starting from offset 1000
+  const remainingRanges = generateChunkRanges(totalCount, 1000, 1000);
+  if (remainingRanges.length === 0) {
+    return firstData;
+  }
+
   const remainingResults = await Promise.all(
     remainingRanges.map(([from, to]) =>
       baseQuery.range(from, to)

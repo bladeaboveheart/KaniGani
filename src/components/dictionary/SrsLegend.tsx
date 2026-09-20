@@ -28,14 +28,14 @@ export default function SrsLegend({ itemType }: SrsLegendProps) {
   }
 
   return (
-    <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-4 sm:px-6 sm:py-3.5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
-      <span className="text-xxs font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+    <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-card p-3.5 sm:px-5 sm:py-3 rounded-2xl sm:rounded-3xl border border-card-border shadow-xs">
+      <span className="text-xs font-bold uppercase tracking-widest text-muted">
         Legenda Status Belajar
       </span>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xxs font-bold text-slate-550 dark:text-slate-400">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold text-muted">
         {/* Locked */}
         <div className="flex items-center space-x-2">
-          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xxs ${lockedStyle}`}>
+          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xs ${lockedStyle}`}>
             {sampleChar}
           </div>
           <span>Locked</span>
@@ -43,7 +43,7 @@ export default function SrsLegend({ itemType }: SrsLegendProps) {
 
         {/* In Lessons */}
         <div className="flex items-center space-x-2">
-          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xxs ${lessonsStyle}`}>
+          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xs ${lessonsStyle}`}>
             {sampleChar}
           </div>
           <span>In Lessons</span>
@@ -51,7 +51,7 @@ export default function SrsLegend({ itemType }: SrsLegendProps) {
 
         {/* In Reviews */}
         <div className="flex items-center space-x-2">
-          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xxs ${reviewsStyle}`}>
+          <div className={`w-6 h-6 rounded-md border flex items-center justify-center font-japanese font-black text-xs ${reviewsStyle}`}>
             {sampleChar}
           </div>
           <span>In Reviews</span>
@@ -59,7 +59,7 @@ export default function SrsLegend({ itemType }: SrsLegendProps) {
 
         {/* Burned */}
         <div className="flex items-center space-x-2">
-          <div className="w-6 h-6 rounded-md border border-solid bg-burned-card flex items-center justify-center font-japanese font-black text-xxs text-white">
+          <div className="w-6 h-6 rounded-md border border-transparent bg-srs-burned flex items-center justify-center font-japanese font-black text-xs text-white">
             {sampleChar}
           </div>
           <span>Burned</span>

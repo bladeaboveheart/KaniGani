@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Item, ItemType } from '@/lib/types';
@@ -85,6 +85,41 @@ export function useDictionaryItems(itemType: ItemType) {
   const [displayMode, setDisplayMode] = useState<'reading' | 'meaning'>('reading');
   const [selectedItem, setSelectedItem] = useState<DictionaryItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
+
+  // Load detailed relations dynamically when opening modal
+  const openItemDetail = useCallback(async (target: DictionaryItem | any) => {
+    const fullBase = items.find(i => i.id === target.id || (target.character && i.character === target.character)) || target;
+    setSelectedItem(fullBase);
+
+    // Sync URL param without refreshing
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.set('character', target.character || target.slug || fullBase.character || '');
+      window.history.replaceState({}, '', url.toString());
+    }
+
+    try {
+      setDetailLoading(true);
+      const details = await fetchItemFullDetails(target.id);
+      setSelectedItem(prev => prev && (prev.id === target.id || prev.character === target.character) ? {
+        ...prev,
+        meanings: details.meanings.length ? details.meanings : prev.meanings,
+        readings: details.readings.length ? details.readings : prev.readings,
+        sentences: details.sentences,
+        radicals: details.prerequisites.filter((p: any) => p.type === 'radical'),
+        kanjis: itemType === 'radical'
+          ? details.dependents.filter((d: any) => d.type === 'kanji')
+          : details.prerequisites.filter((p: any) => p.type === 'kanji'),
+        vocabularies: details.dependents.filter((d: any) => d.type === 'vocabulary'),
+        similar_kanji: details.similar_kanji || [],
+        audios: (details as any).audios || [],
+      } : prev);
+    } catch (err) {
+      console.error('Error fetching full item details:', err);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, [items, itemType]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -318,40 +353,7 @@ export function useDictionaryItems(itemType: ItemType) {
     }
   }, [selectedTier, selectedLevel, items, itemType, loading]);
 
-  // Load detailed relations dynamically when opening modal
-  const openItemDetail = async (target: DictionaryItem | any) => {
-    const fullBase = items.find(i => i.id === target.id || (target.character && i.character === target.character)) || target;
-    setSelectedItem(fullBase);
 
-    // Sync URL param without refreshing
-    if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href);
-      url.searchParams.set('character', target.character || target.slug || fullBase.character || '');
-      window.history.replaceState({}, '', url.toString());
-    }
-
-    try {
-      setDetailLoading(true);
-      const details = await fetchItemFullDetails(target.id);
-      setSelectedItem(prev => prev && (prev.id === target.id || prev.character === target.character) ? {
-        ...prev,
-        meanings: details.meanings.length ? details.meanings : prev.meanings,
-        readings: details.readings.length ? details.readings : prev.readings,
-        sentences: details.sentences,
-        radicals: details.prerequisites.filter((p: any) => p.type === 'radical'),
-        kanjis: itemType === 'radical'
-          ? details.dependents.filter((d: any) => d.type === 'kanji')
-          : details.prerequisites.filter((p: any) => p.type === 'kanji'),
-        vocabularies: details.dependents.filter((d: any) => d.type === 'vocabulary'),
-        similar_kanji: details.similar_kanji || [],
-        audios: (details as any).audios || [],
-      } : prev);
-    } catch (err) {
-      console.error('Error fetching full item details:', err);
-    } finally {
-      setDetailLoading(false);
-    }
-  };
 
   const closeItemDetail = () => {
     setSelectedItem(null);

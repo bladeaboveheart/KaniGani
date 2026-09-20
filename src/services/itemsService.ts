@@ -1,18 +1,21 @@
 import { supabase } from '@/lib/supabase';
 import { Item, ItemType } from '@/lib/types';
 import * as wanakana from 'wanakana';
+import { generateChunkRanges } from '@/lib/userProgress';
 
 /**
  * Fetches all items of a given type in parallel chunks to bypass PostgREST 1000 row limits.
+ * Uses adaptive chunking to accommodate all vocabulary (6,600+ items) without truncation.
  */
 export async function fetchItemsByType(type: ItemType): Promise<Item[]> {
-  const chunkRanges = [
-    [0, 999],
-    [1000, 1999],
-    [2000, 2999],
-    [3000, 3999],
-    [4000, 4999],
-  ];
+  const { count, error: countErr } = await supabase
+    .from('items')
+    .select('*', { count: 'exact', head: true })
+    .eq('type', type);
+
+  const fallbackCount = type === 'vocabulary' ? 8000 : (type === 'kanji' ? 3000 : 1000);
+  const totalCount = countErr || count === null || count === undefined ? fallbackCount : count;
+  const chunkRanges = generateChunkRanges(totalCount, 1000, 0);
 
   const results = await Promise.all(
     chunkRanges.map(([from, to]) =>
@@ -710,13 +713,13 @@ export async function searchGlobalItems(
   // 3. Lower level first
   const lowerQ = trimmed.toLowerCase();
   results.sort((a, b) => {
-    const aCharMatch = a.character.toLowerCase() === lowerQ;
-    const bCharMatch = b.character.toLowerCase() === lowerQ;
+    const aCharMatch = (a.character?.toLowerCase() || '') === lowerQ;
+    const bCharMatch = (b.character?.toLowerCase() || '') === lowerQ;
     if (aCharMatch && !bCharMatch) return -1;
     if (!aCharMatch && bCharMatch) return 1;
 
-    const aMeaningMatch = a.primary_meaning.toLowerCase() === lowerQ || a.slug.toLowerCase() === lowerQ;
-    const bMeaningMatch = b.primary_meaning.toLowerCase() === lowerQ || b.slug.toLowerCase() === lowerQ;
+    const aMeaningMatch = (a.primary_meaning?.toLowerCase() || '') === lowerQ || (a.slug?.toLowerCase() || '') === lowerQ;
+    const bMeaningMatch = (b.primary_meaning?.toLowerCase() || '') === lowerQ || (b.slug?.toLowerCase() || '') === lowerQ;
     if (aMeaningMatch && !bMeaningMatch) return -1;
     if (!aMeaningMatch && bMeaningMatch) return 1;
 

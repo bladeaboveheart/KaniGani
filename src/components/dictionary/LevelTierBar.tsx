@@ -104,7 +104,7 @@ export default function LevelTierBar({
   }, [selectedTier]);
 
   return (
-    <div className="space-y-3 bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-3xl border border-slate-200 dark:border-slate-850 shadow-xs">
+    <div className="space-y-3 bg-card p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border border-card-border shadow-xs">
       {/* 1. Tiers Navigation Bar */}
       <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar pb-1">
         <button
@@ -113,10 +113,10 @@ export default function LevelTierBar({
             onTierChange('all');
             onLevelChange('all');
           }}
-          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
+          className={`px-3.5 py-1.5 min-h-[36px] rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border ${
             selectedTier === 'all' && selectedLevel === 'all'
-              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 border-transparent shadow-xs'
-              : 'border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'bg-primary text-background border-transparent shadow-xs'
+              : 'border-card-border text-muted hover:bg-card-muted hover:text-primary'
           }`}
         >
           Semua
@@ -132,7 +132,7 @@ export default function LevelTierBar({
                 onTierChange(tier.id);
                 onLevelChange('all');
               }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border flex items-center justify-center ${
+              className={`px-3 py-1.5 min-h-[36px] rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer border flex items-center justify-center ${
                 isTierActive
                   ? tier.activeBorder
                   : `${tier.badgeBg} ${tier.badgeText} border-transparent`
@@ -145,15 +145,15 @@ export default function LevelTierBar({
       </div>
 
       {/* 2. Level Pills (1–60 or filtered by tier) */}
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-850">
+      <div className="pt-2 border-t border-card-border">
         <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar py-1">
           <button
             type="button"
             onClick={() => onLevelChange('all')}
-            className={`px-3 py-1 rounded-lg text-xxs font-black shrink-0 transition-all cursor-pointer ${
+            className={`px-3 py-1 min-h-[34px] rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer ${
               selectedLevel === 'all'
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'
+                ? 'bg-primary text-background shadow-xs'
+                : 'bg-card-muted text-muted hover:bg-card-muted/80 hover:text-primary'
             }`}
           >
             ALL
@@ -166,10 +166,10 @@ export default function LevelTierBar({
                 key={lvl}
                 type="button"
                 onClick={() => onLevelChange(String(lvl))}
-                className={`min-w-[30px] h-[28px] px-1.5 rounded-lg text-xxs font-black shrink-0 transition-all cursor-pointer flex items-center justify-center ${
+                className={`min-w-[34px] h-[34px] px-2 rounded-xl text-xs font-black shrink-0 transition-all cursor-pointer flex items-center justify-center ${
                   isLvlActive
                     ? 'bg-indigo-600 text-white shadow-xs scale-105 ring-2 ring-indigo-400/40'
-                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/80 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300'
+                    : 'bg-card-muted hover:bg-card-muted/80 text-muted hover:text-primary'
                 }`}
               >
                 {lvl}

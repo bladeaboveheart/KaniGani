@@ -54,6 +54,9 @@ interface QuizStore {
   untrimmedQueue: QuizCard[] | null; // Keep track of untrimmed queue during Wrap-Up toggle
   sessionTotalCards: number; // Keep track of total cards in current active session for dynamic progress bar
   wrongCounts: Record<string, number>;
+  meaningWrongCounts: Record<string, number>;
+  readingWrongCounts: Record<string, number>;
+  isSubmitting: boolean;
   itemProgress: Record<string, { meaningCorrect: boolean; readingCorrect: boolean }>;
   activeCard: QuizCard | null;
 
@@ -91,6 +94,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   untrimmedQueue: null,
   sessionTotalCards: 0,
   wrongCounts: {},
+  meaningWrongCounts: {},
+  readingWrongCounts: {},
+  isSubmitting: false,
   itemProgress: {},
   activeCard: null,
   userInput: '',
@@ -111,6 +117,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       untrimmedQueue: null,
       sessionTotalCards: 0,
       wrongCounts: {},
+      meaningWrongCounts: {},
+      readingWrongCounts: {},
+      isSubmitting: false,
       itemProgress: {},
       activeCard: null,
       userInput: '',
@@ -127,17 +136,31 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   },
 
   undoActiveCard: () => {
-    const { queue, activeCard, wrongCounts } = get();
+    const { queue, activeCard, wrongCounts, meaningWrongCounts, readingWrongCounts } = get();
     if (!activeCard) return;
 
     const itemId = activeCard.itemId;
     const updatedWrongCounts = { ...wrongCounts };
+    const updatedMeaningWrong = { ...meaningWrongCounts };
+    const updatedReadingWrong = { ...readingWrongCounts };
 
     // Revert wrong penalty for this item if it was added
     if (updatedWrongCounts[itemId] && updatedWrongCounts[itemId] > 0) {
       updatedWrongCounts[itemId]--;
       if (updatedWrongCounts[itemId] === 0) {
         delete updatedWrongCounts[itemId];
+      }
+    }
+
+    if (activeCard.cardType === 'meaning') {
+      if (updatedMeaningWrong[itemId] && updatedMeaningWrong[itemId] > 0) {
+        updatedMeaningWrong[itemId]--;
+        if (updatedMeaningWrong[itemId] === 0) delete updatedMeaningWrong[itemId];
+      }
+    } else {
+      if (updatedReadingWrong[itemId] && updatedReadingWrong[itemId] > 0) {
+        updatedReadingWrong[itemId]--;
+        if (updatedReadingWrong[itemId] === 0) delete updatedReadingWrong[itemId];
       }
     }
 
@@ -161,6 +184,8 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       warningMsg: '',
       showItemInfo: false,
       wrongCounts: updatedWrongCounts,
+      meaningWrongCounts: updatedMeaningWrong,
+      readingWrongCounts: updatedReadingWrong,
     });
   },
 
@@ -213,6 +238,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       sessionTotalCards: shuffledCards.length,
       itemProgress: progress,
       wrongCounts: {},
+      meaningWrongCounts: {},
+      readingWrongCounts: {},
+      isSubmitting: false,
       activeCard: shuffledCards[0] || null,
       userInput: '',
       isAnswerSubmitted: false,
@@ -238,13 +266,12 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   },
 
   submitAnswer: async () => {
-    const { activeCard, userInput, wrongCounts } = get();
-    if (!activeCard) return;
+    const { activeCard, userInput, wrongCounts, meaningWrongCounts, readingWrongCounts, isSubmitting } = get();
+    if (!activeCard || isSubmitting) return;
 
-    const trimmedInput = userInput.trim().toLowerCase();
-
-    // Clear warning state first
-    set({ warningMsg: '' });
+    set({ isSubmitting: true, warningMsg: '' });
+    try {
+      const trimmedInput = userInput.trim().toLowerCase();
 
     // 0. LATIN LETTERS IN READING WARNING
     if (activeCard.cardType === 'reading' && /[a-z]/.test(trimmedInput)) {
@@ -401,6 +428,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       const updatedWrongCounts = { ...wrongCounts };
       updatedWrongCounts[itemId] = (updatedWrongCounts[itemId] || 0) + 1;
 
+      const updatedMeaningWrong = { ...meaningWrongCounts };
+      const updatedReadingWrong = { ...readingWrongCounts };
+      if (activeCard.cardType === 'meaning') {
+        updatedMeaningWrong[itemId] = (updatedMeaningWrong[itemId] || 0) + 1;
+      } else {
+        updatedReadingWrong[itemId] = (updatedReadingWrong[itemId] || 0) + 1;
+      }
+
       set({
         isAnswerSubmitted: true,
         isCorrect: false,
@@ -409,8 +444,13 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         isAlmostCorrect: false,
         closestAcceptedMeaning: '',
         wrongCounts: updatedWrongCounts,
+        meaningWrongCounts: updatedMeaningWrong,
+        readingWrongCounts: updatedReadingWrong,
       });
     }
+  } finally {
+    set({ isSubmitting: false });
+  }
   },
 
   proceedNext: () => {
@@ -439,6 +479,9 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       }
 
       if (!nowCorrect) {
+        set({
+          warningMsg: 'Ketik jawaban yang tepat terlebih dahulu untuk melanjutkan!',
+        });
         return; // Jangan lanjutkan jika ketikan koreksi masih salah
       }
 

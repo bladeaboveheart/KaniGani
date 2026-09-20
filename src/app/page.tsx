@@ -116,7 +116,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col relative overflow-hidden bg-background text-primary transition-colors duration-300">
 
       {/* Decorative Crab-Themed Background Elements (Kepiting & Gelembung) */}
       <div className="absolute inset-0 z-0 pointer-events-none opacity-20 dark:opacity-10">
@@ -161,67 +161,97 @@ export default function AuthPage() {
       </div>
 
       {/* Top Header Controls */}
-      <div className="w-full max-w-7xl mx-auto px-4 py-6 flex items-center justify-between z-10">
+      <header className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex items-center justify-between z-10">
         <div className="flex items-center space-x-2.5">
-          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-sm flex items-center justify-center shrink-0">
+          <div className="w-9 h-9 rounded-xl overflow-hidden shadow-xs flex items-center justify-center shrink-0">
             <CrabLogo className="w-full h-full" showBadge={true} />
           </div>
-          <span className="text-3xl font-extrabold tracking-wider bg-gradient-to-r from-rose-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
+          <span className="text-2xl sm:text-3xl font-black tracking-wider bg-gradient-to-r from-rose-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
             KaniGani
           </span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 font-bold border border-rose-200 dark:border-rose-900/50">
+          <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">
             Bahasa Indonesia
           </span>
         </div>
         <ThemeToggle />
-      </div>
+      </header>
 
       {/* Main Core Auth Card */}
       <main className="flex-1 flex items-center justify-center px-4 py-8 z-10">
-        <div className="w-full max-w-md bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl border border-slate-200/80 dark:border-slate-800/80 shadow-2xl p-8 sm:p-10 animate-fade-in">
+        <div className="w-full max-w-md bg-card/90 backdrop-blur-xl rounded-3xl border border-card-border shadow-2xl p-6 sm:p-9 animate-fade-in">
 
           {/* Title Header */}
-          <div className="text-center mb-8 flex flex-col items-center">
-            <div className="w-14 h-14 mb-3 rounded-2xl shadow-md overflow-hidden flex items-center justify-center">
+          <div className="text-center mb-6 flex flex-col items-center">
+            <div className="w-14 h-14 mb-3 rounded-2xl shadow-xs overflow-hidden flex items-center justify-center">
               <CrabLogo className="w-full h-full" showBadge={true} />
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight mb-2">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight mb-1 text-primary">
               {isSignUp ? 'Buat Akun Baru' : 'Selamat Datang Kembali'}
             </h1>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-muted">
               {isSignUp
                 ? 'Mulai perjalanan Anda menguasai Kanji Jepang hari ini'
-                : 'Masuk untuk melanjutkan latihan SRS kuis Anda'}
+                : 'Masuk untuk melanjutkan sesi belajar SRS Anda'}
             </p>
+          </div>
+
+          {/* Tab Switcher (Masuk vs Daftar) */}
+          <div className="flex p-1 bg-card-muted/60 rounded-2xl border border-card-border mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(false);
+                setErrorMsg('');
+                setSuccessMsg('');
+              }}
+              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                !isSignUp ? 'bg-card text-primary shadow-xs' : 'text-muted hover:text-primary'
+              }`}
+            >
+              Masuk Akun
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSignUp(true);
+                setErrorMsg('');
+                setSuccessMsg('');
+              }}
+              className={`flex-1 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all cursor-pointer ${
+                isSignUp ? 'bg-card text-primary shadow-xs' : 'text-muted hover:text-primary'
+              }`}
+            >
+              Daftar Baru
+            </button>
           </div>
 
           {/* Feedback Messages */}
           {errorMsg && (
-            <div className="mb-6 p-4 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-2xl flex items-start space-x-3 text-sm text-rose-600 dark:text-rose-400 animate-fade-in">
-              <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+            <div className="mb-5 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-start space-x-2.5 text-xs sm:text-sm text-rose-600 dark:text-rose-400 animate-fade-in">
+              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{errorMsg}</span>
             </div>
           )}
 
           {successMsg && (
-            <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl flex items-start space-x-3 text-sm text-emerald-600 dark:text-emerald-400 animate-fade-in">
-              <CheckCircle2 className="w-5 h-5 mt-0.5 shrink-0" />
+            <div className="mb-5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start space-x-2.5 text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 animate-fade-in">
+              <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" />
               <span>{successMsg}</span>
             </div>
           )}
 
           {/* Input Form */}
-          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-5">
+          <form onSubmit={isSignUp ? handleSignUp : handleSignIn} className="space-y-4">
             {isSignUp ? (
               // SIGN UP FORM
               <>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted uppercase tracking-wider block">
                     Username
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                      <User className="w-5 h-5" />
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted">
+                      <User className="w-4 h-4" />
                     </span>
                     <input
                       type="text"
@@ -229,18 +259,18 @@ export default function AuthPage() {
                       placeholder="Pilih username unik"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-xl sm:rounded-2xl bg-card-muted/40 border border-card-border text-primary placeholder-muted text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-muted uppercase tracking-wider block">
                     Alamat Email
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                      <Mail className="w-5 h-5" />
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted">
+                      <Mail className="w-4 h-4" />
                     </span>
                     <input
                       type="email"
@@ -248,20 +278,20 @@ export default function AuthPage() {
                       placeholder="nama@email.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                      className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-xl sm:rounded-2xl bg-card-muted/40 border border-card-border text-primary placeholder-muted text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all"
                     />
                   </div>
                 </div>
               </>
             ) : (
               // SIGN IN FORM
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-muted uppercase tracking-wider block">
                   Username atau Email
                 </label>
                 <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                    <User className="w-5 h-5" />
+                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted">
+                    <User className="w-4 h-4" />
                   </span>
                   <input
                     type="text"
@@ -269,27 +299,27 @@ export default function AuthPage() {
                     placeholder="Masukkan username atau email Anda"
                     value={loginInput}
                     onChange={(e) => setLoginInput(e.target.value)}
-                    className="w-full pl-11 pr-4 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className="w-full min-h-[44px] pl-10 pr-4 py-2.5 rounded-xl sm:rounded-2xl bg-card-muted/40 border border-card-border text-primary placeholder-muted text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all"
                   />
                 </div>
               </div>
             )}
 
             {/* Password Field (Sign In & Sign Up) */}
-            <div className="space-y-1.5">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">
+                <label className="text-xs font-bold text-muted uppercase tracking-wider block">
                   Kata Sandi
                 </label>
                 {!isSignUp && (
-                  <span className="text-xs text-indigo-500 hover:underline cursor-pointer">
+                  <span className="text-xs text-rose-500 hover:underline cursor-pointer">
                     Lupa sandi?
                   </span>
                 )}
               </div>
               <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400 dark:text-slate-600">
-                  <Lock className="w-5 h-5" />
+                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-muted">
+                  <Lock className="w-4 h-4" />
                 </span>
                 <input
                   type={showPassword ? "text" : "password"}
@@ -297,17 +327,17 @@ export default function AuthPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-11 pr-12 py-3 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className="w-full min-h-[44px] pl-10 pr-11 py-2.5 rounded-xl sm:rounded-2xl bg-card-muted/40 border border-card-border text-primary placeholder-muted text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/30 focus:border-rose-500 transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 dark:text-slate-600 hover:text-indigo-500 dark:hover:text-indigo-400 focus:outline-none transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-muted hover:text-primary focus:outline-none transition-colors"
                 >
                   {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
+                    <EyeOff className="w-4 h-4" />
                   ) : (
-                    <Eye className="w-5 h-5" />
+                    <Eye className="w-4 h-4" />
                   )}
                 </button>
               </div>
@@ -317,7 +347,7 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl focus:outline-none transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm"
+              className="w-full min-h-[46px] mt-2 py-3 bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 text-white font-bold rounded-xl sm:rounded-2xl shadow-md hover:shadow-lg active:scale-98 focus:outline-none transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 text-sm cursor-pointer"
             >
               {loading ? (
                 <span>Memproses...</span>
@@ -330,21 +360,17 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Toggle Sign Up / Sign In */}
-          <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-800 text-center text-sm">
-            <span className="text-slate-500 dark:text-slate-400">
-              {isSignUp ? 'Sudah memiliki akun?' : 'Belum memiliki akun KaniGani?'}
-            </span>{' '}
-            <button
-              onClick={() => {
-                setIsSignUp(!isSignUp);
-                setErrorMsg('');
-                setSuccessMsg('');
-              }}
-              className="font-bold text-indigo-500 hover:underline hover:text-indigo-600 focus:outline-none"
-            >
-              {isSignUp ? 'Masuk di sini' : 'Daftar di sini'}
-            </button>
+          {/* Footer Subtext */}
+          <div className="mt-6 pt-5 border-t border-card-border text-center text-xs text-muted">
+            {isSignUp ? (
+              <span>
+                Dengan mendaftar, Anda menyetujui seluruh ketentuan belajar di KaniGani.
+              </span>
+            ) : (
+              <span>
+                Platform belajar Kanji bahasa Indonesia dengan sistem Spaced Repetition (SRS).
+              </span>
+            )}
           </div>
 
         </div>

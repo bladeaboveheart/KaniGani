@@ -59,6 +59,7 @@ function ReviewPageContent() {
 
   // Track on-the-fly review submissions
   const [submittedItemIds, setSubmittedItemIds] = useState<string[]>([]);
+  const submittedIdsRef = useRef<Set<string>>(new Set());
   const [accuracyStats, setAccuracyStats] = useState({ correct: 0, wrong: 0 });
   const [levelUpData, setLevelUpData] = useState<{ newLevel: number } | null>(null);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
@@ -358,7 +359,8 @@ function ReviewPageContent() {
       const state = useQuizStore.getState();
       const prog = state.itemProgress[itemId];
 
-      if (prog && prog.meaningCorrect && prog.readingCorrect && !submittedItemIds.includes(itemId)) {
+      if (prog && prog.meaningCorrect && prog.readingCorrect && !submittedIdsRef.current.has(itemId)) {
+        submittedIdsRef.current.add(itemId);
         setSubmittedItemIds(prev => [...prev, itemId]);
 
         const durationSeconds = getAndResetSeconds();
@@ -367,6 +369,8 @@ function ReviewPageContent() {
           const { data: { session } } = await supabase.auth.getSession();
           const token = session?.access_token;
           const wrongCount = state.wrongCounts[itemId] || 0;
+          const meaningWrongCount = state.meaningWrongCounts[itemId] || 0;
+          const readingWrongCount = state.readingWrongCounts[itemId] || 0;
 
           setAccuracyStats(prev => ({
             correct: prev.correct + (wrongCount === 0 ? 1 : 0),
@@ -382,6 +386,8 @@ function ReviewPageContent() {
             body: JSON.stringify({
               itemId,
               wrongCount,
+              meaningWrongCount,
+              readingWrongCount,
               durationSeconds,
               mode: isLeechMode ? 'leech' : 'normal',
             })
