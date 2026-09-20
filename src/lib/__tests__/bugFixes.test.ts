@@ -138,4 +138,74 @@ describe('Bug Fixes Verification Suite', () => {
       }
     });
   });
+
+  describe('P0: Resilient Quiz Review Meaning Matching (Slash & Parenthesis Expansion)', () => {
+    it('should expand slash-separated and parenthesis-wrapped meanings into individual accepted answers', async () => {
+      const { expandAcceptedMeanings } = await import('@/store/useQuizStore');
+      
+      const expanded = expandAcceptedMeanings([
+        'Unggul / Berbakat / Jenius',
+        'Pengar (Mabuk Pasca Minum / Hangover)',
+        'Kamu Brengsek! / Kau Keparat! (Kasar)',
+      ]);
+
+      // Should accept individual components
+      expect(expanded).toContain('unggul');
+      expect(expanded).toContain('berbakat');
+      expect(expanded).toContain('jenius');
+      expect(expanded).toContain('unggul / berbakat / jenius');
+
+      // Should accept core word without parenthesis
+      expect(expanded).toContain('pengar');
+      expect(expanded).toContain('mabuk pasca minum');
+      expect(expanded).toContain('hangover');
+
+      // Should accept with and without exclamation marks
+      expect(expanded).toContain('kamu brengsek');
+      expect(expanded).toContain('kau keparat');
+      expect(expanded).toContain('kasar');
+    });
+
+    it('should mark review answer correct when typing any individual component of a multi-word translation', async () => {
+      const { initializeSession, setUserInput, submitAnswer } = useQuizStore.getState();
+
+      const mockItem: any = {
+        id: 'test-shun',
+        type: 'kanji',
+        character: '俊',
+        level: 40,
+        accepted_meanings: ['Unggul / Berbakat / Jenius', 'Genius'],
+        accepted_readings: ['しゅん'],
+        primary_meaning: 'Unggul / Berbakat / Jenius',
+        primary_reading: 'しゅん',
+      };
+
+      initializeSession([mockItem], 'review');
+
+      // Find the meaning card
+      const state = useQuizStore.getState();
+      const meaningCard = state.queue.find(c => c.cardType === 'meaning');
+      expect(meaningCard).toBeDefined();
+
+      // Directly set activeCard to meaning card for testing
+      useQuizStore.setState({ activeCard: meaningCard });
+
+      // User types only "Jenius"
+      setUserInput('Jenius');
+      await submitAnswer();
+      expect(useQuizStore.getState().isCorrect).toBe(true);
+
+      // User types only "Unggul"
+      useQuizStore.setState({ isAnswerSubmitted: false, isCorrect: false });
+      setUserInput('unggul');
+      await submitAnswer();
+      expect(useQuizStore.getState().isCorrect).toBe(true);
+
+      // User types only "Berbakat"
+      useQuizStore.setState({ isAnswerSubmitted: false, isCorrect: false });
+      setUserInput('berbakat');
+      await submitAnswer();
+      expect(useQuizStore.getState().isCorrect).toBe(true);
+    });
+  });
 });
