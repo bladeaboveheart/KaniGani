@@ -5,6 +5,7 @@ import {
   getNextReviewDate,
   calculateUserLevel,
 } from '@/lib/levelLogic';
+import { fetchAllKanjiItems, fetchAllGuruItems } from '@/lib/userProgress';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -18,28 +19,18 @@ async function getUserLevel(userClient: any, userId: string): Promise<number> {
     .eq('id', userId)
     .maybeSingle();
 
-  const { data: allKanji, error: kanjiError } = await userClient
-    .from('items')
-    .select('id, level')
-    .eq('type', 'kanji');
+  try {
+    const [allKanji, passedKanjiIdsList] = await Promise.all([
+      fetchAllKanjiItems('id, level', userClient),
+      fetchAllGuruItems(userId, userClient),
+    ]);
 
-  if (kanjiError || !allKanji) {
+    const passedKanjiIds = new Set<string>(passedKanjiIdsList);
+    return calculateUserLevel(allKanji, passedKanjiIds, profile?.level);
+  } catch (err) {
+    console.error('Failed to calculate user level dynamically in quiz submit:', err);
     return profile?.level || 1;
   }
-
-  const { data: progressList, error: progressError } = await userClient
-    .from('user_progress')
-    .select('item_id')
-    .eq('user_id', userId)
-    .gte('srs_stage', 5);
-
-  if (progressError || !progressList) {
-    return profile?.level || 1;
-  }
-
-  const passedKanjiIds = new Set<string>(progressList.map((p: any) => String(p.item_id)));
-
-  return calculateUserLevel(allKanji, passedKanjiIds, profile?.level);
 }
 
 // Fungsi membuka Radikal dan materi prasyarat yang terpenuhi saat pengguna naik level
@@ -333,6 +324,12 @@ export async function POST(request: Request) {
 
       if (levelAfter > levelBefore) {
         levelUpOccurred = true;
+        // Sinkronkan level baru ke profiles pengguna di database
+        await userClient
+          .from('profiles')
+          .update({ level: levelAfter })
+          .eq('id', user.id);
+
         // Tangani pembukaan Radikal/materi level baru saat pengguna berhasil naik level!
         const levelUpUnlocked = await handleLevelUp(userClient, user.id, levelAfter);
         unlockedDependents.push(...levelUpUnlocked);

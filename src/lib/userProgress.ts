@@ -80,12 +80,15 @@ export async function fetchAllUserProgress(
 /**
  * Fetches all kanji items (up to 4,000 items) bypassing 1,000 rows cap.
  */
-export async function fetchAllKanjiItems(selectQuery: string = 'id, level, character, slug, type'): Promise<any[]> {
+export async function fetchAllKanjiItems(
+  selectQuery: string = 'id, level, character, slug, type',
+  customClient: any = supabase
+): Promise<any[]> {
   const [c1, c2, c3, c4] = await Promise.all([
-    supabase.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(0, 999),
-    supabase.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(1000, 1999),
-    supabase.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(2000, 2999),
-    supabase.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(3000, 3999),
+    customClient.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(0, 999),
+    customClient.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(1000, 1999),
+    customClient.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(2000, 2999),
+    customClient.from('items').select(selectQuery as any).eq('type', 'kanji').order('level', { ascending: true }).order('lesson_position', { ascending: true }).range(3000, 3999),
   ]);
 
   if (c1.error) throw c1.error;
@@ -99,6 +102,48 @@ export async function fetchAllKanjiItems(selectQuery: string = 'id, level, chara
     ...((c3.data as any[]) || []),
     ...((c4.data as any[]) || [])
   ];
+}
+
+/**
+ * Fetches all Guru items (stage >= 5) for a user bypassing 1,000 rows cap.
+ */
+export async function fetchAllGuruItems(userId: string, customClient: any = supabase): Promise<string[]> {
+  const baseQuery = customClient
+    .from('user_progress')
+    .select('item_id')
+    .eq('user_id', userId)
+    .gte('srs_stage', 5)
+    .order('item_id', { ascending: true });
+
+  const firstChunk = await baseQuery.range(0, 999);
+  if (firstChunk.error) throw firstChunk.error;
+  const firstData = (firstChunk.data as any[]) || [];
+
+  if (firstData.length < 1000) {
+    return firstData.map(r => String(r.item_id));
+  }
+
+  const { count } = await customClient
+    .from('user_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('srs_stage', 5);
+
+  const totalCount = count || 12000;
+  const remainingRanges = generateChunkRanges(totalCount, 1000, 1000);
+
+  const remainingResults = await Promise.all(
+    remainingRanges.map(([from, to]) => baseQuery.range(from, to))
+  );
+
+  const allIds = firstData.map(r => String(r.item_id));
+  for (const res of remainingResults) {
+    if (res.data) {
+      allIds.push(...res.data.map((r: any) => String(r.item_id)));
+    }
+  }
+
+  return allIds;
 }
 
 /**

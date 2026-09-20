@@ -118,5 +118,45 @@ describe('Level 0 to 60 Learning Journey & Data Chunking Tests', () => {
       expect(unlockables).toContain('kanji_new_1');
       expect(unlockables).not.toContain('kanji_new_2');
     });
+
+    it('immediately unlocks orphan items (items without prerequisites like kana-only vocab) on level up', () => {
+      const levelItems = [
+        { id: 'vocab_ringo', level: 3, type: 'vocabulary' },
+        { id: 'kanji_with_prereq', level: 3, type: 'kanji' },
+      ];
+
+      const prereqsMap = new Map<string, string[]>([
+        ['kanji_with_prereq', ['rad_unmet']],
+        // vocab_ringo has NO prerequisites (empty or undefined)
+      ]);
+
+      const guruSet = new Set<string>();
+
+      const unlockables = getUnlockableItemsOnLevelUp(levelItems, prereqsMap, guruSet);
+
+      // kana-only vocab should be unlocked directly as it has no prerequisites
+      expect(unlockables).toContain('vocab_ringo');
+      // kanji with unmet prereqs remains locked
+      expect(unlockables).not.toContain('kanji_with_prereq');
+    });
+
+    it('demonstrates that missing kanji for level 28+ locks progress if kanji catalog is truncated', () => {
+      // Simulating the bug: only level 1-27 kanji are loaded in catalog (1000 limit)
+      const truncatedKanji: KanjiItem[] = [];
+      for (let lvl = 1; lvl <= 27; lvl++) {
+        truncatedKanji.push({ id: `k_${lvl}`, level: lvl, type: 'kanji' });
+      }
+
+      // User has passed level 1-27 kanji AND level 28 kanji
+      const guruSet = new Set(truncatedKanji.map(k => k.id));
+      guruSet.add('k_28'); // user actually passed level 28 kanji
+
+      // With truncated catalog, user is stuck at 28 (cannot advance to 29 because level 28 has 0 kanji in catalog)
+      expect(calculateUserLevel(truncatedKanji, guruSet)).toBe(28);
+
+      // With full catalog up to level 60 including level 28 kanji, user advances smoothly to 29!
+      const fullKanji = [...truncatedKanji, { id: 'k_28', level: 28, type: 'kanji' }];
+      expect(calculateUserLevel(fullKanji, guruSet)).toBe(29);
+    });
   });
 });

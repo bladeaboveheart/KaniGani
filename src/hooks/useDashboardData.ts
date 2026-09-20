@@ -8,6 +8,7 @@ import { fetchAllUserProgress, resetAllUserProgress } from '@/services/progressS
 import { fetchActivityLogs, fetchLeaderboard, LeaderboardEntry } from '@/services/statsService';
 import { getUserProfile } from '@/services/profileService';
 import { calculateUserLevel } from '@/lib/levelLogic';
+import { fetchAllKanjiItems } from '@/lib/userProgress';
 import { memoryCache } from '@/lib/memoryCache';
 
 export interface DashboardKanjiItem {
@@ -101,22 +102,15 @@ export function useDashboardData() {
 
       const kanjiPromise = allKanji
         ? Promise.resolve(allKanji)
-        : supabase
-            .from('items')
-            .select('id, level, character, slug, lesson_position')
-            .eq('type', 'kanji')
-            .order('level', { ascending: true })
-            .order('lesson_position', { ascending: true })
-            .then(res => {
-              const list = (res.data as Item[]) || [];
-              memoryCache.set('catalog_kanji_all', list, 60 * 60 * 1000);
-              if (typeof window !== 'undefined') {
-                try {
-                  localStorage.setItem('catalog_kanji_all', JSON.stringify(list));
-                } catch {}
-              }
-              return list;
-            });
+        : fetchAllKanjiItems('id, level, character, slug, lesson_position').then(list => {
+            memoryCache.set('catalog_kanji_all', list, 60 * 60 * 1000);
+            if (typeof window !== 'undefined') {
+              try {
+                localStorage.setItem('catalog_kanji_all', JSON.stringify(list));
+              } catch {}
+            }
+            return list;
+          });
 
       const [profile, progresses, kanjiItems, activityLogs, lb] = await Promise.all([
         getUserProfile(user.id),
@@ -147,8 +141,8 @@ export function useDashboardData() {
       const totalKanji = currentLevelKanji.length;
       const kanjiIds = currentLevelKanji.map(k => k.id);
 
-      // 3. PARALLEL PHASE 2: Fetch level radicals & kanji prerequisites concurrently
-      const [levelRadicalsRes, prereqRes] = await Promise.all([
+      // 3. PARALLEL PHASE 2: Fetch level radicals, kanji prerequisites, and kana-only vocab concurrently
+      const [levelRadicalsRes, prereqRes, levelKanaVocabRes] = await Promise.all([
         supabase
           .from('items')
           .select('id, level, type')
@@ -160,19 +154,28 @@ export function useDashboardData() {
               .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
               .in('item_id', kanjiIds)
           : Promise.resolve({ data: [] as any[], error: null }),
+        supabase
+          .from('items')
+          .select('id, level, type, item_prerequisites!item_id(requires_item_id)')
+          .eq('type', 'vocabulary')
+          .lte('level', userLevel),
       ]);
 
       const levelRadicals = levelRadicalsRes.data || [];
       const prereqs = prereqRes.data || [];
-
-      // Self-healing check: ensure all radicals with level <= userLevel are unlocked (srs_stage >= 1)
-      const unlockedItemIds = new Set((progresses || []).map((p: any) => p.item_id));
-      const lockedRadicalsToUnlock = levelRadicals.filter(
-        (rad: any) => !unlockedItemIds.has(rad.id)
+      const kanaVocabs = (levelKanaVocabRes.data || []).filter(
+        (v: any) => !v.item_prerequisites || v.item_prerequisites.length === 0
       );
 
-      if (lockedRadicalsToUnlock.length > 0) {
-        const idsToUnlock = lockedRadicalsToUnlock.map((row: any) => row.id);
+      // Self-healing check: ensure all radicals & kana-only vocab with level <= userLevel are unlocked (srs_stage >= 1)
+      const autoUnlockCandidates = [...levelRadicals, ...kanaVocabs];
+      const unlockedItemIds = new Set((progresses || []).map((p: any) => p.item_id));
+      const lockedItemsToUnlock = autoUnlockCandidates.filter(
+        (item: any) => !unlockedItemIds.has(item.id)
+      );
+
+      if (lockedItemsToUnlock.length > 0) {
+        const idsToUnlock = lockedItemsToUnlock.map((row: any) => row.id);
         const { error: healError } = await supabase
           .from('user_progress')
           .upsert(idsToUnlock.map(id => ({
