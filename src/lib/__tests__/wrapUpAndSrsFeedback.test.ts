@@ -22,6 +22,7 @@ function createMockItem(id: string, type: 'radical' | 'kanji' | 'vocabulary'): I
     character: '漢' + id,
     slug: 'item-' + id,
     level: 1,
+    lesson_position: 1,
     primary_meaning: 'Meaning ' + id,
     accepted_meanings: ['meaning ' + id],
     primary_reading: type !== 'radical' ? 'kan' + id : undefined,
@@ -159,7 +160,7 @@ describe('Wrap-Up & SRS Feedback Logic Tests', () => {
       };
 
       // Reading was already completed earlier in session
-      const itemProgress = {
+      const itemProgress: Record<string, { meaningCorrect: boolean; readingCorrect: boolean }> = {
         'kan-1': { meaningCorrect: false, readingCorrect: true },
       };
       const prog = itemProgress[kanjiMeaningCard.itemId];
