@@ -319,33 +319,6 @@ export default function ItemFullPageView({
 
             {/* Core Info */}
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
-                  {typeLabel} • Level {itemToDisplay.level}
-                </span>
-
-                {type === 'vocabulary' && itemToDisplay.parts_of_speech && itemToDisplay.parts_of_speech.length > 0 && (
-                  itemToDisplay.parts_of_speech.map((pos: string) => {
-                    const meta = getPartOfSpeechMeta(pos);
-                    return (
-                      <span
-                        key={pos}
-                        className="text-4xs font-bold bg-black/25 backdrop-blur-sm text-white/95 px-2.5 py-1 rounded-full border border-white/20 inline-flex items-center gap-1.5 shadow-xs"
-                        title={meta.description ? `${meta.englishLabel} • ${meta.description}` : meta.englishLabel}
-                      >
-                        {meta.isTransitivity && (
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${pos.includes('intransitive') ? 'bg-amber-300' : 'bg-sky-300'}`}
-                            aria-hidden="true"
-                          />
-                        )}
-                        <span>{meta.label}</span>
-                      </span>
-                    );
-                  })
-                )}
-              </div>
-
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight capitalize">{primaryMeaning}</h1>
 
               {type !== 'radical' && primaryReading && (
@@ -361,23 +334,54 @@ export default function ItemFullPageView({
             </div>
           </div>
 
-          {/* SRS Stage Card */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 shrink-0 self-stretch sm:self-auto sm:min-w-[220px] flex flex-col justify-between space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-4xs font-black uppercase tracking-widest opacity-80 flex items-center space-x-1">
-                <Award className="w-3.5 h-3.5" />
-                <span>Status Belajar SRS</span>
+          {/* Right Column: Badges & SRS Stage Card */}
+          <div className="flex flex-col items-center sm:items-start md:items-end justify-between space-y-3 shrink-0 self-stretch sm:self-auto sm:min-w-[220px]">
+            {/* Badges Row (Tipe, Level & Parts of Speech) */}
+            <div className="flex flex-wrap items-center justify-center sm:justify-start md:justify-end gap-2 max-w-full">
+              <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10 shadow-xs">
+                {typeLabel} • Level {itemToDisplay.level}
               </span>
-            </div>
-            <div>
-              <span className={`inline-block text-xs font-black px-3 py-1 rounded-xl shadow-sm ${getSrsColorClass(srsStage)}`}>
-                {srsStage === 0 ? 'Terkunci (Belum Belajar)' : getSrsLabel(srsStage)}
-              </span>
-              {srsStage > 0 && (
-                <p className="text-4xs opacity-80 mt-1.5 font-medium">
-                  Tahap SRS {srsStage} dari 9.
-                </p>
+
+              {type === 'vocabulary' && itemToDisplay.parts_of_speech && itemToDisplay.parts_of_speech.length > 0 && (
+                itemToDisplay.parts_of_speech.map((pos: string) => {
+                  const meta = getPartOfSpeechMeta(pos);
+                  return (
+                    <span
+                      key={pos}
+                      className="text-4xs font-bold bg-black/25 backdrop-blur-sm text-white/95 px-2.5 py-1 rounded-full border border-white/20 inline-flex items-center gap-1.5 shadow-xs"
+                      title={meta.description ? `${meta.englishLabel} • ${meta.description}` : meta.englishLabel}
+                    >
+                      {meta.isTransitivity && (
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${pos.includes('intransitive') ? 'bg-amber-300' : 'bg-sky-300'}`}
+                          aria-hidden="true"
+                        />
+                      )}
+                      <span>{meta.label}</span>
+                    </span>
+                  );
+                })
               )}
+            </div>
+
+            {/* SRS Stage Card */}
+            <div className="w-full bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-5 flex flex-col justify-between space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-4xs font-black uppercase tracking-widest opacity-80 flex items-center space-x-1">
+                  <Award className="w-3.5 h-3.5" />
+                  <span>Status Belajar SRS</span>
+                </span>
+              </div>
+              <div>
+                <span className={`inline-block text-xs font-black px-3 py-1 rounded-xl shadow-sm ${getSrsColorClass(srsStage)}`}>
+                  {srsStage === 0 ? 'Terkunci (Belum Belajar)' : getSrsLabel(srsStage)}
+                </span>
+                {srsStage > 0 && (
+                  <p className="text-4xs opacity-80 mt-1.5 font-medium">
+                    Tahap SRS {srsStage} dari 9.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
