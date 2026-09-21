@@ -140,6 +140,9 @@ export default function LessonPage() {
     if (currentBatch.length === 0) return;
     initializeSession(currentBatch, 'lesson');
     setPhase('quiz');
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 50);
   }, [currentBatch, initializeSession]);
 
   const handleNext = useCallback(() => {
@@ -417,13 +420,24 @@ export default function LessonPage() {
     return () => resetStore();
   }, [router, resetStore, initializeSession]);
 
+  const handleProceedNext = () => {
+    proceedNext();
+    inputRef.current?.focus();
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 20);
+  };
+
   const handleQuizSubmitAction = () => {
     if (!isAnswerSubmitted) {
       if (userInput.trim() !== '') {
         submitAnswer();
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 20);
       }
     } else {
-      proceedNext();
+      handleProceedNext();
     }
   };
 
@@ -444,7 +458,7 @@ export default function LessonPage() {
           }, 20);
         }
       } else {
-        proceedNext();
+        handleProceedNext();
         setTimeout(() => {
           inputRef.current?.focus();
         }, 20);
@@ -454,7 +468,7 @@ export default function LessonPage() {
       toggleItemInfo();
     } else if (isAnswerSubmitted && e.key === ' ') {
       e.preventDefault();
-      proceedNext();
+      handleProceedNext();
       setTimeout(() => {
         inputRef.current?.focus();
       }, 20);

@@ -46,12 +46,15 @@ export default function QuizInput({
         setUserInput(getDevModeAnswer());
         setTimeout(() => {
           onSubmit();
+          inputRef.current?.focus();
         }, 20);
       } else {
         onSubmit();
+        inputRef.current?.focus();
       }
     } else {
       onSubmit(); // calls proceedNext
+      inputRef.current?.focus();
     }
   };
 
@@ -89,6 +92,7 @@ export default function QuizInput({
         <button
           type="button"
           disabled={!isAnswerSubmitted && userInput.trim() === '' && !devMode}
+          onMouseDown={(e) => e.preventDefault()}
           onClick={handleActionClick}
           className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-250 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed z-10 ${
             isAnswerSubmitted
