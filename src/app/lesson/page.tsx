@@ -25,6 +25,7 @@ import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -140,6 +141,45 @@ export default function LessonPage() {
     initializeSession(currentBatch, 'lesson');
     setPhase('quiz');
   }, [currentBatch, initializeSession]);
+
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+
+  const handleNext = useCallback(() => {
+    if (!currentItem) return;
+    if (itemIndex === currentBatch.length - 1 && activeTab !== 'info') {
+      // Reached the final slide; requires explicit tap on 'Mulai Kuis'
+      return;
+    }
+    setSlideDirection('left');
+    if (activeTab === 'info') {
+      setActiveTab(currentItem.type === 'radical' ? 'kanjis' : 'mnemonic');
+    } else {
+      setItemIndex(prev => prev + 1);
+      setActiveTab('info');
+    }
+  }, [currentItem, itemIndex, currentBatch.length, activeTab]);
+
+  const handlePrev = useCallback(() => {
+    if (itemIndex === 0 && activeTab === 'info') return;
+    setSlideDirection('right');
+    if (activeTab !== 'info') {
+      setActiveTab('info');
+    } else if (itemIndex > 0) {
+      const prevIdx = itemIndex - 1;
+      setItemIndex(prevIdx);
+      const prevItem = currentBatch[prevIdx];
+      if (prevItem && prevItem.type === 'radical') {
+        setActiveTab('kanjis');
+      } else {
+        setActiveTab('mnemonic');
+      }
+    }
+  }, [itemIndex, activeTab, currentBatch]);
+
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: handleNext,
+    onSwipeRight: handlePrev,
+  });
 
   // Fetch lessons available
   useEffect(() => {
@@ -636,9 +676,21 @@ export default function LessonPage() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
         {/* PHASE 1: BATCH LEARN SLIDES */}
         {phase === 'learn' && currentItem && (
-          <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in flex flex-col min-h-[500px]">
+          <div
+            {...swipeHandlers}
+            className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-all"
+          >
             {/* Header Colorful Character Card */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
+            <div
+              key={`header-${itemIndex}`}
+              className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)} ${
+                slideDirection === 'left'
+                  ? 'animate-slide-in-right'
+                  : slideDirection === 'right'
+                  ? 'animate-slide-in-left'
+                  : 'animate-fade-in'
+              }`}
+            >
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
@@ -711,7 +763,16 @@ export default function LessonPage() {
             </div>
 
             {/* Tab Explanation Details */}
-            <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text">
+            <div
+              key={`content-${itemIndex}-${activeTab}`}
+              className={`p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text ${
+                slideDirection === 'left'
+                  ? 'animate-slide-in-right'
+                  : slideDirection === 'right'
+                  ? 'animate-slide-in-left'
+                  : 'animate-fade-in'
+              }`}
+            >
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-4 animate-fade-in">
@@ -913,20 +974,7 @@ export default function LessonPage() {
               <div className="flex items-center justify-between w-full">
                 <button
                   disabled={itemIndex === 0 && activeTab === 'info'}
-                  onClick={() => {
-                    if (activeTab !== 'info') {
-                      setActiveTab('info');
-                    } else if (itemIndex > 0) {
-                      const prevIdx = itemIndex - 1;
-                      setItemIndex(prevIdx);
-                      const prevItem = currentBatch[prevIdx];
-                      if (prevItem && prevItem.type === 'radical') {
-                        setActiveTab('kanjis');
-                      } else {
-                        setActiveTab('mnemonic');
-                      }
-                    }
-                  }}
+                  onClick={handlePrev}
                   className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
@@ -952,22 +1000,15 @@ export default function LessonPage() {
                 {itemIndex === currentBatch.length - 1 && activeTab !== 'info' ? (
                   <button
                     onClick={startQuiz}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer shadow-sm"
                   >
                     <span>Mulai Kuis</span>
                     <Award className="w-4 h-4" />
                   </button>
                 ) : (
                   <button
-                    onClick={() => {
-                      if (activeTab === 'info') {
-                        setActiveTab(currentItem.type === 'radical' ? 'kanjis' : 'mnemonic');
-                      } else {
-                        setItemIndex(itemIndex + 1);
-                        setActiveTab('info');
-                      }
-                    }}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer"
+                    onClick={handleNext}
+                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer shadow-sm"
                   >
                     <span>Berikutnya</span>
                     <ArrowRight className="w-4 h-4" />
