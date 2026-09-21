@@ -15,12 +15,15 @@ import {
   Award,
   Share2,
   Edit3,
+  Bookmark,
 } from 'lucide-react';
 import CharacterDisplay from '@/components/CharacterDisplay';
 import FormattedText from '@/components/FormattedText';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import ItemEditorModal from '@/components/admin/ItemEditorModal';
+import { PartOfSpeechBadge, PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
+import { getPartOfSpeechMeta } from '@/lib/partsOfSpeech';
 import { ItemInput } from '@/lib/types';
 import {
   mapItemToItemInput,
@@ -320,6 +323,27 @@ export default function ItemFullPageView({
                 <span className="text-4xs font-black uppercase tracking-widest bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full border border-white/10">
                   {typeLabel} • Level {itemToDisplay.level}
                 </span>
+
+                {type === 'vocabulary' && itemToDisplay.parts_of_speech && itemToDisplay.parts_of_speech.length > 0 && (
+                  itemToDisplay.parts_of_speech.map((pos: string) => {
+                    const meta = getPartOfSpeechMeta(pos);
+                    return (
+                      <span
+                        key={pos}
+                        className="text-4xs font-bold bg-black/25 backdrop-blur-sm text-white/95 px-2.5 py-1 rounded-full border border-white/20 inline-flex items-center gap-1.5 shadow-xs"
+                        title={meta.description ? `${meta.englishLabel} • ${meta.description}` : meta.englishLabel}
+                      >
+                        {meta.isTransitivity && (
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${pos.includes('intransitive') ? 'bg-amber-300' : 'bg-sky-300'}`}
+                            aria-hidden="true"
+                          />
+                        )}
+                        <span>{meta.label}</span>
+                      </span>
+                    );
+                  })
+                )}
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-black tracking-tight capitalize">{primaryMeaning}</h1>
@@ -363,6 +387,23 @@ export default function ItemFullPageView({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left 2 Columns: Readings, Mnemonics, Context Sentences, Similar Kanji */}
         <div className="lg:col-span-2 space-y-8">
+          {/* Parts of Speech Section (Vocabulary) */}
+          {type === 'vocabulary' && itemToDisplay.parts_of_speech && itemToDisplay.parts_of_speech.length > 0 && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
+                  <Bookmark className="w-4 h-4 text-purple-500" />
+                  <span>Jenis Kata & Tata Bahasa (Parts of Speech)</span>
+                </h2>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {itemToDisplay.parts_of_speech.map((pos: string) => (
+                  <PartOfSpeechBadge key={pos} item={pos} size="md" />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Readings Section (Kanji & Vocab) */}
           {item.readings && item.readings.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">

@@ -8,6 +8,8 @@ import { supabase } from '@/lib/supabase';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 
+import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
+
 interface QuizInfoDrawerProps {
   item: Item | null;
   cardType: 'meaning' | 'reading';
@@ -106,6 +108,12 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
         <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
           {item.primary_meaning}
         </p>
+
+        {item.type === 'vocabulary' && item.parts_of_speech && item.parts_of_speech.length > 0 && (
+          <div className="mt-2.5">
+            <PartOfSpeechList partsOfSpeech={item.parts_of_speech} size="sm" />
+          </div>
+        )}
 
         {item.meaning_mnemonic && (
           <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">

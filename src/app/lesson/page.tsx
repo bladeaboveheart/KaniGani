@@ -24,6 +24,7 @@ import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
+import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -719,6 +720,11 @@ export default function LessonPage() {
                     <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
                       {currentItem.primary_meaning}
                     </p>
+                    {currentItem.type === 'vocabulary' && currentItem.parts_of_speech && currentItem.parts_of_speech.length > 0 && (
+                      <div className="mt-2.5">
+                        <PartOfSpeechList partsOfSpeech={currentItem.parts_of_speech} size="sm" />
+                      </div>
+                    )}
                   </div>
 
                   {currentItem.description && (

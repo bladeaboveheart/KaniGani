@@ -61,6 +61,7 @@ export async function fetchDictionaryTierItems(
       meaning_mnemonic,
       reading_mnemonic,
       description,
+      parts_of_speech,
       item_meanings(id, meaning, primary_meaning, accepted_answer),
       item_readings(id, reading, reading_type, primary_reading, accepted_answer)
     `)

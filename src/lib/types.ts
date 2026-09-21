@@ -12,6 +12,7 @@ export interface Item {
   description?: string;
   srs_stage?: number;
   wanikani_id?: number;
+  parts_of_speech?: string[] | null;
   
   // Merged detailed properties
   meanings?: ItemMeaning[];
