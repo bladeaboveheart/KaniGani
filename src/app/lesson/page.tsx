@@ -142,15 +142,12 @@ export default function LessonPage() {
     setPhase('quiz');
   }, [currentBatch, initializeSession]);
 
-  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
-
   const handleNext = useCallback(() => {
     if (!currentItem) return;
     if (itemIndex === currentBatch.length - 1 && activeTab !== 'info') {
       // Reached the final slide; requires explicit tap on 'Mulai Kuis'
       return;
     }
-    setSlideDirection('left');
     if (activeTab === 'info') {
       setActiveTab(currentItem.type === 'radical' ? 'kanjis' : 'mnemonic');
     } else {
@@ -161,7 +158,6 @@ export default function LessonPage() {
 
   const handlePrev = useCallback(() => {
     if (itemIndex === 0 && activeTab === 'info') return;
-    setSlideDirection('right');
     if (activeTab !== 'info') {
       setActiveTab('info');
     } else if (itemIndex > 0) {
@@ -681,16 +677,7 @@ export default function LessonPage() {
             className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-all"
           >
             {/* Header Colorful Character Card */}
-            <div
-              key={`header-${itemIndex}`}
-              className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)} ${
-                slideDirection === 'left'
-                  ? 'animate-slide-in-right'
-                  : slideDirection === 'right'
-                  ? 'animate-slide-in-left'
-                  : 'animate-fade-in'
-              }`}
-            >
+            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
                 <button
                   type="button"
@@ -763,19 +750,10 @@ export default function LessonPage() {
             </div>
 
             {/* Tab Explanation Details */}
-            <div
-              key={`content-${itemIndex}-${activeTab}`}
-              className={`p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text ${
-                slideDirection === 'left'
-                  ? 'animate-slide-in-right'
-                  : slideDirection === 'right'
-                  ? 'animate-slide-in-left'
-                  : 'animate-fade-in'
-              }`}
-            >
+            <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text">
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                   <div>
                     <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Arti Karakter</h3>
                     <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
@@ -889,7 +867,7 @@ export default function LessonPage() {
 
               {/* TAB 2: READINGS & MNEMONICS (KANJI / VOCAB) */}
               {activeTab === 'mnemonic' && currentItem.type !== 'radical' && (
-                <div className="space-y-4 animate-fade-in">
+                <div className="space-y-4">
                   <div>
                     <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
                       {currentItem.type === 'kanji'
