@@ -42,6 +42,18 @@ Ketika mora/bacaan berikut muncul dalam kanji, gunakan tokoh/kata kunci baku ber
 | **せい** | sei | **Sensei Kiler** | **Sensei** kiler yang kalo ngasih kuis dadakan selalu sambil ngacungin **Seng** (<reading>sei</reading>) sengkuap biar muridnya pada trauma. |
 | **はち** | hachi | **Hachiko** | **Hachiko**, anjing setia yang nungguin majikannya di stasiun sambil live TikTok dan bersin-bersin "Hachii! (<reading>hachi</reading>)" gara-gara angin malam. |
 | **かわ** | kawa | **Kawan Kentel** | **Kawan** kentel lu yang suka ngajak nongkrong mendadak jam 1 malam sambil teriak "Kawasan (<reading>kawa</reading>) aman, gass!" |
+| **せん** | sen | **Pak Senter** | **Pak Senter**, satpam komplek berkumis melengkung yang kalo patroli malam bawa Senter (<reading>sen</reading>) sorot stadion sampai bikin maling silau dan buta mendadak. |
+| **ゆう** | yuu | **Mbak Yuyu** | **Mbak Yuyu** (<reading>yuu</reading>), kepiting raksasa berbaju daster yang kerjaannya nongkrong di pinggir sungai sambil live TikTok nyapit-nyapit angin. |
+| **ちょう** | chou | **Coki Choco** | **Coki**, cowok flexing yang kemana-mana selalu bawa Choco (<reading>chou</reading>) batangan raksasa sambil jalan gaya catwalk di zebra cross. |
+| **まる** | maru | **Kucing Maru** | **Kucing Maru**, kucing gembul bulat sempurna yang hobi pamer aksi nekat meluncur masuk ke kardus indomie sampai kardusnya meledak (<reading>maru</reading>). |
+| **ちゅう** | chuu | **Cucu Chuu** | **Cucu** cilik usil yang tiap minta uang jajan selalu ngeluarin suara ciuman nyaring "Chuu! (<reading>chuu</reading>)" tepat di pipi sampai basah kuyup. |
+| **ろく** | roku | **Rocker Rokurou** | **Rocker** gondrong yang manggung bawa gitar listrik, tapi pas teriak bukannya nyanyi malah jualan Rokok (<reading>roku</reading>) herbal lewat mik. |
+| **てん** | ten | **Tenda Lele** | **Tenda** (<reading>ten</reading>) pecel lele pemicu asap tebal yang pas dibuka ternyata isinya tim Tennis lagi tanding di dalam tenda. |
+| **すい** | sui | **Suster Sui** | **Suster** galak yang kalo ngejar pasien kabur selalu sambil muter-muter jarum suntik raksasa kayak baling-baling bambu (suiiinnng~ / <reading>sui</reading>). |
+| **おう** | ou | **Oppa Ou** | **Oppa** Korea ganteng yang tiap kali tebar pesona selalu ngeluarin suara desahan kaget khas drakor: "Ouu~ (<reading>ou</reading>) my god!" sambil kibas rambut. |
+| **ほん** | hon | **Honda Bebek** | Motor **Honda** (<reading>hon</reading>) bebek legendaris yang knalpotnya sengaja dibikin nyaring sampai bunyi "HON-HON-HON!" bikin satu RT kebangun. |
+| **はく** | haku | **Hacker Haku** | **Hacker** (<reading>haku</reading>) misterious bertudung putih yang nge-hack satelit NASA cuma modal HP Android patah-patah dari warkop 24 jam. |
+| **め** | me | **Meme Bengek** | Gambar **Meme** (<reading>me</reading>) kocak di medsos yang gambarnya Muka Lu Sendiri, bikin lu ngakak guling-guling sampai bengek di lantai. |
 
 *(Daftar tokoh akan terus diperluas secara bertahap seiring pertambahan level kanji hingga Level 60).*
 
