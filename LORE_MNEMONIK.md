@@ -18,7 +18,9 @@ Agar cerita mnemonik menancap kuat di otak pembelajar dan tidak membosankan, sel
    - Menggunakan referensi yang *relatable* bagi netizen/pembelajar Indonesia: *warkop 24 jam, seblak mevvah, kating ambis, flexing, jamet, war Mobile Legends, emak-emak matic, live TikTok, drakor, bengek, dll.*
 4. **Aturan Bacaan Ganda (*Multi-Reading Integrity*)**:
    - Jika suatu kanji memiliki lebih dari satu cara baca penting (misal: *on'yomi* ganda seperti 力 `ryoku`/`riki`, atau kombinasi *on/kun*), **seluruh variasi bacaan wajib terangkai dalam satu adegan yang sama**.
-5. **Tagging Semantik Wajib**:
+5. **Prinsip Arketipe Abadi (*Timeless Over Ephemeral*)**:
+   - Utamakan profesi, karakter kultur masyarakat Indonesia, dan arketipe fiksi abadi (Tukang Bakso, Ibu Kos Galak, Satpam Komplek, Kating Ambis, Ninja, Pendekar, Kucing Oyen, Geng Motor). Hindari nama akun viral sesaat atau isu politik musiman yang cepat basi dalam 2–3 tahun ke depan.
+6. **Tagging Semantik Wajib**:
    - `<radical>Nama Radikal</radical>` (Badge Biru)
    - `<kanji>Arti Kanji</kanji>` (Badge Merah)
    - `<vocabulary>Arti Kosakata</vocabulary>` (Badge Ungu)
@@ -66,22 +68,22 @@ Setiap kali mora/bunyi bacaan berikut muncul dalam kanji atau kosakata, gunakan 
 | **ほん** | hon | **Honda Bebek** | Motor **Honda** (<reading>hon</reading>) bebek legendaris yang knalpot bobokannya sengaja dibikin bunyi *"HON-HON-HON!"* bangunin satu RT. |
 | **はく** | haku | **Hacker Haku** | **Hacker** (<reading>haku</reading>) bertudung putih yang nge-hack satelit NASA modal HP Android kentang layar retak dari warkop 24 jam. |
 | **め** | me | **Meme Bengek** | Gambar **Meme** (<reading>me</reading>) kocak di medsos yang isinya aib muka lu sendiri, bikin lu ngakak guling-guling sampai bengek di lantai. |
-| **げん / がん** | gen / gan | **Gen Halilintar** / **Gandalf** | Rombongan **Gen** (<reading>gen</reading>) Halilintar bikin konten vlog bareng kakek penyihir **Gandalf** (<reading>gan</reading>) di tengah pasar malam. |
+| **げん / がん** | gen / gan | **Geng Motor** / **Juragan** | Rombongan **Geng Motor** (<reading>gen</reading>) knalpot brong mendadak kicep pas dihadang **Juragan** (<reading>gan</reading>) sakti berkumis tebal. |
 | **けい** | kei | **Idol K-Pop** / **Mobil Kei** | **Idol K-Pop** (<reading>kei</reading>) nyetir mobil mini **Kei-car** (<reading>kei</reading>) sambil joget koreografi di lampu merah. |
 | **きょう / ぎょう** | kyou / gyou | **Kucing Kyou** / **Gyoza** | **Kucing Kyou** (<reading>kyou</reading>) oyen tsundere yang ngamuk gara-gara piring **Gyoza** (<reading>gyou</reading>)-nya disenggol tikus warkop. |
-| **さい / ざi** | sai / zai | **Sailor Moon** / **Pak Zaidan** | **Sailor Moon** (<reading>sai</reading>) belanja sayur di warung **Pak Zaidan** (<reading>zai</reading>) sambil teriak: *"Dengan kekuatan sayur, aku akan menghukummu!"* |
+| **さい / ざい** | sai / zai | **Sailor Moon** / **Pak Zaidan** | **Sailor Moon** (<reading>sai</reading>) belanja sayur di warung **Pak Zaidan** (<reading>zai</reading>) sambil teriak: *"Dengan kekuatan sayur, aku akan menghukummu!"* |
 | **ばく** | baku | **Baku Hantam** | Pasukan warga komplek siap **Baku Hantam** (<reading>baku</reading>) lempar-lemparan bakwan anget gara-gara rebutan parkir mobil. |
 | **だん** | dan | **Dangdut Danyon** | Komandan Batalyon (**Danton/Danyon**) yang hobi nyawer biduan **Dangdut** (<reading>dan</reading>) koplo di atas panggung tujuhbelasan. |
 | **ふ / ぶ** | fu / bu | **Kungfu Panda** / **Ibu Kos** | **Kungfu** (<reading>fu</reading>) Panda kabur kocar-kacir dikejar **Ibu** (<reading>bu</reading>) Kos galak yang nagih uang sewa bulanan. |
-| **ぼう / ほう** | bou / hou | **Bocah Booyah** / **Hoka Bento** | **Bocah Booyah** (<reading>bou</reading>) main Free Fire sambil mukbang paket hemat **Hoka Bento** (<reading>hou</reading>) sampai belepotan. |
+| **ぼう / ほう** | bou / hou | **Bocah Botak** / **Pak Penghulu** | **Bocah Botak** (<reading>bou</reading>) usil ketahuan nyomot rendang di tenda hajatan pas **Pak Penghulu** (<reading>hou</reading>) lagi khutbah nikah. |
 | **れん** | ren | **Rentenir Ren** | **Rentenir** (<reading>ren</reading>) keliling yang nagih utang pinjol pake pengeras suara toa mushola bikin tetangga panik. |
 | **そく / ぞく** | soku / zoku | **Anak Sok-sokan** / **Yakuza** | **Anak Sok-sokan** (<reading>soku</reading>) tawuran bawa penggaris, mendadak kicep pas ketemu om-om tatoan bos **Yakuza** (<reading>zoku</reading>). |
 | **えい** | ei | **Alien Eyang** | Makhluk **Alien** (<reading>ei</reading>) dari Mars yang nyasar ke bumi malah betah nongkrong di teras bareng **Eyang** kakung sambil ngisap rokok klobot. |
-| **きん / ぎん** | kin / gin | **King Kobra** / **Gincu** | **King Kobra** (<reading>kin</reading>) seleb TikTok yang dipakein bibir **Gincu** (<reading>gin</reading>) merah merona pas lagi *endorse* kosmetik. |
+| **きん / ぎん** | kin / gin | **King Kobra** / **Gincu** | Pawang sirkus adu mental ngelawan **King Kobra** (<reading>kin</reading>) ganas yang bibirnya dipoles **Gincu** (<reading>gin</reading>) merah merona. |
 | **ちょく** | choku | **Coki Choki** | Bocah ingusan makan cokelat pasta **Choki-Choki** (<reading>choku</reading>) sampai belepotan di seluruh muka. |
 | **たん** | tan | **Tante Girang** / **Tank Baja** | **Tante** (<reading>tan</reading>) kaya raya yang flexing belanja ke mall naik kendaraan **Tank** (<reading>tan</reading>) baja militer warna pink. |
-| **はい / ばい** | hai / bai | **Hypebeast** / **Bajak Laut** | Pemuda **Hypebeast** (<reading>hai</reading>) sepatu mahal diculik gerombolan **Bajak Laut** (<reading>bai</reading>) gara-gara pamer di dermaga pelabuhan. |
-| **ふく** | fuku | **Fufufafa** | Akun kaskus **Fufufafa** (<reading>fuku</reading>) yang viral bikin geger seluruh jagat Twitter gara-gara postingan jadulnya. |
+| **はい / ばい** | hai / bai | **Haidar Pendekar** / **Bajak Laut** | Pendekar sakti bernama **Haidar** (<reading>hai</reading>) duel pedang sengit melawan kapten **Bajak Laut** (<reading>bai</reading>) di atas geladak kapal. |
+| **ふく** | fuku | **Ikan Fugu** / **Jubah Fuku** | Ikan buntal **Fugu** (<reading>fuku</reading>) gembul berduri yang kalo ditiup langsung menggelembung meletup sambil pake jubah sulap (<reading>fuku</reading>). |
 
 ---
 
