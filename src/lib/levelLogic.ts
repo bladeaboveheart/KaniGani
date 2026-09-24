@@ -87,12 +87,12 @@ export function calculateUserLevel(
   profileLevel?: number | null,
   maxLevel: number = MAX_LEVEL
 ): number {
-  // If user profile has an explicit manual level set, respect it
-  if (profileLevel !== null && profileLevel !== undefined && profileLevel > 0) {
-    return profileLevel;
-  }
+  // Start from profileLevel if set (e.g. from WaniKani sync or manual baseline), otherwise level 1
+  let currentLevel =
+    profileLevel !== null && profileLevel !== undefined && profileLevel > 0
+      ? profileLevel
+      : 1;
 
-  let currentLevel = 1;
   while (currentLevel < maxLevel) {
     const levelKanji = allKanji.filter((k) => k.level === currentLevel);
     if (levelKanji.length === 0) {

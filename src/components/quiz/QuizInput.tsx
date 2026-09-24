@@ -72,7 +72,7 @@ export default function QuizInput({
           value={userInput}
           onChange={handleInputChange}
           onKeyDown={onKeyDown}
-          readOnly={isAnswerSubmitted && !incorrectActive}
+          readOnly={isAnswerSubmitted}
           className={`w-full py-3.5 pl-14 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-transparent ${
             warningMsg
               ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-500 text-amber-700 dark:text-amber-400 animate-shake'

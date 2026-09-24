@@ -55,6 +55,8 @@ function ReviewPageContent() {
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<'quiz' | 'summary'>('quiz');
   const [totalItemsCount, setTotalItemsCount] = useState(0);
+  const [totalDueCount, setTotalDueCount] = useState(0);
+  const [batchSize, setBatchSize] = useState(100);
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
 
@@ -67,6 +69,13 @@ function ReviewPageContent() {
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const infoDrawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showItemInfo && infoDrawerRef.current) {
+      infoDrawerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [showItemInfo]);
 
   const playCurrentAudio = useCallback(() => {
     if (!activeCard || activeCard.item.type !== 'vocabulary') return;
@@ -98,119 +107,173 @@ function ReviewPageContent() {
     isAnswerSubmitted,
   });
 
-  // Auto-play audio on correct answer for vocabulary
-  useEffect(() => {
-    if (isAnswerSubmitted && isCorrect && activeCard?.item.type === 'vocabulary') {
-      playCurrentAudio();
-    }
-  }, [isAnswerSubmitted, isCorrect, activeCard, playCurrentAudio]);
+  // Fetch reviews due using PostgREST nested relational query
+  const loadReviews = useCallback(async () => {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/');
+        return;
+      }
 
-  // Fetch reviews due
-  useEffect(() => {
-    async function loadReviews() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+      let rawItems: any[] = [];
+      const progressMap = new Map<string, number>();
+
+      if (isLeechMode) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
           router.push('/');
           return;
         }
-
-        let rawItems: any[] = [];
-        const progressMap = new Map<string, number>();
-
-        if (isLeechMode) {
-          const { data: { session } } = await supabase.auth.getSession();
-          if (!session) {
-            router.push('/');
-            return;
-          }
-          const res = await fetch('/api/leeches', {
-            headers: { Authorization: `Bearer ${session.access_token}` },
-          });
-          const json = await res.json();
-          const leeches = json.leeches || [];
-          if (leeches.length === 0) {
-            setLoading(false);
-            return;
-          }
-
-          const itemIds = leeches.map((l: any) => l.item_id);
-          const { data: itemsData, error: itemsError } = await supabase
-            .from('items')
-            .select('*')
-            .in('id', itemIds);
-
-          if (itemsError) throw itemsError;
-          rawItems = itemsData || [];
-          leeches.forEach((l: any) => progressMap.set(l.item_id, l.srs_stage));
-        } else {
-          const now = new Date().toISOString();
-
-          // Fetch review items due
-          const { data, error } = await supabase
-            .from('user_progress')
-            .select('item_id, srs_stage, next_review, items(*)')
-            .eq('user_id', user.id)
-            .gte('srs_stage', 1)
-            .lte('srs_stage', 8)
-            .lte('next_review', now);
-
-          if (error) throw error;
-          if (!data || data.length === 0) {
-            setLoading(false);
-            return;
-          }
-
-          rawItems = data.map((row: any) => row.items).filter(Boolean);
-          data.forEach((row: any) => progressMap.set(row.item_id, row.srs_stage));
+        const res = await fetch('/api/leeches', {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        const json = await res.json();
+        const leeches = json.leeches || [];
+        if (leeches.length === 0) {
+          setTotalItemsCount(0);
+          setLoading(false);
+          return;
         }
 
-        const itemIds = rawItems.map((i: any) => i.id);
-        const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
-        const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
+        const itemIds = leeches.map((l: any) => l.item_id);
+        const { data: itemsData, error: itemsError } = await supabase
+          .from('items')
+          .select(`
+            id, character, slug, level, type, lesson_position,
+            parts_of_speech, meaning_mnemonic, reading_mnemonic,
+            item_meanings (*),
+            item_readings (*),
+            item_audios (*),
+            item_context_sentences (*)
+          `)
+          .in('id', itemIds);
 
-        // 1. FAST INITIAL FETCH: Only meanings, readings, and audios needed to start quiz instantly (<350ms)
-        const [meaningsRes, readingsRes, audiosRes] = await Promise.all([
-          supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('item_readings').select('*').in('item_id', itemIds),
-          supabase.from('item_audios').select('*').in('item_id', itemIds),
-        ]);
+        if (itemsError) throw itemsError;
+        rawItems = itemsData || [];
+        leeches.forEach((l: any) => progressMap.set(l.item_id, l.srs_stage));
+        setTotalDueCount(rawItems.length);
+      } else {
+        const now = new Date().toISOString();
 
-        const meanings = meaningsRes.data || [];
-        const readings = readingsRes.data || [];
-        const audios = audiosRes.data || [];
+        // 1. Hitung total review yang jatuh tempo di server
+        const { count: dueCount, error: countError } = await supabase
+          .from('user_progress')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('srs_stage', 1)
+          .lte('srs_stage', 8)
+          .lte('next_review', now);
 
-        // Build initial items immediately
-        const initialItemsWithDetails: Item[] = rawItems.map((item: any) => {
-          const mList = meanings.filter((m) => m.item_id === item.id);
-          const rList = readings.filter((r) => r.item_id === item.id);
-          const primaryMeaning = mList.find((m) => m.primary_meaning)?.meaning || '';
-          const primaryReading = rList.find((r) => r.primary_reading)?.reading || null;
-          const srsStage = progressMap.get(item.id) ?? 1;
+        if (countError) throw countError;
+        const totalDue = dueCount || 0;
+        setTotalDueCount(totalDue);
 
-          return {
-            ...item,
-            srs_stage: srsStage,
-            meanings: mList,
-            readings: rList,
-            context_sentences: [],
-            primary_meaning: primaryMeaning,
-            primary_reading: primaryReading,
-            accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
-            accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
-            audios: audios.filter((a: any) => a.item_id === item.id),
-          };
-        });
+        if (totalDue === 0) {
+          setTotalItemsCount(0);
+          setLoading(false);
+          return;
+        }
 
-        setTotalItemsCount(initialItemsWithDetails.length);
-        initializeSession(initialItemsWithDetails, 'review');
-        setLoading(false); // User can immediately start reviewing!
+        // Tentukan batas ukuran batch review (default 100)
+        const storedBatchSize = typeof window !== 'undefined'
+          ? localStorage.getItem('kanigani-review-batch-size')
+          : null;
+        const currentBatchLimit = storedBatchSize === 'all'
+          ? 2500
+          : storedBatchSize && !isNaN(Number(storedBatchSize))
+          ? Number(storedBatchSize)
+          : 100;
 
-        // 2. BACKGROUND PREFETCH: Load heavy sentences, prerequisites & similar kanji for drawer quietly
+        setBatchSize(currentBatchLimit);
+
+        // 2. Ambil data batch menggunakan PostgREST nested relational query
+        // Mengambil semua relasi meanings, readings, audios, dan sentences dalam 1 query terpadu tanpa URL query panjang
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select(`
+            item_id, srs_stage, next_review,
+            items (
+              id, character, slug, level, type, lesson_position,
+              parts_of_speech, meaning_mnemonic, reading_mnemonic,
+              item_meanings (*),
+              item_readings (*),
+              item_audios (*),
+              item_context_sentences (*)
+            )
+          `)
+          .eq('user_id', user.id)
+          .gte('srs_stage', 1)
+          .lte('srs_stage', 8)
+          .lte('next_review', now)
+          .order('next_review', { ascending: true })
+          .limit(currentBatchLimit);
+
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          setTotalItemsCount(0);
+          setLoading(false);
+          return;
+        }
+
+        rawItems = data.map((row: any) => row.items).filter(Boolean);
+        data.forEach((row: any) => progressMap.set(row.item_id, row.srs_stage));
+      }
+
+      const initialItemsWithDetails: Item[] = rawItems.map((item: any) => {
+        const mList = item.item_meanings || [];
+        const rList = item.item_readings || [];
+        const aList = item.item_audios || [];
+        const sList = item.item_context_sentences || [];
+        const primaryMeaning = mList.find((m: any) => m.primary_meaning)?.meaning || mList[0]?.meaning || '';
+        const primaryReading = rList.find((r: any) => r.primary_reading)?.reading || rList[0]?.reading || null;
+        const srsStage = progressMap.get(item.id) ?? 1;
+
+        const acceptedMeanings = mList
+          .filter((m: any) => m.accepted_answer)
+          .map((m: any) => m.meaning.toLowerCase().trim());
+        if (acceptedMeanings.length === 0 && primaryMeaning) {
+          acceptedMeanings.push(primaryMeaning.toLowerCase().trim());
+        }
+
+        const acceptedReadings = rList
+          .filter((r: any) => r.accepted_answer)
+          .map((r: any) => r.reading.toLowerCase().trim());
+        if (acceptedReadings.length === 0 && primaryReading) {
+          acceptedReadings.push(primaryReading.toLowerCase().trim());
+        }
+
+        return {
+          ...item,
+          srs_stage: srsStage,
+          meanings: mList,
+          readings: rList,
+          context_sentences: sList,
+          primary_meaning: primaryMeaning,
+          primary_reading: primaryReading,
+          accepted_meanings: acceptedMeanings,
+          accepted_readings: acceptedReadings,
+          audios: aList,
+        };
+      });
+
+      setTotalItemsCount(initialItemsWithDetails.length);
+      initializeSession(initialItemsWithDetails, 'review');
+      setLoading(false);
+      setPhase('quiz');
+      setSubmittedItemIds([]);
+      submittedIdsRef.current = new Set();
+      setAccuracyStats({ correct: 0, wrong: 0 });
+
+      // Background prefetch: Prerequisites & Similar Kanji untuk drawer (batching kecil < 100 item)
+      const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
+      const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
+
+      if (radicalIds.length > 0 || kanjiIds.length > 0) {
         setTimeout(async () => {
           try {
-            const [sentencesRes, prereqsRes, similarRes] = await Promise.all([
-              supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
+            const [prereqsRes, similarRes] = await Promise.all([
               radicalIds.length > 0
                 ? supabase
                     .from('item_prerequisites')
@@ -233,9 +296,7 @@ function ReviewPageContent() {
                 : Promise.resolve({ data: [] }),
             ]);
 
-            const sentences = sentencesRes.data || [];
             const prereqs = prereqsRes.data || [];
-
             const kanjisMap = new Map<string, any[]>();
             prereqs.forEach((row: any) => {
               const reqId = row.requires_item_id;
@@ -248,7 +309,7 @@ function ReviewPageContent() {
 
             const similarKanjiMap = new Map<string, SimilarKanji[]>();
             similarRes.data?.forEach((row: any) => {
-              const it = row.items;
+              const it = (row as any).items;
               if (!it) return;
               const pM = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
               const pR = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
@@ -264,26 +325,26 @@ function ReviewPageContent() {
               });
             });
 
-            // Enrich session items in memory so QuizInfoDrawer displays complete details
             initialItemsWithDetails.forEach(item => {
-              item.context_sentences = sentences.filter((s: any) => s.item_id === item.id);
               if (item.type === 'radical') item.kanjis = kanjisMap.get(item.id) || [];
               if (item.type === 'kanji') item.similar_kanjis = similarKanjiMap.get(item.id) || [];
             });
           } catch (bgErr) {
             console.warn('Background drawer enrich deferred:', bgErr);
           }
-        }, 100);
-      } catch (err) {
-        console.error('Error fetching reviews:', err);
-      } finally {
-        setLoading(false);
+        }, 50);
       }
+    } catch (err) {
+      console.error('Error fetching reviews:', err);
+    } finally {
+      setLoading(false);
     }
+  }, [isLeechMode, router, initializeSession]);
 
+  useEffect(() => {
     loadReviews();
     return () => resetStore();
-  }, [router, resetStore, initializeSession]);
+  }, [loadReviews, resetStore]);
 
   // Read global dev mode setting
   useEffect(() => {
@@ -335,12 +396,6 @@ function ReviewPageContent() {
     } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
       e.preventDefault();
       toggleItemInfo();
-    } else if (isAnswerSubmitted && e.key === ' ') {
-      e.preventDefault();
-      handleProceedNext();
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 20);
     }
   };
 
@@ -433,7 +488,7 @@ function ReviewPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center relative bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
         <div className="flex flex-col items-center space-y-4 select-none">
           <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
@@ -445,7 +500,7 @@ function ReviewPageContent() {
 
   if (totalItemsCount === 0 && phase !== 'summary') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center relative bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
         <CrabBackground />
         <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <Flame className="w-16 h-16 mx-auto text-pink-500 animate-bounce" />
@@ -511,12 +566,15 @@ function ReviewPageContent() {
   };
 
   const remainingItemsCount = Array.from(new Set(queue.map(c => c.itemId))).length;
+  const displayRemainingReviews = isLeechMode
+    ? remainingItemsCount
+    : Math.max(0, totalDueCount - submittedItemIds.length);
   const accuracyPct = accuracyStats.correct + accuracyStats.wrong > 0
     ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
     : 100;
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 dark:bg-slate-950 transition-colors duration-300">
       <CrabBackground />
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
         {/* PHASE 1: QUIZ REVIEW SESSION */}
@@ -562,10 +620,10 @@ function ReviewPageContent() {
                       router.push('/dashboard');
                     }
                   }}
-                  title={isLeechMode ? 'Latihan Leech' : 'Review'}
+                  title={isLeechMode ? 'Latihan Leech' : totalDueCount > totalItemsCount ? `Batch ${totalItemsCount} Item` : 'Review'}
                   accuracyPct={accuracyPct}
                   completedCount={submittedItemIds.length}
-                  remainingCount={remainingItemsCount}
+                  remainingCount={displayRemainingReviews}
                   globalDevMode={globalDevMode}
                   devMode={devMode}
                   setDevMode={setDevMode}
@@ -619,10 +677,12 @@ function ReviewPageContent() {
 
               {/* Sliding Detail Drawer Panel */}
               {showItemInfo && (
-                <QuizInfoDrawer
-                  item={activeCard.item}
-                  cardType={activeCard.cardType}
-                />
+                <div ref={infoDrawerRef}>
+                  <QuizInfoDrawer
+                    item={activeCard.item}
+                    cardType={activeCard.cardType}
+                  />
+                </div>
               )}
             </div>
           );
@@ -635,6 +695,11 @@ function ReviewPageContent() {
             items={[]}
             totalCompleted={submittedItemIds.length}
             accuracyPct={accuracyPct}
+            hasNextBatch={totalDueCount > submittedItemIds.length}
+            remainingLessonsCount={Math.max(0, totalDueCount - submittedItemIds.length)}
+            onNextBatch={() => {
+              loadReviews();
+            }}
             levelUpLevel={levelUpData?.newLevel}
             onFinish={() => router.push('/dashboard')}
           />

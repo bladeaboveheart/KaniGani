@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X, Layers, CheckSquare, Square, Sparkles, Filter, Info, BookOpen, ChevronRight } from 'lucide-react';
 import CharacterDisplay from '@/components/CharacterDisplay';
 
@@ -15,7 +15,7 @@ interface LessonPickerModalProps {
 }
 
 export default function LessonPickerModal({
-  availableLessons,
+  availableLessons: rawAvailableLessons,
   selectedLessonIds,
   setSelectedLessonIds,
   interleaveLessons,
@@ -23,6 +23,17 @@ export default function LessonPickerModal({
   startCustomLesson,
   setPickerOpen
 }: LessonPickerModalProps) {
+  // Deduplicate available lessons by ID to guarantee unique React keys and exact counts
+  const availableLessons = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const item of rawAvailableLessons || []) {
+      if (item && item.id && !map.has(item.id)) {
+        map.set(item.id, item);
+      }
+    }
+    return Array.from(map.values());
+  }, [rawAvailableLessons]);
+
   // Group lessons by level & type
   const getGroupedLessons = () => {
     const groups: Record<number, { radical: any[]; kanji: any[]; vocabulary: any[] }> = {};
@@ -32,7 +43,7 @@ export default function LessonPickerModal({
         groups[lvl] = { radical: [], kanji: [], vocabulary: [] };
       }
       const type = item.type as 'radical' | 'kanji' | 'vocabulary';
-      if (groups[lvl][type]) {
+      if (groups[lvl][type] && !groups[lvl][type].some(i => i.id === item.id)) {
         groups[lvl][type].push(item);
       }
     });

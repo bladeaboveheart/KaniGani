@@ -13,16 +13,30 @@ export interface LeaderboardEntry {
  * Fetches user activity logs for heatmaps.
  */
 export async function fetchActivityLogs(userId: string) {
-  const { data, error } = await supabase
-    .from('activity_logs')
-    .select('activity_type, item_count, created_at, duration_seconds')
-    .eq('user_id', userId);
+  const allRows: any[] = [];
+  const chunkSize = 1000;
+  let from = 0;
 
-  if (error) {
-    console.warn('Error fetching activity logs:', error);
-    return [];
+  while (true) {
+    const { data, error } = await supabase
+      .from('activity_logs')
+      .select('activity_type, item_count, created_at, duration_seconds')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(from, from + chunkSize - 1);
+
+    if (error) {
+      console.warn('Error fetching activity logs:', error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < chunkSize || allRows.length >= 5000) break;
+    from += chunkSize;
   }
-  return data || [];
+
+  return allRows;
 }
 
 /**

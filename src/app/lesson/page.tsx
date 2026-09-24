@@ -75,6 +75,14 @@ export default function LessonPage() {
 
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const quizInfoDrawerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showItemInfo && quizInfoDrawerRef.current) {
+      quizInfoDrawerRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [showItemInfo]);
+
   const currentItem = currentBatch[itemIndex];
 
   // Play audio for current vocabulary item (supports learn and quiz phases)
@@ -114,13 +122,6 @@ export default function LessonPage() {
     isAnswerSubmitted: phase === 'quiz' && isAnswerSubmitted,
     onPlayAudio: playCurrentAudio,
   });
-
-  // Auto-play audio when vocab question is correctly answered in quiz phase
-  useEffect(() => {
-    if (phase === 'quiz' && isAnswerSubmitted && isCorrect && activeCard?.item.type === 'vocabulary') {
-      playCurrentAudio();
-    }
-  }, [phase, isAnswerSubmitted, isCorrect, activeCard, playCurrentAudio]);
 
   // Read global dev mode setting
   useEffect(() => {
@@ -220,6 +221,20 @@ export default function LessonPage() {
         let data = initialData;
 
         if (error) throw error;
+
+        if (data && data.length > 0) {
+          const typeOrder: Record<string, number> = { radical: 1, kanji: 2, vocabulary: 3 };
+          data.sort((a: any, b: any) => {
+            const itemA = a.items;
+            const itemB = b.items;
+            if (!itemA || !itemB) return 0;
+            if (itemA.level !== itemB.level) return itemA.level - itemB.level;
+            const orderA = typeOrder[itemA.type] || 4;
+            const orderB = typeOrder[itemB.type] || 4;
+            if (orderA !== orderB) return orderA - orderB;
+            return (itemA.lesson_position || 0) - (itemB.lesson_position || 0);
+          });
+        }
         if (!data || data.length === 0) {
           // Self-healing check for brand new users entering /lesson directly
           if (!customQueueIds || customQueueIds.length === 0) {
@@ -291,8 +306,14 @@ export default function LessonPage() {
             context_sentences: [],
             primary_meaning: primaryMeaning,
             primary_reading: primaryReading,
-            accepted_meanings: mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim()),
-            accepted_readings: rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim()),
+            accepted_meanings: (() => {
+              const list = mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim());
+              return list.length ? list : (primaryMeaning ? [primaryMeaning.toLowerCase().trim()] : []);
+            })(),
+            accepted_readings: (() => {
+              const list = rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim());
+              return list.length ? list : (primaryReading ? [primaryReading.toLowerCase().trim()] : []);
+            })(),
             kanjis: item.type === 'radical' ? [] : undefined,
             similar_kanjis: item.type === 'kanji' ? [] : undefined,
             audios: item.type === 'vocabulary' ? (audiosMap.get(item.id) || []) : undefined,
@@ -467,12 +488,6 @@ export default function LessonPage() {
     } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
       e.preventDefault();
       toggleItemInfo();
-    } else if (isAnswerSubmitted && e.key === ' ') {
-      e.preventDefault();
-      handleProceedNext();
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 20);
     }
   };
 
@@ -606,7 +621,7 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+      <div className="min-h-screen flex items-center justify-center relative bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         <CrabBackground />
         <div className="flex flex-col items-center space-y-4 select-none">
           <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
@@ -618,7 +633,7 @@ export default function LessonPage() {
 
   if (lessons.length === 0 && phase !== 'summary') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
+      <div className="min-h-screen flex flex-col items-center justify-center relative bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 px-4">
         <CrabBackground />
         <div className="max-w-md w-full text-center bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl space-y-6">
           <BookOpen className="w-16 h-16 mx-auto text-teal-500 animate-bounce" />
@@ -681,7 +696,7 @@ export default function LessonPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+    <div className="min-h-screen flex flex-col relative bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
@@ -1099,10 +1114,12 @@ export default function LessonPage() {
 
               {/* Collapsible Info Drawer */}
               {showItemInfo && (
-                <QuizInfoDrawer
-                  item={activeCard.item}
-                  cardType={activeCard.cardType}
-                />
+                <div ref={quizInfoDrawerRef}>
+                  <QuizInfoDrawer
+                    item={activeCard.item}
+                    cardType={activeCard.cardType}
+                  />
+                </div>
               )}
             </div>
           );

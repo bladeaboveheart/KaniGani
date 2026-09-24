@@ -208,4 +208,55 @@ describe('Bug Fixes Verification Suite', () => {
       expect(useQuizStore.getState().isCorrect).toBe(true);
     });
   });
+
+  describe('P5: Dynamic Chunk Ranges for 2000+ Progress Rows', () => {
+    it('should generate complete contiguous chunk ranges without gaps or truncation', async () => {
+      const { generateChunkRanges } = await import('@/lib/userProgress');
+      const ranges = generateChunkRanges(2332, 1000, 1000);
+      expect(ranges).toEqual([
+        [1000, 1999],
+        [2000, 2331],
+      ]);
+    });
+  });
+
+  describe('P6: Review Item Reading and Meaning Acceptance for WaniKani Items', () => {
+    it('should accept exact Japanese kana readings such as きんねん for 近年', async () => {
+      const { initializeSession, setUserInput, submitAnswer } = useQuizStore.getState();
+
+      const kinnenItem: any = {
+        id: 'kinnen-uuid',
+        type: 'vocabulary',
+        character: '近年',
+        level: 14,
+        slug: 'beberapa-tahun-terakhir',
+        primary_meaning: 'Beberapa Tahun Terakhir',
+        primary_reading: 'きんねん',
+        accepted_meanings: ['beberapa tahun terakhir', 'recent years', 'lately'],
+        accepted_readings: ['きんねん'],
+      };
+
+      initializeSession([kinnenItem], 'review');
+
+      // Test reading card
+      const state = useQuizStore.getState();
+      const readingCard = state.queue.find(c => c.cardType === 'reading');
+      expect(readingCard).toBeDefined();
+
+      useQuizStore.setState({ activeCard: readingCard, isAnswerSubmitted: false, isCorrect: false });
+      setUserInput('きんねん');
+      await submitAnswer();
+      expect(useQuizStore.getState().isCorrect).toBe(true);
+
+      // Test meaning card
+      const meaningCard = state.queue.find(c => c.cardType === 'meaning');
+      expect(meaningCard).toBeDefined();
+
+      useQuizStore.setState({ activeCard: meaningCard, isAnswerSubmitted: false, isCorrect: false });
+      setUserInput('beberapa tahun terakhir');
+      await submitAnswer();
+      expect(useQuizStore.getState().isCorrect).toBe(true);
+    });
+  });
 });
+

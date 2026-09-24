@@ -49,9 +49,7 @@ export async function fetchDictionaryTierItems(
   minLevel: number,
   maxLevel: number
 ): Promise<Item[]> {
-  const { data, error } = await supabase
-    .from('items')
-    .select(`
+  const selectQuery = `
       id,
       character,
       slug,
@@ -64,17 +62,33 @@ export async function fetchDictionaryTierItems(
       parts_of_speech,
       item_meanings(id, meaning, primary_meaning, accepted_answer),
       item_readings(id, reading, reading_type, primary_reading, accepted_answer)
-    `)
-    .eq('type', type)
-    .gte('level', minLevel)
-    .lte('level', maxLevel)
-    .order('level', { ascending: true })
-    .order('lesson_position', { ascending: true });
+  `;
 
-  if (error) throw error;
-  if (!data) return [];
+  // Fetch in 1,000 row chunks to bypass PostgREST max-rows limit (e.g. vocabulary tiers exceed 1,000 items)
+  const allRows: any[] = [];
+  const chunkSize = 1000;
+  let from = 0;
 
-  return data.map((it: any) => {
+  while (true) {
+    const { data, error } = await supabase
+      .from('items')
+      .select(selectQuery)
+      .eq('type', type)
+      .gte('level', minLevel)
+      .lte('level', maxLevel)
+      .order('level', { ascending: true })
+      .order('lesson_position', { ascending: true })
+      .range(from, from + chunkSize - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < chunkSize) break;
+    from += chunkSize;
+  }
+
+  return allRows.map((it: any) => {
     const meanings = it.item_meanings || [];
     const readings = it.item_readings || [];
     const pMeaning = meanings.find((m: any) => m.primary_meaning)?.meaning || it.slug || '';
@@ -93,18 +107,15 @@ export async function fetchDictionaryTierItems(
 }
 
 /**
- * Fetches all item prerequisites across the platform (up to 7000 rows in chunks).
+ * Fetches all item prerequisites across the platform dynamically chunked bypassing PostgREST 1,000 row limits.
  */
 export async function fetchAllItemPrerequisites(): Promise<any[]> {
-  const chunkRanges = [
-    [0, 999],
-    [1000, 1999],
-    [2000, 2999],
-    [3000, 3999],
-    [4000, 4999],
-    [5000, 5999],
-    [6000, 6999],
-  ];
+  const { count, error: countErr } = await supabase
+    .from('item_prerequisites')
+    .select('*', { count: 'exact', head: true });
+
+  const totalCount = countErr || count === null || count === undefined ? 20000 : count;
+  const chunkRanges = generateChunkRanges(totalCount, 1000, 0);
 
   const results = await Promise.all(
     chunkRanges.map(([from, to]) =>
@@ -350,17 +361,31 @@ export async function fetchAdjacentItems(type: ItemType, level: number, currentI
  * Fetches lightweight reference items (radicals & kanjis) for prerequisites selector.
  */
 export async function fetchReferenceItems() {
-  const { data, error } = await supabase
-    .from('items')
-    .select('id, character, slug, level, type')
-    .in('type', ['radical', 'kanji'])
-    .order('level', { ascending: true });
+  const allRows: any[] = [];
+  const chunkSize = 1000;
+  let from = 0;
 
-  if (error) {
-    console.error('Error fetching reference items:', error);
-    return [];
+  while (true) {
+    const { data, error } = await supabase
+      .from('items')
+      .select('id, character, slug, level, type')
+      .in('type', ['radical', 'kanji'])
+      .order('level', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + chunkSize - 1);
+
+    if (error) {
+      console.error('Error fetching reference items:', error);
+      break;
+    }
+    if (!data || data.length === 0) break;
+
+    allRows.push(...data);
+    if (data.length < chunkSize) break;
+    from += chunkSize;
   }
-  return data || [];
+
+  return allRows;
 }
 
 /**

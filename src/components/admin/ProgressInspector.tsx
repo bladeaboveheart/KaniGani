@@ -47,17 +47,30 @@ export default function ProgressInspector({ users, currentUserId }: ProgressInsp
     if (!userId) return;
     setLoading(true);
     try {
-      // Fetch user_progress with items details (up to 2000 active rows)
-      const { data, error } = await supabase
-        .from('user_progress')
-        .select('item_id, srs_stage, unlocked_at, next_review, items!item_id(id, character, slug, type, level, lesson_position, wanikani_id)')
-        .eq('user_id', userId)
-        .order('srs_stage', { ascending: false });
+      // Fetch user_progress with items details (chunked to bypass PostgREST 1,000 row limits)
+      const allRows: any[] = [];
+      const chunkSize = 1000;
+      let from = 0;
 
-      if (error) throw error;
+      while (true) {
+        const { data, error } = await supabase
+          .from('user_progress')
+          .select('item_id, srs_stage, unlocked_at, next_review, items!item_id(id, character, slug, type, level, lesson_position, wanikani_id)')
+          .eq('user_id', userId)
+          .order('srs_stage', { ascending: false })
+          .order('item_id', { ascending: true })
+          .range(from, from + chunkSize - 1);
 
-      const rows = data || [];
-      setProgressItems(rows);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        allRows.push(...data);
+        if (data.length < chunkSize) break;
+        from += chunkSize;
+      }
+
+      setProgressItems(allRows);
+      const rows = allRows;
 
       // Compute stats
       let apprentice = 0;

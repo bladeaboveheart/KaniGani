@@ -170,7 +170,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-background text-text-primary transition-colors duration-200">
+    <div className="min-h-screen flex flex-col relative bg-background text-text-primary transition-colors duration-200">
       <Navbar />
       <CrabBackground />
 

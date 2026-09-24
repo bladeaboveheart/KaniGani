@@ -510,35 +510,14 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     const {
       queue,
       activeCard,
-      userInput,
-      incorrectActive,
+      isCorrect,
       itemProgress,
-      wrapUpActive
     } = get();
 
     if (!activeCard) return;
 
-    // Jika koreksi salah aktif, paksa ketikan sampai benar
-    if (incorrectActive) {
-      const trimmedInput = userInput.trim().toLowerCase();
-      let nowCorrect = false;
-
-      if (activeCard.cardType === 'meaning') {
-        const acceptedMeanings = activeCard.item.accepted_meanings || [];
-        nowCorrect = acceptedMeanings.some(m => m.toLowerCase().trim() === trimmedInput);
-      } else {
-        const acceptedReadings = activeCard.item.accepted_readings || [];
-        nowCorrect = acceptedReadings.some(r => r.toLowerCase().trim() === trimmedInput);
-      }
-
-      if (!nowCorrect) {
-        set({
-          warningMsg: 'Ketik jawaban yang tepat terlebih dahulu untuk melanjutkan!',
-        });
-        return; // Jangan lanjutkan jika ketikan koreksi masih salah
-      }
-
-      // Jika sudah diketik benar, taruh kembali kartu di akhir antrean
+    // Jika jawaban salah, kembalikan kartu ke akhir antrean untuk diulang nanti di sesi ini (WaniKani style)
+    if (!isCorrect) {
       const updatedQueue = [...queue];
       const current = updatedQueue.shift();
       if (current) {
@@ -557,7 +536,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         isAlmostCorrect: false,
         closestAcceptedMeaning: '',
         warningMsg: '',
-        showItemInfo: false, // Tutup info detail
+        showItemInfo: false,
       });
       return;
     }
@@ -581,11 +560,12 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       isAnswerSubmitted: false,
       isCorrect: false,
       showFeedback: false,
+      incorrectActive: false,
       itemProgress: progress,
       isAlmostCorrect: false,
       closestAcceptedMeaning: '',
       warningMsg: '',
-      showItemInfo: false, // Tutup info detail
+      showItemInfo: false,
     });
   },
 

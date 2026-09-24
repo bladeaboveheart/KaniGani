@@ -25,8 +25,8 @@ function createMockItem(id: string, type: 'radical' | 'kanji' | 'vocabulary'): I
     lesson_position: 1,
     primary_meaning: 'Meaning ' + id,
     accepted_meanings: ['meaning ' + id],
-    primary_reading: type !== 'radical' ? 'kan' + id : undefined,
-    accepted_readings: type !== 'radical' ? ['kan' + id] : undefined,
+    primary_reading: type !== 'radical' ? 'かん' : undefined,
+    accepted_readings: type !== 'radical' ? ['かん'] : undefined,
     srs_stage: 1,
   };
 }
@@ -73,7 +73,7 @@ describe('Wrap-Up & SRS Feedback Logic Tests', () => {
       expect(stateAfterUntoggle.queue.length).toBe(30);
     });
 
-    it('should NOT destructively drop the remaining card of an item during proceedNext while wrap up is active', () => {
+    it('should NOT destructively drop the remaining card of an item during proceedNext while wrap up is active', async () => {
       // 2 kanji items = 4 cards
       const items = [
         createMockItem('k1', 'kanji'),
@@ -90,7 +90,7 @@ describe('Wrap-Up & SRS Feedback Logic Tests', () => {
         ? firstCard.item.accepted_meanings![0]
         : firstCard.item.accepted_readings![0];
       useQuizStore.getState().setUserInput(answer);
-      useQuizStore.getState().submitAnswer();
+      await useQuizStore.getState().submitAnswer();
 
       // Proceed to next card
       useQuizStore.getState().proceedNext();

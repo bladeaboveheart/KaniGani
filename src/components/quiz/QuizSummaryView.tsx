@@ -41,12 +41,18 @@ export default function QuizSummaryView({
 
       <div className="space-y-1">
         <h2 className="text-2xl font-black">
-          {isLesson ? 'Batch Selesai! 🎉' : 'Review Selesai! 🎉'}
+          {isLesson
+            ? 'Batch Pelajaran Selesai! 🎉'
+            : hasNextBatch
+            ? 'Batch Review Selesai! 👏'
+            : 'Semua Review Selesai! 🎉'}
         </h2>
         <p className="text-sm text-slate-550 dark:text-slate-400">
           {isLesson
             ? 'Anda telah menyelesaikan pelajaran baru untuk batch ini. Semua item ini telah terdaftar di SRS dan siap diulas pada jadwal berikutnya.'
-            : 'Anda telah menyelesaikan semua sesi kuis review dengan sukses.'}
+            : hasNextBatch
+            ? `Hebat! Anda telah menuntaskan batch ${totalCompleted ?? items.length} item review. Masih ada ${remainingLessonsCount} item di antrean jika Anda ingin melanjutkan.`
+            : 'Selamat! Anda telah menyelesaikan seluruh item review yang jatuh tempo saat ini.'}
         </p>
       </div>
 
@@ -62,7 +68,7 @@ export default function QuizSummaryView({
         <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 grid grid-cols-2 gap-4">
           <div className="flex flex-col justify-between items-center h-16 text-center select-none">
             <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-              Total Item
+              Total Item Batch
             </span>
             <span className="text-xl font-black text-slate-400 dark:text-slate-200">
               {totalCompleted ?? items.length}
@@ -70,7 +76,7 @@ export default function QuizSummaryView({
           </div>
           <div className="flex flex-col justify-between items-center h-16 text-center select-none">
             <span className="text-4xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-              Akurasi Rata-rata
+              Akurasi Sesi
             </span>
             <span className="text-xl font-black text-pink-500">{accuracyPct}%</span>
           </div>
@@ -100,12 +106,14 @@ export default function QuizSummaryView({
 
       {/* Action Buttons */}
       <div className="flex flex-col gap-3">
-        {isLesson && hasNextBatch && onNextBatch && (
+        {hasNextBatch && onNextBatch && (
           <button
             onClick={onNextBatch}
-            className="w-full py-3 bg-teal-500 hover:bg-teal-600 text-white font-extrabold rounded-2xl shadow-md transition-colors cursor-pointer flex items-center justify-center space-x-2"
+            className={`w-full py-3 text-white font-extrabold rounded-2xl shadow-md transition-colors cursor-pointer flex items-center justify-center space-x-2 ${
+              isLesson ? 'bg-teal-500 hover:bg-teal-600' : 'bg-gradient-to-r from-pink-500 to-indigo-600 hover:opacity-95'
+            }`}
           >
-            <span>Lanjut Batch Berikutnya ({remainingLessonsCount} item sisa)</span>
+            <span>Lanjut Batch Berikutnya ({remainingLessonsCount} item tersisa)</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
@@ -113,15 +121,15 @@ export default function QuizSummaryView({
         <button
           onClick={onFinish}
           className={`w-full py-3 font-extrabold rounded-2xl transition-colors cursor-pointer flex items-center justify-center space-x-2 ${
-            isLesson && hasNextBatch
-              ? 'bg-slate-105 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
+            hasNextBatch
+              ? 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200'
               : isLesson
               ? 'bg-teal-500 hover:bg-teal-600 text-white shadow-md'
               : 'bg-pink-500 hover:bg-pink-600 text-white shadow-md'
           }`}
         >
           <Home className="w-4 h-4" />
-          <span>{isLesson && hasNextBatch ? 'Selesai & Ke Dashboard' : 'Kembali ke Dashboard'}</span>
+          <span>{hasNextBatch ? 'Selesai Sesi & Ke Dashboard' : 'Kembali ke Dashboard'}</span>
         </button>
       </div>
     </div>

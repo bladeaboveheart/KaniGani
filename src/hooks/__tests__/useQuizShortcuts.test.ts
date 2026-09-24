@@ -28,6 +28,16 @@ describe('useQuizShortcuts handler logic', () => {
     onPlayAudio?: () => void;
   }) => {
     const handleKeyDown = (e: any) => {
+      const target = e.target;
+      const isInputActive =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) &&
+        !target.hasAttribute?.('readonly');
+
+      if (isInputActive) {
+        return;
+      }
+
       if (options.isAnswerSubmitted) {
         if ((e.key === 'f' || e.key === 'F') && options.onToggleInfo) {
           e.preventDefault();
@@ -40,12 +50,6 @@ describe('useQuizShortcuts handler logic', () => {
           options.onPlayAudio();
           return;
         }
-
-        if (e.key === ' ' && options.onAdvance) {
-          e.preventDefault();
-          options.onAdvance();
-          return;
-        }
       }
     };
 
@@ -55,12 +59,10 @@ describe('useQuizShortcuts handler logic', () => {
 
   it('triggers onToggleInfo when "f" or "F" is pressed and isAnswerSubmitted is true', () => {
     const onToggleInfo = vi.fn();
-    const onAdvance = vi.fn();
 
     const cleanup = createHandler({
       isAnswerSubmitted: true,
       onToggleInfo,
-      onAdvance,
     });
 
     const preventDefault1 = vi.fn();
@@ -76,20 +78,46 @@ describe('useQuizShortcuts handler logic', () => {
     cleanup();
   });
 
-  it('triggers onAdvance when " " (Space) is pressed and isAnswerSubmitted is true', () => {
-    const onToggleInfo = vi.fn();
+  it('does NOT trigger onAdvance and does NOT preventDefault when " " (Space) is pressed', () => {
     const onAdvance = vi.fn();
 
     const cleanup = createHandler({
       isAnswerSubmitted: true,
-      onToggleInfo,
       onAdvance,
     });
 
     const preventDefault = vi.fn();
     listeners['keydown']?.({ key: ' ', preventDefault });
-    expect(onAdvance).toHaveBeenCalledTimes(1);
-    expect(preventDefault).toHaveBeenCalledTimes(1);
+    expect(onAdvance).not.toHaveBeenCalled();
+    expect(preventDefault).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('does NOT trigger any shortcut when user is actively typing in an editable input', () => {
+    const onToggleInfo = vi.fn();
+    const onPlayAudio = vi.fn();
+
+    const cleanup = createHandler({
+      isAnswerSubmitted: true,
+      onToggleInfo,
+      onPlayAudio,
+    });
+
+    const mockEditableInput = {
+      tagName: 'INPUT',
+      hasAttribute: (attr: string) => false,
+    };
+
+    const preventDefault1 = vi.fn();
+    listeners['keydown']?.({ key: 'j', target: mockEditableInput, preventDefault: preventDefault1 });
+    expect(onPlayAudio).not.toHaveBeenCalled();
+    expect(preventDefault1).not.toHaveBeenCalled();
+
+    const preventDefault2 = vi.fn();
+    listeners['keydown']?.({ key: 'f', target: mockEditableInput, preventDefault: preventDefault2 });
+    expect(onToggleInfo).not.toHaveBeenCalled();
+    expect(preventDefault2).not.toHaveBeenCalled();
 
     cleanup();
   });

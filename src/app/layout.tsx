@@ -31,7 +31,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${outfit.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="id" className={`${outfit.variable} antialiased`} suppressHydrationWarning>
       <head>
         {/* Anti-flicker Script to set dark class before HTML loads */}
         <script
@@ -54,7 +54,7 @@ export default function RootLayout({
         />
         {/* Favicon: Next.js auto-detects src/app/icon.png */}
       </head>
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
+      <body className="min-h-screen flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>

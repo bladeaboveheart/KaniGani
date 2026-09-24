@@ -2,7 +2,7 @@
 
 export default function CrabBackground() {
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none opacity-15 dark:opacity-8">
+    <div className="absolute inset-0 z-0 pointer-events-none opacity-15 dark:opacity-8 overflow-hidden">
       {/* Giant Floating Crab Left */}
       <svg className="absolute -left-20 top-20 w-80 h-80 text-rose-500 fill-current animate-pulse" viewBox="0 0 100 100">
         <path d="M50 30 C30 30 20 45 20 60 C20 70 30 80 50 80 C70 80 80 70 80 60 C80 45 70 30 50 30 Z" />

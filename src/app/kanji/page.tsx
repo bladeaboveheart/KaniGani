@@ -48,7 +48,7 @@ export default function KanjiPage() {
     <div className="min-h-screen flex flex-col bg-background text-primary transition-colors duration-300">
       <Navbar />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5 animate-fade-in">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-16 space-y-5 animate-fade-in">
         {/* Simple & Clean Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1 border-b border-card-border">
           <div>

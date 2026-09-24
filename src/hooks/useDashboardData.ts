@@ -167,8 +167,8 @@ export function useDashboardData() {
         (v: any) => !v.item_prerequisites || v.item_prerequisites.length === 0
       );
 
-      // Self-healing check: ensure all radicals & kana-only vocab with level <= userLevel are unlocked (srs_stage >= 1)
-      const autoUnlockCandidates = [...levelRadicals, ...kanaVocabs];
+      // Self-healing check: ensure all radicals & kana-only vocab for fresh Level 1 users are unlocked (srs_stage >= 1)
+      const autoUnlockCandidates = userLevel === 1 ? [...levelRadicals, ...kanaVocabs] : [];
       const unlockedItemIds = new Set((progresses || []).map((p: any) => p.item_id));
       const lockedItemsToUnlock = autoUnlockCandidates.filter(
         (item: any) => !unlockedItemIds.has(item.id)
@@ -219,58 +219,77 @@ export function useDashboardData() {
 
       const loadedItems: any[] = [];
 
+      // Deduplicate progresses by item_id to avoid double counting or duplicate React keys
+      const uniqueProgressMap = new Map<string, any>();
       if (progresses) {
-        progresses.forEach((row: any) => {
-          const stage = row.srs_stage;
-          const item = row.items;
-          if (!item) return;
-
-          loadedItems.push({
-            id: item.id,
-            character: item.character,
-            type: item.type,
-            srs_stage: stage,
-            next_review: row.next_review,
-            name: item.slug || 'item',
-          });
-
-          const isStudied = stage > 1 || (stage === 1 && row.next_review);
-          if (isStudied) {
-            distribution[stage] = (distribution[stage] || 0) + 1;
-          }
-
-          if (item.type === 'radical') {
-            byType.radical.total++;
-            if (stage >= 5) byType.radical.guru++;
-          } else if (item.type === 'kanji') {
-            byType.kanji.total++;
-            if (stage >= 5) byType.kanji.guru++;
-          } else if (item.type === 'vocabulary') {
-            byType.vocabulary.total++;
-            if (stage === 9) byType.vocabulary.burned++;
-          }
-
-          if (stage === 1 && !row.next_review) {
-            lessonsAvailable++;
-            lessonsList.push({
-              id: item.id,
-              character: item.character,
-              type: item.type,
-              level: item.level,
-              slug: item.slug,
-              lesson_position: item.lesson_position
-            });
-          }
-
-          if (stage >= 1 && stage <= 8 && row.next_review && row.next_review <= now) {
-            reviewsDue++;
-          }
-
-          if (item.type === 'kanji' && stage >= 5 && kanjiIds.includes(item.id)) {
-            kanjiPassed++;
+        progresses.forEach((p: any) => {
+          if (p && p.item_id && !uniqueProgressMap.has(p.item_id)) {
+            uniqueProgressMap.set(p.item_id, p);
           }
         });
       }
+      const uniqueProgresses = Array.from(uniqueProgressMap.values());
+
+      uniqueProgresses.forEach((row: any) => {
+        const stage = row.srs_stage;
+        const item = row.items;
+        if (!item) return;
+
+        loadedItems.push({
+          id: item.id,
+          character: item.character,
+          type: item.type,
+          srs_stage: stage,
+          next_review: row.next_review,
+          name: item.slug || 'item',
+        });
+
+        const isStudied = stage > 1 || (stage === 1 && row.next_review);
+        if (isStudied) {
+          distribution[stage] = (distribution[stage] || 0) + 1;
+        }
+
+        if (item.type === 'radical') {
+          byType.radical.total++;
+          if (stage >= 5) byType.radical.guru++;
+        } else if (item.type === 'kanji') {
+          byType.kanji.total++;
+          if (stage >= 5) byType.kanji.guru++;
+        } else if (item.type === 'vocabulary') {
+          byType.vocabulary.total++;
+          if (stage === 9) byType.vocabulary.burned++;
+        }
+
+        if (stage === 1 && !row.next_review) {
+          lessonsAvailable++;
+          lessonsList.push({
+            id: item.id,
+            character: item.character,
+            type: item.type,
+            level: item.level,
+            slug: item.slug,
+            lesson_position: item.lesson_position
+          });
+        }
+
+        if (stage >= 1 && stage <= 8 && row.next_review && row.next_review <= now) {
+          reviewsDue++;
+        }
+
+        if (item.type === 'kanji' && stage >= 5 && kanjiIds.includes(item.id)) {
+          kanjiPassed++;
+        }
+      });
+
+      // Sort lessonsList: Level ascending -> Type (radical -> kanji -> vocab) -> lesson_position
+      lessonsList.sort((a, b) => {
+        if (a.level !== b.level) return a.level - b.level;
+        const typeOrder: Record<string, number> = { radical: 1, kanji: 2, vocabulary: 3 };
+        const orderA = typeOrder[a.type] || 4;
+        const orderB = typeOrder[b.type] || 4;
+        if (orderA !== orderB) return orderA - orderB;
+        return (a.lesson_position || 0) - (b.lesson_position || 0);
+      });
 
       // Map Prerequisites
       const prereqsMap = new Map<string, any[]>();

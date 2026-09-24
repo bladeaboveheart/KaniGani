@@ -11,18 +11,21 @@ export async function fetchAllUserProgress(
   selectQuery: string = 'item_id, srs_stage, unlocked_at, next_review',
   activeOnly: boolean = true
 ): Promise<UserProgress[]> {
-  let baseQuery = supabase
-    .from('user_progress')
-    .select(selectQuery as any)
-    .eq('user_id', userId)
-    .order('item_id', { ascending: true });
+  const buildQuery = () => {
+    let q = supabase
+      .from('user_progress')
+      .select(selectQuery as any)
+      .eq('user_id', userId)
+      .order('item_id', { ascending: true });
 
-  if (activeOnly) {
-    baseQuery = baseQuery.gt('srs_stage', 0);
-  }
+    if (activeOnly) {
+      q = q.gt('srs_stage', 0);
+    }
+    return q;
+  };
 
   // Fast single fetch for normal datasets (< 1000 active items)
-  const firstChunk = await baseQuery.range(0, 999);
+  const firstChunk = await buildQuery().range(0, 999);
   if (firstChunk.error) throw firstChunk.error;
   const firstData = (firstChunk.data as unknown as UserProgress[]) || [];
 
@@ -51,7 +54,7 @@ export async function fetchAllUserProgress(
 
   const remainingResults = await Promise.all(
     remainingRanges.map(([from, to]) =>
-      baseQuery.range(from, to)
+      buildQuery().range(from, to)
     )
   );
 
@@ -63,7 +66,15 @@ export async function fetchAllUserProgress(
     }
   }
 
-  return allRows;
+  // Deduplicate rows by item_id to ensure no duplicated items
+  const rowMap = new Map<string, UserProgress>();
+  for (const row of allRows) {
+    if (row?.item_id) {
+      rowMap.set(row.item_id, row);
+    }
+  }
+
+  return Array.from(rowMap.values());
 }
 
 /**

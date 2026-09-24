@@ -17,7 +17,18 @@ export function useQuizShortcuts({
 }: QuizShortcutsOptions) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // When answer is submitted, allow 'F' to toggle info, 'J' to replay audio, and 'Space' to advance
+      // If user is actively typing in an editable input or textarea, do NOT intercept any keys
+      const target = e.target as HTMLElement | null;
+      const isInputActive =
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) &&
+        !target.hasAttribute('readonly');
+
+      if (isInputActive) {
+        return;
+      }
+
+      // When answer is submitted and not typing, allow 'F' to toggle info and 'J' to replay audio
       if (isAnswerSubmitted) {
         if ((e.key === 'f' || e.key === 'F') && onToggleInfo) {
           e.preventDefault();
@@ -30,13 +41,6 @@ export function useQuizShortcuts({
           e.preventDefault();
           e.stopPropagation();
           onPlayAudio();
-          return;
-        }
-
-        if (e.key === ' ' && onAdvance) {
-          e.preventDefault();
-          e.stopPropagation();
-          onAdvance();
           return;
         }
       }

@@ -89,6 +89,13 @@ describe('Level Up & SRS Logic Test Suite', () => {
       const level = calculateUserLevel(mockLevel1Kanji, guruSet, 15);
       expect(level).toBe(15);
     });
+
+    it('should advance past profileLevel when 90% kanji of profileLevel are passed', () => {
+      const level14Kanji = Array.from({ length: 10 }, (_, i) => ({ id: `l14_k${i + 1}`, level: 14 }));
+      const guruSet = new Set(level14Kanji.slice(0, 9).map(k => k.id));
+      const level = calculateUserLevel(level14Kanji, guruSet, 14);
+      expect(level).toBe(15);
+    });
   });
 
   describe('Rule 2: Radicals Auto-Unlock on Level Up', () => {
