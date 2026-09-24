@@ -27,5 +27,6 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dictionary Pages Layout Spacing:** Added `pb-16` bottom padding to `src/app/radical/page.tsx`, `src/app/kanji/page.tsx`, and `src/app/vocabulary/page.tsx` so cards at the bottom of the page have generous breathing room above the footer.
 
 ### Added
+- **Two-Column Meaning Display (Arti Utama & Arti Alternatif):** Added support across the platform to display alternative character meanings alongside the primary meaning in two distinct sub-columns. Applied consistently across Slide Lesson (`src/app/lesson/page.tsx`), Review & Lesson Quiz Drawer (`src/components/quiz/QuizInfoDrawer.tsx`), Dictionary Item Modal (`src/components/dictionary/ItemDetailModal.tsx`), and Full Page View (`src/components/dictionary/ItemFullPageView.tsx`). If no alternative meaning exists, a neutral dash (`-`) is displayed.
 - **Review Batch Continuity:** Added `hasNextBatch` and `onNextBatch` support to `QuizSummaryView`, allowing users to comfortably proceed to the next 100 items or return to the dashboard.
 - **Header Batch Indicator:** Added dynamic session batch indicator in `QuizHeader` (e.g. `Batch 100 / 2.008 Total`).

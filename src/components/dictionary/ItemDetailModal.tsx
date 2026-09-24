@@ -201,6 +201,43 @@ export default function ItemDetailModal({
             </span>
           </div>
 
+          {/* Meanings Section: Arti Utama & Arti Alternatif Dua Sub-kolom */}
+          {(() => {
+            const rawMeanings = item.meanings || (item as any).item_meanings || [];
+            const pMeaning = primaryMeaning;
+            const altList = rawMeanings
+              .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== pMeaning.toLowerCase().trim())
+              .map((m: any) => m.meaning.trim());
+            const uniqueAlts = Array.from(new Set(altList));
+            const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
+
+            return (
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-card-muted/40 p-3.5 sm:p-4 rounded-2xl border border-card-border">
+                  {/* Sub-kolom 1: Arti Utama */}
+                  <div>
+                    <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
+                      Arti Utama
+                    </h3>
+                    <p className="text-lg font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
+                      {pMeaning}
+                    </p>
+                  </div>
+
+                  {/* Sub-kolom 2: Arti Alternatif */}
+                  <div className="border-t sm:border-t-0 sm:border-l border-card-border pt-3 sm:pt-0 sm:pl-4">
+                    <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
+                      Arti Alternatif
+                    </h3>
+                    <p className={`text-sm font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-muted' : 'text-primary'}`}>
+                      {alternativeMeaningsText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Readings Section (Kanji & Vocab) */}
           {item.readings && item.readings.length > 0 && (
             <div className="space-y-2">

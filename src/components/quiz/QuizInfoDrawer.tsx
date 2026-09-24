@@ -101,14 +101,39 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
   const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
   const hasMoreKanjis = allKanjis.length > 8;
 
+  const rawMeanings = item.meanings || [];
+  const primaryMeaning = item.primary_meaning || rawMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || '';
+  const altList = rawMeanings
+    .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== primaryMeaning.toLowerCase().trim())
+    .map((m: any) => m.meaning.trim());
+  const uniqueAlts = Array.from(new Set(altList));
+  const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
+
   return (
     <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 animate-fade-in space-y-6 text-sm leading-relaxed text-left select-text">
       {/* 1. Meaning Info */}
       <div>
-        <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Arti Karakter</h4>
-        <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-          {item.primary_meaning}
-        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
+          {/* Sub-kolom 1: Arti Utama */}
+          <div>
+            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+              Arti Utama
+            </h4>
+            <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
+              {primaryMeaning}
+            </p>
+          </div>
+
+          {/* Sub-kolom 2: Arti Alternatif */}
+          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4">
+            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+              Arti Alternatif
+            </h4>
+            <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+              {alternativeMeaningsText}
+            </p>
+          </div>
+        </div>
 
         {item.type === 'vocabulary' && item.parts_of_speech && item.parts_of_speech.length > 0 && (
           <div className="mt-2.5">

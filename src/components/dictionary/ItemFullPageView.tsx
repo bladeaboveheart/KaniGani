@@ -390,8 +390,52 @@ export default function ItemFullPageView({
 
       {/* Main Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left 2 Columns: Readings, Mnemonics, Context Sentences, Similar Kanji */}
+        {/* Left 2 Columns: Meanings, Readings, Mnemonics, Context Sentences, Similar Kanji */}
         <div className="lg:col-span-2 space-y-8">
+          {/* Meanings Section: Arti Utama & Arti Alternatif Dua Sub-kolom */}
+          {(() => {
+            const rawMeanings = itemToDisplay.meanings || (itemToDisplay as any).item_meanings || [];
+            const pMeaning = primaryMeaning;
+            const altList = rawMeanings
+              .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== pMeaning.toLowerCase().trim())
+              .map((m: any) => m.meaning.trim());
+            const uniqueAlts = Array.from(new Set(altList));
+            const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
+
+            return (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-2">
+                    <BookOpen className="w-4 h-4 text-teal-500" />
+                    <span>Arti Karakter (Meanings)</span>
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50/70 dark:bg-slate-800/40 p-4 sm:p-5 rounded-2xl border border-slate-200/70 dark:border-slate-700/60">
+                  {/* Sub-kolom 1: Arti Utama */}
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                      Arti Utama
+                    </h3>
+                    <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
+                      {pMeaning}
+                    </p>
+                  </div>
+
+                  {/* Sub-kolom 2: Arti Alternatif */}
+                  <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-5">
+                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                      Arti Alternatif
+                    </h3>
+                    <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                      {alternativeMeaningsText}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Parts of Speech Section (Vocabulary) */}
           {type === 'vocabulary' && itemToDisplay.parts_of_speech && itemToDisplay.parts_of_speech.length > 0 && (
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-3xl p-6 sm:p-7 space-y-3 shadow-sm">

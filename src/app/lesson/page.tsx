@@ -784,17 +784,48 @@ export default function LessonPage() {
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Arti Karakter</h3>
-                    <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-                      {currentItem.primary_meaning}
-                    </p>
-                    {currentItem.type === 'vocabulary' && currentItem.parts_of_speech && currentItem.parts_of_speech.length > 0 && (
-                      <div className="mt-2.5">
-                        <PartOfSpeechList partsOfSpeech={currentItem.parts_of_speech} size="sm" />
+                  {/* Arti Utama & Arti Alternatif Dua Sub-kolom */}
+                  {(() => {
+                    const rawMeanings = currentItem.meanings || [];
+                    const primaryMeaning = currentItem.primary_meaning || rawMeanings.find((m: any) => m.primary_meaning)?.meaning || currentItem.slug || '';
+                    const altList = rawMeanings
+                      .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== primaryMeaning.toLowerCase().trim())
+                      .map((m: any) => m.meaning.trim());
+                    const uniqueAlts = Array.from(new Set(altList));
+                    const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
+
+                    return (
+                      <div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
+                          {/* Sub-kolom 1: Arti Utama */}
+                          <div>
+                            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                              Arti Utama
+                            </h3>
+                            <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
+                              {primaryMeaning}
+                            </p>
+                          </div>
+
+                          {/* Sub-kolom 2: Arti Alternatif */}
+                          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4">
+                            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                              Arti Alternatif
+                            </h3>
+                            <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                              {alternativeMeaningsText}
+                            </p>
+                          </div>
+                        </div>
+
+                        {currentItem.type === 'vocabulary' && currentItem.parts_of_speech && currentItem.parts_of_speech.length > 0 && (
+                          <div className="mt-2.5">
+                            <PartOfSpeechList partsOfSpeech={currentItem.parts_of_speech} size="sm" />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })()}
 
                   {currentItem.description && (
                     <div>
