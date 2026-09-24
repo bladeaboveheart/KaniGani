@@ -131,3 +131,20 @@ Berikut adalah contoh perbandingan nyata evolusi gaya bahasa:
 | **勹** | Penjara | **Penjara** (sinonim: *Bungkus*) | Ruangan jeruji sempit yang mengurung elemen lain di dalamnya. |
 | **ト** | Jari Kaki | **Jari Kaki** (sinonim: *Tanda Arah*) | Bentuk tonjolan jempol kaki yang menonjol keluar. |
 | **ナ** | Paus Narwhal | **Paus Narwhal** | Paus kutub dengan tanduk lurus unik. |
+
+---
+
+## 5. Standar & Aturan Animasi Visual Piktografik (Visual Mnemonic Specification)
+
+Untuk item-item tertentu yang memiliki kaitan visual kuat dengan bentuk fisik di dunia nyata, KaniGani menyediakan **Animasi Vektor Simpel (SVG/CSS Animation)**:
+
+### A. Kriteria Konsistensi (Rule)
+1. **Rule Metamorfosis Piktografik**: Hanya dibuatkan untuk **Radikal & Kanji dasar** yang bentuknya merupakan hasil metamorfosis/evolusi dari objek nyata (misal: angka 7 terbalik menjadi `七`, jempol kaki menjadi `ト`, wahana perosotan menjadi `丿`, puncak gunung menjadi `山`, riak sungai menjadi `川`).
+2. **Tidak Dipaksakan Pada Semua Item**: Kanji majemuk kompleks yang sudah tersusun dari radikal yang dikenal tidak perlu animasi terpisah, karena sudah dijelaskan oleh kombinasi cerita radikalnya.
+3. **Simpel, Bersih, & Ringan**: Format SVG vektor murni berukuran mikro (<50KB), tajam tanpa pecah di resolusi retina HP, serta mendukung adaptasi warna Light/Dark Mode.
+
+### B. Konvensi Penyimpanan Aset
+- Disimpan di: `/public/mnemonics/[slug].svg` atau `/public/mnemonics/[type]s/[slug].svg`.
+- Dimuat secara otomatis oleh komponen modular `<MnemonicVisual type={item.type} slug={item.slug} />`.
+- *Graceful Fallback*: Jika sebuah item belum memiliki file animasi, komponen tidak akan merender apa-apa secara aman tanpa memicu error.
+

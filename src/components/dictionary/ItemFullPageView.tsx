@@ -23,6 +23,7 @@ import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import ItemEditorModal from '@/components/admin/ItemEditorModal';
 import { PartOfSpeechBadge, PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
+import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 import { getPartOfSpeechMeta } from '@/lib/partsOfSpeech';
 import { ItemInput } from '@/lib/types';
 import {
@@ -552,6 +553,7 @@ export default function ItemFullPageView({
                     {type === 'radical' ? 'Mnemonic & Penjelasan Radikal' : 'Mnemonic Arti (Jembatan Keledai)'}
                   </span>
                 </h3>
+                <MnemonicVisual slug={itemToDisplay.slug} character={itemToDisplay.character} type={type} />
                 <p className="text-teal-950 dark:text-teal-200 text-sm leading-relaxed font-medium">
                   <FormattedText text={itemToDisplay.meaning_mnemonic || itemToDisplay.description} />
                 </p>

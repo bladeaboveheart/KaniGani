@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg-rect {
+        fill: #f8fafc;
+        rx: 16px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bg-rect { fill: #0f172a; }
+        .grid-line { stroke: #1e293b !important; }
+        .label-text { fill: #94a3b8 !important; }
+      }
+      .grid-line {
+        stroke: #e2e8f0;
+        stroke-dasharray: 4 4;
+        stroke-width: 1;
+      }
+      .label-text {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        fill: #64748b;
+        letter-spacing: 0.05em;
+        text-anchor: middle;
+      }
+
+      /* Mountain to Kanji morph animation */
+      .mountain-peaks {
+        animation: peaksFade 4s ease-in-out infinite;
+      }
+
+      .kanji-mountain {
+        animation: kanjiDraw 4s ease-in-out infinite;
+      }
+
+      @keyframes peaksFade {
+        0%, 25% {
+          opacity: 0.85;
+          transform: translateY(0);
+        }
+        45%, 75% {
+          opacity: 0.15;
+          transform: translateY(-2px);
+        }
+        90%, 100% {
+          opacity: 0.85;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes kanjiDraw {
+        0%, 25% {
+          stroke: #10b981;
+          stroke-width: 6;
+          opacity: 0.5;
+        }
+        45%, 75% {
+          stroke: #00a0f0;
+          stroke-width: 8;
+          opacity: 1;
+        }
+        90%, 100% {
+          stroke: #10b981;
+          stroke-width: 6;
+          opacity: 0.5;
+        }
+      }
+    </style>
+  </defs>
+
+  <!-- Background Card -->
+  <rect class="bg-rect" width="240" height="160" />
+  
+  <!-- Subtle Crosshairs -->
+  <line class="grid-line" x1="120" y1="20" x2="120" y2="130" />
+  <line class="grid-line" x1="30" y1="75" x2="210" y2="75" />
+
+  <!-- Mountain Peaks (Pictograph Layer) -->
+  <g class="mountain-peaks">
+    <!-- Center Peak (Tallest) -->
+    <polygon points="120,38 95,108 145,108" fill="#a7f3d0" stroke="#059669" stroke-width="2" stroke-linejoin="round" />
+    <polygon points="120,38 112,58 128,58" fill="#ffffff" opacity="0.9" />
+
+    <!-- Left Peak -->
+    <polygon points="80,56 60,108 100,108" fill="#6ee7b7" stroke="#059669" stroke-width="2" stroke-linejoin="round" />
+    <polygon points="80,56 74,70 86,70" fill="#ffffff" opacity="0.9" />
+
+    <!-- Right Peak -->
+    <polygon points="160,56 140,108 180,108" fill="#6ee7b7" stroke="#059669" stroke-width="2" stroke-linejoin="round" />
+    <polygon points="160,56 154,70 166,70" fill="#ffffff" opacity="0.9" />
+  </g>
+
+  <!-- Radical/Kanji 山 Strokes -->
+  <g class="kanji-mountain">
+    <!-- Center tall vertical stroke -->
+    <line x1="120" y1="38" x2="120" y2="108" stroke-linecap="round" />
+
+    <!-- Left stroke curving into bottom base, then right vertical stroke -->
+    <!-- In kanji 山: Left vertical goes down and turns right along base -->
+    <path d="M 80 58 L 80 108 L 160 108" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Right vertical stroke -->
+    <line x1="160" y1="58" x2="160" y2="108" stroke-linecap="round" />
+  </g>
+
+  <!-- Dynamic Caption Footnote -->
+  <text class="label-text" x="120" y="142">3 PUNCAK GUNUNG = 山</text>
+</svg>

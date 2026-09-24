@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg-rect {
+        fill: #f8fafc;
+        rx: 16px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bg-rect { fill: #0f172a; }
+        .grid-line { stroke: #1e293b !important; }
+        .label-text { fill: #94a3b8 !important; }
+        .foot-outline { stroke: #334155 !important; }
+      }
+      .grid-line {
+        stroke: #e2e8f0;
+        stroke-dasharray: 4 4;
+        stroke-width: 1;
+      }
+      .label-text {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        fill: #64748b;
+        letter-spacing: 0.05em;
+        text-anchor: middle;
+      }
+      .foot-outline {
+        stroke: #cbd5e1;
+        stroke-dasharray: 4 3;
+        stroke-width: 2;
+        fill: none;
+      }
+
+      /* Pulse toe effect */
+      .toe-highlight {
+        animation: toePop 3s ease-in-out infinite;
+      }
+
+      .kanji-stroke {
+        stroke-dasharray: 120;
+        animation: drawRadical 3s ease-in-out infinite;
+      }
+
+      @keyframes toePop {
+        0%, 20% {
+          transform: scale(1);
+          stroke: #f59e0b;
+        }
+        40%, 60% {
+          transform: scale(1.15) translate(-10px, -5px);
+          stroke: #ef4444;
+        }
+        80%, 100% {
+          transform: scale(1);
+          stroke: #f59e0b;
+        }
+      }
+
+      @keyframes drawRadical {
+        0%, 15% {
+          stroke: #00a0f0;
+          stroke-width: 7;
+        }
+        50%, 75% {
+          stroke: #0284c7;
+          stroke-width: 9;
+        }
+        90%, 100% {
+          stroke: #00a0f0;
+          stroke-width: 7;
+        }
+      }
+    </style>
+  </defs>
+
+  <!-- Background Card -->
+  <rect class="bg-rect" width="240" height="160" />
+  
+  <!-- Subtle Crosshairs -->
+  <line class="grid-line" x1="120" y1="20" x2="120" y2="130" />
+  <line class="grid-line" x1="30" y1="75" x2="210" y2="75" />
+
+  <!-- Foot & Leg Contour Outline -->
+  <path class="foot-outline" d="M 85 35 L 85 95 C 85 115, 105 120, 135 120 C 155 120, 160 108, 155 98 C 150 90, 138 90, 130 92 C 120 95, 115 85, 115 35" />
+
+  <!-- Radical ト - Vertical Stem & Side Branch -->
+  <g class="kanji-stroke">
+    <!-- Vertical stem: Leg / inner edge -->
+    <line x1="105" y1="35" x2="105" y2="115" stroke="#00a0f0" stroke-width="8" stroke-linecap="round" />
+    
+    <!-- Slanted branch: Big Toe sticking out to the right -->
+    <path class="toe-highlight" d="M 105 68 C 120 72, 138 82, 146 88" fill="none" stroke="#f59e0b" stroke-width="8" stroke-linecap="round" />
+  </g>
+
+  <!-- Pointing arrow / highlight on the toe -->
+  <g transform="translate(152, 94)">
+    <circle cx="0" cy="0" r="4" fill="#ef4444" />
+    <line x1="8" y1="5" x2="22" y2="14" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round" />
+  </g>
+
+  <!-- Dynamic Caption Footnote -->
+  <text class="label-text" x="120" y="142">JEMPOL KAKI MENONJOL = ト</text>
+</svg>

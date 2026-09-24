@@ -9,6 +9,7 @@ import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
+import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 
 interface QuizInfoDrawerProps {
   item: Item | null;
@@ -118,6 +119,7 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
         {item.meaning_mnemonic && (
           <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
             <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic (Arti)</h5>
+            <MnemonicVisual slug={item.slug} character={item.character} type={item.type} />
             <p className="text-teal-900 dark:text-teal-100 mt-1.5"><FormattedText text={item.meaning_mnemonic} /></p>
           </div>
         )}

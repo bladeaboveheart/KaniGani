@@ -26,6 +26,7 @@ import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -790,6 +791,7 @@ export default function LessonPage() {
                   {currentItem.meaning_mnemonic && (
                     <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
                       <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
+                      <MnemonicVisual slug={currentItem.slug} character={currentItem.character} type={currentItem.type} />
                       <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic} /></p>
                     </div>
                   )}

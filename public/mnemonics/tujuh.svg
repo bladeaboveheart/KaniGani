@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="100%" height="100%">
+  <defs>
+    <style>
+      .bg-rect {
+        fill: #f8fafc;
+        rx: 16px;
+      }
+      @media (prefers-color-scheme: dark) {
+        .bg-rect { fill: #0f172a; }
+        .grid-line { stroke: #1e293b !important; }
+        .label-text { fill: #94a3b8 !important; }
+        .sub-text { fill: #64748b !important; }
+      }
+      .grid-line {
+        stroke: #e2e8f0;
+        stroke-dasharray: 4 4;
+        stroke-width: 1;
+      }
+      .label-text {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        fill: #64748b;
+        letter-spacing: 0.05em;
+        text-anchor: middle;
+      }
+      .sub-text {
+        font-family: system-ui, -apple-system, sans-serif;
+        font-size: 10px;
+        font-weight: 600;
+        fill: #94a3b8;
+        text-anchor: middle;
+      }
+      
+      /* Animation Keyframes */
+      .morph-group {
+        transform-origin: 120px 75px;
+        animation: flipCycle 5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      }
+      
+      .numeral-seven {
+        animation: fadeOutToKanji 5s ease-in-out infinite;
+      }
+      
+      .kanji-seven {
+        animation: fadeInFromNumeral 5s ease-in-out infinite;
+      }
+      
+      .arrow-indicator {
+        animation: arrowPulse 5s ease-in-out infinite;
+      }
+
+      @keyframes flipCycle {
+        0%, 25% {
+          transform: rotate(0deg);
+        }
+        40%, 85% {
+          transform: rotate(180deg);
+        }
+        95%, 100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes fadeOutToKanji {
+        0%, 30% {
+          opacity: 1;
+        }
+        42%, 85% {
+          opacity: 0.15;
+        }
+        95%, 100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadeInFromNumeral {
+        0%, 30% {
+          opacity: 0;
+          stroke-dashoffset: 80;
+        }
+        45%, 85% {
+          opacity: 1;
+          stroke-dashoffset: 0;
+        }
+        95%, 100% {
+          opacity: 0;
+          stroke-dashoffset: 80;
+        }
+      }
+
+      @keyframes arrowPulse {
+        0%, 25% {
+          opacity: 0.8;
+          transform: scale(1);
+        }
+        35%, 45% {
+          opacity: 1;
+          transform: scale(1.15);
+        }
+        55%, 100% {
+          opacity: 0.3;
+          transform: scale(1);
+        }
+      }
+    </style>
+  </defs>
+
+  <!-- Background Card -->
+  <rect class="bg-rect" width="240" height="160" />
+  
+  <!-- Subtle Crosshair Coordinates -->
+  <line class="grid-line" x1="120" y1="20" x2="120" y2="130" />
+  <line class="grid-line" x1="30" y1="75" x2="210" y2="75" />
+
+  <!-- Animated Morphing Element -->
+  <g class="morph-group">
+    <!-- Base Numeral 7 (Crossed European 7) -->
+    <g class="numeral-seven">
+      <!-- Horizontal top bar -->
+      <path d="M 98 52 L 142 52" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round" />
+      <!-- Diagonal stem -->
+      <path d="M 140 52 L 102 98" fill="none" stroke="#f59e0b" stroke-width="7" stroke-linecap="round" />
+      <!-- Cross bar -->
+      <path d="M 110 74 L 132 74" fill="none" stroke="#f59e0b" stroke-width="5" stroke-linecap="round" />
+    </g>
+
+    <!-- Radical 七 (Highlighted in KaniGani Radical Blue) -->
+    <g class="kanji-seven">
+      <!-- Horizontal slanted stroke -->
+      <path d="M 95 72 C 110 72, 130 68, 145 66" fill="none" stroke="#00a0f0" stroke-width="8" stroke-linecap="round" stroke-dasharray="80" />
+      <!-- Vertical downward curve with upward hook -->
+      <path d="M 116 48 L 116 88 C 116 97, 126 98, 136 96 C 142 94, 144 88, 145 84" fill="none" stroke="#00a0f0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="100" />
+    </g>
+  </g>
+
+  <!-- Rotation Circular Indicator Arrow -->
+  <g class="arrow-indicator" transform-origin="120 75">
+    <path d="M 162 75 A 42 42 0 0 1 120 117" fill="none" stroke="#00a0f0" stroke-width="2" stroke-dasharray="4 3" stroke-linecap="round" />
+    <polygon points="120,113 120,121 114,117" fill="#00a0f0" />
+  </g>
+
+  <!-- Dynamic Caption Footnote -->
+  <text class="label-text" x="120" y="142">ANGKA 7 DIBALIK 180° = 七</text>
+</svg>

@@ -10,6 +10,7 @@ import { getSrsLabel, getSrsColorClass } from '@/lib/srs';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { supabase } from '@/lib/supabase';
+import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 
 interface ItemDetailModalProps {
   item: DictionaryItem | null;
@@ -339,6 +340,7 @@ export default function ItemDetailModal({
               <h3 className="text-xs font-bold text-teal-700 dark:text-teal-300 uppercase tracking-widest block mb-1">
                 {type === 'radical' ? 'Mnemonic & Penjelasan Radikal' : 'Mnemonic Arti (Jembatan Keledai)'}
               </h3>
+              <MnemonicVisual slug={item.slug} character={item.character} type={type} />
               <p className="text-primary font-medium text-xs leading-relaxed">
                 <FormattedText text={item.meaning_mnemonic || item.description} />
               </p>
