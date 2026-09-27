@@ -13,7 +13,7 @@ import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import {
-  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp
+  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp, Languages, Layers, ExternalLink
 } from 'lucide-react';
 
 // Modular Quiz Components
@@ -358,13 +358,27 @@ export default function LessonPage() {
         // Phase 2: Asynchronous background fetch of heavy drawer data (sentences, prereqs, similar kanji)
         (async () => {
           try {
-            const [sentencesRes, prereqsRes, similarRes] = await Promise.all([
+            const [sentencesRes, prereqsRes, itemPrereqsRes, similarRes] = await Promise.all([
               supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
               radicalIds.length > 0
                 ? supabase
                     .from('item_prerequisites')
                     .select('requires_item_id, items!item_id(id, character, slug, level, type)')
                     .in('requires_item_id', radicalIds)
+                : Promise.resolve({ data: [] }),
+              (kanjiIds.length > 0 || vocabIds.length > 0)
+                ? supabase
+                    .from('item_prerequisites')
+                    .select(`
+                      item_id,
+                      requires_item_id,
+                      items!requires_item_id(
+                        id, character, slug, level, type,
+                        item_meanings(meaning, primary_meaning),
+                        item_readings(reading, primary_reading)
+                      )
+                    `)
+                    .in('item_id', [...kanjiIds, ...vocabIds])
                 : Promise.resolve({ data: [] }),
               kanjiIds.length > 0
                 ? supabase
@@ -383,6 +397,7 @@ export default function LessonPage() {
 
             const sentences = sentencesRes.data || [];
             const prereqs = prereqsRes.data || [];
+            const itemPrereqs = itemPrereqsRes.data || [];
 
             // Map radical kanji dependencies
             const kanjisMap = new Map<string, any[]>();
@@ -397,6 +412,30 @@ export default function LessonPage() {
 
             kanjisMap.forEach((list) => {
               list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+            });
+
+            // Map radicals composed in kanji AND kanjis composed in vocabularies
+            const radicalsMap = new Map<string, any[]>();
+            const vocabKanjisMap = new Map<string, any[]>();
+            itemPrereqs.forEach((row: any) => {
+              const parentId = row.item_id;
+              const childItem = row.items;
+              if (!childItem) return;
+              if (childItem.type === 'radical') {
+                if (!radicalsMap.has(parentId)) radicalsMap.set(parentId, []);
+                radicalsMap.get(parentId)!.push(childItem);
+              } else if (childItem.type === 'kanji') {
+                if (!vocabKanjisMap.has(parentId)) vocabKanjisMap.set(parentId, []);
+                vocabKanjisMap.get(parentId)!.push(childItem);
+              }
+            });
+
+            radicalsMap.forEach((list) => {
+              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
+            });
+
+            vocabKanjisMap.forEach((list) => {
+              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
             });
 
             // Map similar kanji
@@ -421,7 +460,12 @@ export default function LessonPage() {
             const enrichItem = (item: Item): Item => ({
               ...item,
               context_sentences: sentences.filter((s: any) => s.item_id === item.id),
-              kanjis: item.type === 'radical' ? (kanjisMap.get(item.id) || []) : item.kanjis,
+              kanjis: item.type === 'radical'
+                ? (kanjisMap.get(item.id) || [])
+                : item.type === 'vocabulary'
+                ? (vocabKanjisMap.get(item.id) || [])
+                : item.kanjis,
+              radicals: item.type === 'kanji' ? (radicalsMap.get(item.id) || []) : item.radicals,
               similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : item.similar_kanjis,
             });
 
@@ -732,7 +776,7 @@ export default function LessonPage() {
               <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
                 <CharacterDisplay character={currentItem.character} slug={currentItem.slug} imgClassName="w-20 h-20" />
               </h1>
-              <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.slug}</p>
+              <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.primary_meaning || currentItem.slug}</p>
 
               {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
                 <div className="mt-3">
@@ -834,6 +878,108 @@ export default function LessonPage() {
                     </div>
                   )}
 
+                  {/* Radicals composed in Kanji */}
+                  {currentItem.type === 'kanji' && currentItem.radicals && currentItem.radicals.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center space-x-1.5 select-none">
+                          <Layers className="w-3.5 h-3.5 text-cyan-500" />
+                          <span>Terdiri Dari Radikal</span>
+                        </h3>
+                        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20 select-none">
+                          {currentItem.radicals.length}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                        {currentItem.radicals.map((rd: any) => {
+                          const meaning = rd.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || rd.slug;
+                          return (
+                            <a
+                              key={rd.id}
+                              href={`/radical/${encodeURIComponent(rd.slug || rd.character)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Buka halaman penuh radikal ${meaning} di tab baru`}
+                              className="p-3 bg-radical/5 border border-radical/20 hover:border-radical/40 dark:bg-radical/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/rd transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <span className="text-2xl font-black text-radical group-hover/rd:scale-110 transition-transform duration-200 block leading-tight">
+                                  <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-6 h-6" />
+                                </span>
+                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[90px] font-bold mt-0.5">
+                                  {meaning}
+                                </span>
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                {rd.level && (
+                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-radical/10 dark:bg-radical/20 rounded-md text-radical">
+                                    Lvl {rd.level}
+                                  </span>
+                                )}
+                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/rd:text-radical transition-colors" />
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Kanjis composed in Vocabulary */}
+                  {currentItem.type === 'vocabulary' && currentItem.kanjis && currentItem.kanjis.length > 0 && (
+                    <div className="space-y-2.5 pt-2">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest flex items-center space-x-1.5 select-none">
+                          <Layers className="w-3.5 h-3.5 text-pink-500" />
+                          <span>Terdiri Dari Kanji</span>
+                        </h3>
+                        <span className="text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20 select-none">
+                          {currentItem.kanjis.length}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
+                        {currentItem.kanjis.map((kj: any) => {
+                          const meaning = kj.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || kj.slug;
+                          const reading = kj.item_readings?.find((r: any) => r.primary_reading)?.reading || null;
+                          return (
+                            <a
+                              key={kj.id}
+                              href={`/kanji/${encodeURIComponent(kj.character)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Buka halaman penuh kanji ${kj.character} (${meaning}) di tab baru`}
+                              className="p-3 bg-kanji/5 border border-kanji/20 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200 cursor-pointer"
+                            >
+                              <div className="min-w-0 pr-2">
+                                <span className="text-2xl font-black font-japanese text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight">
+                                  {kj.character}
+                                </span>
+                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[90px] font-bold mt-0.5">
+                                  {meaning}
+                                </span>
+                                {reading && (
+                                  <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block truncate">
+                                    {reading}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                {kj.level && (
+                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
+                                    Lvl {kj.level}
+                                  </span>
+                                )}
+                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/kj:text-kanji transition-colors" />
+                              </div>
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {currentItem.meaning_mnemonic && (
                     <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
                       <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
@@ -880,9 +1026,13 @@ export default function LessonPage() {
                       <div className="space-y-3">
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
                           {displayedKanjis.map((kj) => (
-                            <div
+                            <a
                               key={kj.id}
-                              className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
+                              href={`/kanji/${encodeURIComponent(kj.character)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title={`Buka halaman penuh kanji ${kj.character} di tab baru`}
+                              className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200 cursor-pointer"
                             >
                               <div>
                                 <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
@@ -892,12 +1042,15 @@ export default function LessonPage() {
                                   {kj.slug}
                                 </span>
                               </div>
-                              {kj.level && (
-                                <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
-                                  Lvl {kj.level}
-                                </span>
-                              )}
-                            </div>
+                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                {kj.level && (
+                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
+                                    Lvl {kj.level}
+                                  </span>
+                                )}
+                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/kj:text-kanji transition-colors" />
+                              </div>
+                            </a>
                           ))}
                         </div>
 
@@ -930,34 +1083,133 @@ export default function LessonPage() {
               {/* TAB 2: READINGS & MNEMONICS (KANJI / VOCAB) */}
               {activeTab === 'mnemonic' && currentItem.type !== 'radical' && (
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                      {currentItem.type === 'kanji'
-                        ? `Bacaan Jepang Utama (${currentItem.readings?.find((r: any) => r.primary_reading)?.reading_type === 'onyomi'
-                          ? 'Onyomi'
-                          : 'Kunyomi'
-                        })`
-                        : 'Bacaan Jepang Utama (Kana)'}
-                    </h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                        {currentItem.primary_reading}
-                      </p>
-                      {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
-                        <AudioPlayerButton audios={currentItem.audios} variant="compact" />
-                      )}
-                    </div>
-                  </div>
-
-                  {currentItem.readings && currentItem.readings.length > 1 && (
+                  {currentItem.type === 'kanji' ? (
                     <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1 select-none">Variasi Bacaan Lainnya</h3>
-                      <div className="flex flex-wrap gap-2 select-none">
-                        {currentItem.readings.map((r, idx) => (
-                          <span key={idx} className="px-3 py-1 bg-slate-105 dark:bg-slate-800 text-xs font-semibold rounded-lg">
-                            {r.reading} {r.reading_type && `(${r.reading_type})`}
-                          </span>
-                        ))}
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-1.5 select-none mb-2">
+                        <Languages className="w-3.5 h-3.5 text-pink-500" />
+                        <span>Cara Baca (Readings)</span>
+                      </h3>
+                      {(() => {
+                        const rawReadings = currentItem.readings || [];
+                        const onyomiList = rawReadings.filter(
+                          (r: any) => r.reading_type === 'onyomi' || (!r.reading_type && r.reading_type !== 'kunyomi' && r.reading_type !== 'nanori')
+                        );
+                        const kunyomiList = rawReadings.filter((r: any) => r.reading_type === 'kunyomi');
+                        const nanoriList = rawReadings.filter((r: any) => r.reading_type === 'nanori');
+
+                        return (
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
+                            {/* On'yomi */}
+                            <div className="space-y-1.5">
+                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                                On’yomi
+                              </span>
+                              {onyomiList.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {onyomiList.map((r: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                        r.primary_reading
+                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
+                                      }`}
+                                    >
+                                      <span className="leading-none">{r.reading}</span>
+                                      {r.primary_reading && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
+                                          Utama
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
+                                  None
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Kun'yomi */}
+                            <div className="space-y-1.5 border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-3.5">
+                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                                Kun’yomi
+                              </span>
+                              {kunyomiList.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {kunyomiList.map((r: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                        r.primary_reading
+                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
+                                      }`}
+                                    >
+                                      <span className="leading-none">{r.reading}</span>
+                                      {r.primary_reading && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
+                                          Utama
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
+                                  None
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Nanori */}
+                            <div className="space-y-1.5 border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-3.5">
+                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                                Nanori
+                              </span>
+                              {nanoriList.length > 0 ? (
+                                <div className="flex flex-wrap gap-1.5">
+                                  {nanoriList.map((r: any, idx: number) => (
+                                    <div
+                                      key={idx}
+                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
+                                        r.primary_reading
+                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
+                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
+                                      }`}
+                                    >
+                                      <span className="leading-none">{r.reading}</span>
+                                      {r.primary_reading && (
+                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
+                                          Utama
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
+                                  None
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : (
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                        Bacaan Jepang Utama (Kana)
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1">
+                        <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                          {currentItem.primary_reading}
+                        </p>
+                        {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
+                          <AudioPlayerButton audios={currentItem.audios} variant="compact" />
+                        )}
                       </div>
                     </div>
                   )}

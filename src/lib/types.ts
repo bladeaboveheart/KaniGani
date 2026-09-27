@@ -27,7 +27,8 @@ export interface Item {
   accepted_readings?: string[];
 
   // Related items
-  kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string }>;
+  kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[]; item_readings?: any[] }>;
+  radicals?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[] }>;
   similar_kanjis?: SimilarKanji[];
 }
 
