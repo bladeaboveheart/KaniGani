@@ -576,7 +576,7 @@ function ReviewPageContent() {
   return (
     <div className="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 dark:bg-slate-950 transition-colors duration-300">
       <CrabBackground />
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
         {/* PHASE 1: QUIZ REVIEW SESSION */}
         {phase === 'quiz' && activeCard && (() => {
           const currentStage = activeCard.item.srs_stage || 1;

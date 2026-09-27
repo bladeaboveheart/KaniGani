@@ -699,12 +699,12 @@ export default function LessonPage() {
     <div className="min-h-screen flex flex-col relative bg-slate-55 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300">
       <CrabBackground />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12 transition-all duration-300">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
         {/* PHASE 1: BATCH LEARN SLIDES */}
         {phase === 'learn' && currentItem && (
           <div
             {...swipeHandlers}
-            className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-all"
+            className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-colors duration-200"
           >
             {/* Header Colorful Character Card */}
             <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>

@@ -199,6 +199,7 @@ export default function HourlySchedule({
                   const rankB = order[b.type as 'radical' | 'kanji' | 'vocabulary'] || 4;
                   return rankA - rankB;
                 })
+                .slice(0, 120)
                 .map((item: any, idx: number) => (
                   <div
                     key={idx}
@@ -213,6 +214,11 @@ export default function HourlySchedule({
                     <span>{item.character}</span>
                   </div>
                 ))}
+              {selectedBucket.items.length > 120 && (
+                <div className="h-11 sm:h-12 px-3.5 flex items-center justify-center rounded-xl border border-card-border bg-card-muted text-xs font-bold text-text-muted select-none">
+                  +{selectedBucket.items.length - 120} item lainnya
+                </div>
+              )}
             </div>
           </div>
         ) : (
