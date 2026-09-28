@@ -19,6 +19,7 @@ import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 import LevelUpModal from '@/components/quiz/LevelUpModal';
+import QuickItemEditorModal from '@/components/admin/QuickItemEditorModal';
 
 function ReviewPageContent() {
   const router = useRouter();
@@ -66,6 +67,40 @@ function ReviewPageContent() {
   const [accuracyStats, setAccuracyStats] = useState({ correct: 0, wrong: 0 });
   const [levelUpData, setLevelUpData] = useState<{ newLevel: number } | null>(null);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const handleItemUpdated = (updatedItem: Item) => {
+    const state = useQuizStore.getState();
+    if (state.activeCard && state.activeCard.itemId === updatedItem.id) {
+      useQuizStore.setState({
+        activeCard: {
+          ...state.activeCard,
+          item: updatedItem,
+          character: updatedItem.character,
+        }
+      });
+    }
+
+    const updatedQueue = state.queue.map(c => {
+      if (c.itemId === updatedItem.id) {
+        return {
+          ...c,
+          item: updatedItem,
+          character: updatedItem.character,
+        };
+      }
+      return c;
+    });
+
+    const updatedOriginal = state.originalItems.map(it => it.id === updatedItem.id ? updatedItem : it);
+    const updatedReserve = state.reserveItems.map(it => it.id === updatedItem.id ? updatedItem : it);
+
+    useQuizStore.setState({
+      queue: updatedQueue,
+      originalItems: updatedOriginal,
+      reserveItems: updatedReserve,
+    });
+  };
 
   const inputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -532,43 +567,43 @@ function ReviewPageContent() {
   const renderKaniGaniPrompt = () => {
     if (!activeCard) return null;
     const isMeaning = activeCard.cardType === 'meaning';
+    const keywordClass = isMeaning
+      ? 'font-black text-slate-900 dark:text-white'
+      : 'font-black text-white dark:text-slate-100';
 
     if (activeCard.type === 'radical') {
       return (
-        <span className="select-text">Nama <span className="font-black text-slate-800 dark:text-slate-100">Radikal</span></span>
+        <span className="select-text">Nama <span className={keywordClass}>Radikal</span></span>
       );
     }
 
     if (activeCard.type === 'kanji') {
       if (isMeaning) {
         return (
-          <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+          <span className="select-text">Arti <span className={keywordClass}>Kanji</span></span>
         );
       }
       const readings = activeCard.item.readings || [];
       const primaryReadingObj = readings.find(r => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type;
       return expectedType === 'onyomi' ? (
-        <span className="select-text">Bacaan Onyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Onyomi <span className={keywordClass}>Kanji</span></span>
       ) : (
-        <span className="select-text">Bacaan Kunyomi <span className="font-black text-slate-800 dark:text-slate-100">Kanji</span></span>
+        <span className="select-text">Bacaan Kunyomi <span className={keywordClass}>Kanji</span></span>
       );
     }
 
     if (isMeaning) {
       return (
-        <span className="select-text">Arti <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
+        <span className="select-text">Arti <span className={keywordClass}>Kosakata</span></span>
       );
     }
     return (
-      <span className="select-text">Cara Baca <span className="font-black text-slate-800 dark:text-slate-100">Kosakata</span></span>
+      <span className="select-text">Cara Baca <span className={keywordClass}>Kosakata</span></span>
     );
   };
 
-  const remainingItemsCount = Array.from(new Set(queue.map(c => c.itemId))).length;
-  const displayRemainingReviews = isLeechMode
-    ? remainingItemsCount
-    : Math.max(0, totalDueCount - submittedItemIds.length);
+  const displayRemainingReviews = Math.max(0, totalDueCount - submittedItemIds.length);
   const accuracyPct = accuracyStats.correct + accuracyStats.wrong > 0
     ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
     : 100;
@@ -634,7 +669,13 @@ function ReviewPageContent() {
               </div>
 
               {/* Prompt Label */}
-              <div className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 border-y border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-semibold text-slate-500 dark:text-slate-350 tracking-wider uppercase select-none">
+              <div
+                className={`w-full py-2.5 border-y flex items-center justify-center text-xs font-semibold tracking-wider uppercase select-none transition-colors duration-200 ${
+                  activeCard.cardType === 'meaning'
+                    ? 'bg-white dark:bg-slate-700/70 border-slate-200 dark:border-slate-650 text-slate-600 dark:text-slate-200 shadow-2xs'
+                    : 'bg-slate-800 dark:bg-slate-950 border-slate-700 dark:border-slate-850 text-slate-300 dark:text-slate-400'
+                }`}
+              >
                 {renderKaniGaniPrompt()}
               </div>
 
@@ -681,12 +722,22 @@ function ReviewPageContent() {
                   <QuizInfoDrawer
                     item={activeCard.item}
                     cardType={activeCard.cardType}
+                    devMode={globalDevMode}
+                    onEditItem={() => setEditModalOpen(true)}
                   />
                 </div>
               )}
             </div>
           );
         })()}
+
+        {/* QUICK ITEM EDITOR MODAL (DEV MODE) */}
+        <QuickItemEditorModal
+          isOpen={editModalOpen}
+          setIsOpen={setEditModalOpen}
+          item={activeCard?.item || null}
+          onItemUpdated={handleItemUpdated}
+        />
 
         {/* PHASE 2: SUMMARY REVIEW COMPLETED */}
         {phase === 'summary' && (

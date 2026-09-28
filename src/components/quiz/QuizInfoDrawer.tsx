@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Item, SimilarKanji } from '@/lib/types';
 import FormattedText from '@/components/FormattedText';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
@@ -14,9 +14,16 @@ import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 interface QuizInfoDrawerProps {
   item: Item | null;
   cardType: 'meaning' | 'reading';
+  devMode?: boolean;
+  onEditItem?: () => void;
 }
 
-export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDrawerProps) {
+export default function QuizInfoDrawer({
+  item,
+  cardType: _cardType,
+  devMode = false,
+  onEditItem,
+}: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
   const [fallbackSimilar, setFallbackSimilar] = useState<SimilarKanji[]>([]);
   const [fallbackAudios, setFallbackAudios] = useState<any[]>([]);
@@ -111,6 +118,24 @@ export default function QuizInfoDrawer({ item, cardType: _cardType }: QuizInfoDr
 
   return (
     <div className="border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 p-6 sm:p-8 animate-fade-in space-y-6 text-sm leading-relaxed text-left select-text">
+      {/* Developer Quick Edit Action */}
+      {devMode && onEditItem && (
+        <div className="flex items-center justify-between pb-3 border-b border-amber-500/20 bg-amber-500/10 -mx-6 sm:-mx-8 -mt-6 sm:-mt-8 px-6 sm:px-8 py-3 rounded-t-3xl">
+          <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400 text-xs font-bold">
+            <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-3xs font-black uppercase tracking-wider">DEV MODE</span>
+            <span className="hidden sm:inline">Perbaiki atau tambah alternatif kata</span>
+          </div>
+          <button
+            type="button"
+            onClick={onEditItem}
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition-all shadow-sm shadow-amber-500/20 hover:scale-102 active:scale-98 cursor-pointer ml-auto"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Edit Item Ini</span>
+          </button>
+        </div>
+      )}
+
       {/* 1. Meaning Info */}
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">

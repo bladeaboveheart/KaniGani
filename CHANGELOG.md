@@ -30,3 +30,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Two-Column Meaning Display (Arti Utama & Arti Alternatif):** Added support across the platform to display alternative character meanings alongside the primary meaning in two distinct sub-columns. Applied consistently across Slide Lesson (`src/app/lesson/page.tsx`), Review & Lesson Quiz Drawer (`src/components/quiz/QuizInfoDrawer.tsx`), Dictionary Item Modal (`src/components/dictionary/ItemDetailModal.tsx`), and Full Page View (`src/components/dictionary/ItemFullPageView.tsx`). If no alternative meaning exists, a neutral dash (`-`) is displayed.
 - **Review Batch Continuity:** Added `hasNextBatch` and `onNextBatch` support to `QuizSummaryView`, allowing users to comfortably proceed to the next 100 items or return to the dashboard.
 - **Header Batch Indicator:** Added dynamic session batch indicator in `QuizHeader` (e.g. `Batch 100 / 2.008 Total`).
+- **Dynamic Sliding Review Queue & Active Interleaving:**
+  - Implemented an active pool mechanism (`ACTIVE_POOL_SIZE = 10`) in `src/store/useQuizStore.ts` for review sessions with large item batches.
+  - Replaced overwhelming 200-card bulk shuffles with scheduled interleaving (meaning and reading separated by 2-3 cards).
+  - Cards for completed items are continuously replenished from reserve items, and failed cards are dynamically re-queued to the back of the active pool with an immediate fresh reserve item brought in. This ensures visible, steady SRS progress without feeling stuck.
+- **Developer Mode On-The-Fly Item Editor (Lesson & Review):**
+  - Added quick item editing capability for developers (`kanigani-dev-mode` enabled) directly mid-session without restarting or aborting active reviews or lessons.
+  - Edit button is rendered strictly inside the Info Drawer (`QuizInfoDrawer`) during quizzes and the lesson info tab during the learn phase.
+  - In-place memory synchronization immediately updates active card, queue, accepted meanings, and accepted readings so newly added answers are recognized without restarting the session.
+  - Added new **"Awas Tertukar! (Kanji Mirip)"** tab in `ItemEditorModal` specifically for Kanji items, allowing searching and linking similar kanji with automatic bidirectional pairing in `item_similar_kanji`.

@@ -1,18 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Plus, Trash2, Languages, FileText, Layers, ChevronRight, Loader2, Save } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Plus, Trash2, Languages, FileText, Layers, ChevronRight, Loader2, Save, AlertCircle } from 'lucide-react';
 import * as wanakana from 'wanakana';
+import { supabase } from '@/lib/supabase';
 
 // Type definitions
-interface MeaningInput {
+export interface MeaningInput {
   id?: string;
   meaning: string;
   primary_meaning: boolean;
   accepted_answer: boolean;
 }
 
-interface ReadingInput {
+export interface ReadingInput {
   id?: string;
   reading: string;
   reading_type: 'onyomi' | 'kunyomi' | 'nanori' | null;
@@ -20,13 +21,13 @@ interface ReadingInput {
   accepted_answer: boolean;
 }
 
-interface SentenceInput {
+export interface SentenceInput {
   id?: string;
   japanese: string;
   indonesian: string;
 }
 
-interface ItemInput {
+export interface ItemInput {
   id?: string;
   type: 'radical' | 'kanji' | 'vocabulary';
   character: string;
@@ -41,9 +42,10 @@ interface ItemInput {
   context_sentences: SentenceInput[];
   prerequisites: string[];
   found_in_kanjis?: string[];
+  similar_kanjis?: string[];
 }
 
-interface ItemEditorModalProps {
+export interface ItemEditorModalProps {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   formItem: ItemInput;
@@ -62,11 +64,39 @@ export default function ItemEditorModal({
   formLoading,
   items
 }: ItemEditorModalProps) {
-  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites' | 'found_in_kanjis'>('basic');
+  const [activeFormTab, setActiveFormTab] = useState<'basic' | 'mnemonics' | 'meanings' | 'readings' | 'sentences' | 'prerequisites' | 'found_in_kanjis' | 'similar_kanjis'>('basic');
   const [kanjiSearchQuery, setKanjiSearchQuery] = useState('');
   const [kanjiFilterLevel, setKanjiFilterLevel] = useState<string>('all');
   const [prereqSearchQuery, setPrereqSearchQuery] = useState('');
   const [prereqFilterLevel, setPrereqFilterLevel] = useState<string>('all');
+  const [similarSearchQuery, setSimilarSearchQuery] = useState('');
+  const [similarFilterLevel, setSimilarFilterLevel] = useState<string>('all');
+
+  const [catalogKanjis, setCatalogKanjis] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem('catalog_kanji_all');
+        if (cached) {
+          try {
+            setCatalogKanjis(JSON.parse(cached));
+            return;
+          } catch {}
+        }
+      }
+      supabase
+        .from('items')
+        .select('id, character, slug, level, type')
+        .eq('type', 'kanji')
+        .order('level', { ascending: true })
+        .then(({ data }) => {
+          if (data) setCatalogKanjis(data);
+        });
+    }
+  }, [isOpen]);
+
+  const allKanjiList = catalogKanjis.length > 0 ? catalogKanjis : items.filter((i: any) => i.type === 'kanji');
 
   if (!isOpen) return null;
 
@@ -99,7 +129,8 @@ export default function ItemEditorModal({
         readings,
         context_sentences: sentences,
         prerequisites: [],
-        found_in_kanjis: []
+        found_in_kanjis: [],
+        similar_kanjis: type === 'kanji' ? prev.similar_kanjis || [] : []
       };
     });
   };
@@ -314,6 +345,22 @@ export default function ItemEditorModal({
               <span>Prasyarat</span>
               <span className="px-1.5 py-0.5 bg-slate-200 dark:bg-slate-800 rounded-md text-3xs font-extrabold">
                 {formItem.prerequisites.length}
+              </span>
+            </button>
+          )}
+
+          {formItem.type === 'kanji' && (
+            <button
+              onClick={() => setActiveFormTab('similar_kanjis')}
+              className={`py-3.5 px-4 sm:px-6 border-b-2 transition-colors cursor-pointer flex items-center space-x-1.5 ${activeFormTab === 'similar_kanjis'
+                ? 'border-amber-500 text-amber-600 dark:text-amber-400 bg-white dark:bg-slate-900/50'
+                : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+            >
+              <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+              <span>Awas Tertukar! (Kanji Mirip)</span>
+              <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-md text-3xs font-extrabold">
+                {(formItem.similar_kanjis || []).length}
               </span>
             </button>
           )}
@@ -875,6 +922,119 @@ export default function ItemEditorModal({
                     <p className="text-xs text-slate-400">
                       {!isSearching
                         ? 'Belum ada kanji yang terhubung. Gunakan kolom pencarian di atas untuk mencari dan menghubungkan kanji.'
+                        : 'Tidak ada kanji yang cocok dengan pencarian / filter level.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* TAB 8: AWAS TERTUKAR! (KANJI MIRIP) */}
+          {activeFormTab === 'similar_kanjis' && formItem.type === 'kanji' && (() => {
+            const selectedSimilarIds = formItem.similar_kanjis || [];
+            const kanjiItems = (allKanjiList.length > 0 ? allKanjiList : items).filter(i => i.type === 'kanji' && i.id !== formItem.id);
+            const isSearching = similarSearchQuery.trim() !== '' || similarFilterLevel !== 'all';
+
+            let displayList = kanjiItems;
+            if (!isSearching) {
+              displayList = kanjiItems.filter(kj => selectedSimilarIds.includes(kj.id));
+            } else {
+              displayList = kanjiItems.filter(kj => {
+                const matchesSearch = !similarSearchQuery.trim() ||
+                  kj.character.toLowerCase().includes(similarSearchQuery.trim().toLowerCase()) ||
+                  (kj.slug && kj.slug.toLowerCase().includes(similarSearchQuery.trim().toLowerCase()));
+                const matchesLevel = similarFilterLevel === 'all' || String(kj.level) === similarFilterLevel;
+                return matchesSearch && matchesLevel;
+              }).slice(0, 60);
+            }
+
+            return (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h4 className="font-extrabold text-sm flex items-center space-x-1.5 select-none text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="w-4 h-4 text-amber-500" />
+                      <span>Awas Tertukar! (Kanji Mirip)</span>
+                    </h4>
+                    <p className="text-4xs text-slate-400 leading-normal select-none">
+                      {!isSearching
+                        ? 'Menampilkan kanji mirip yang sedang aktif. Hubungan ini tersimpan dua arah. Gunakan kolom cari untuk menambah kanji mirip baru.'
+                        : 'Hasil pencarian kanji mirip (maks 60 item):'}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
+                    <input
+                      type="text"
+                      placeholder="Cari kanji / slug..."
+                      value={similarSearchQuery}
+                      onChange={(e) => setSimilarSearchQuery(e.target.value)}
+                      className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-amber-500 w-36 sm:w-44"
+                    />
+                    <select
+                      value={similarFilterLevel}
+                      onChange={(e) => setSimilarFilterLevel(e.target.value)}
+                      className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:outline-none focus:border-amber-500 cursor-pointer"
+                    >
+                      <option value="all">Semua Level</option>
+                      {Array.from({ length: 60 }, (_, i) => i + 1).map((lvl) => (
+                        <option key={lvl} value={String(lvl)}>
+                          Level {lvl}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-h-[300px] overflow-y-auto pr-2">
+                  {displayList.map((item) => {
+                    const isChecked = selectedSimilarIds.includes(item.id);
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => {
+                          setFormItem(prev => {
+                            const current = prev.similar_kanjis || [];
+                            const exists = current.includes(item.id);
+                            const updated = exists
+                              ? current.filter(id => id !== item.id)
+                              : [...current, item.id];
+                            return { ...prev, similar_kanjis: updated };
+                          });
+                        }}
+                        className={`p-3 rounded-2xl border flex items-center justify-between cursor-pointer transition-all duration-200 select-none ${
+                          isChecked
+                            ? 'bg-amber-500/15 border-amber-500 text-amber-700 dark:text-amber-300 shadow-sm font-black ring-1 ring-amber-500/50'
+                            : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-850 opacity-60 hover:opacity-100 text-slate-700 dark:text-slate-350'
+                        }`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-2xl font-black font-japanese leading-tight">{item.character}</span>
+                          <span className="text-4xs uppercase tracking-wider truncate max-w-[80px] font-semibold mt-0.5 text-slate-500 dark:text-slate-400">
+                            {item.slug || 'kanji'}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-end space-y-1">
+                          <span className="px-1.5 py-0.5 text-4xs font-black bg-slate-900/5 dark:bg-white/5 rounded text-slate-500">
+                            Lvl {item.level}
+                          </span>
+                          {isChecked && (
+                            <span className="text-4xs font-bold text-amber-600 dark:text-amber-400">
+                              Mirip ✓
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {displayList.length === 0 && (
+                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <p className="text-xs text-slate-400">
+                      {!isSearching
+                        ? 'Belum ada kanji mirip yang dipilih. Cari kanji/slug di atas untuk menghubungkan kanji yang rawan tertukar.'
                         : 'Tidak ada kanji yang cocok dengan pencarian / filter level.'}
                     </p>
                   </div>

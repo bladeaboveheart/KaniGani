@@ -54,6 +54,7 @@ interface ItemInput {
   context_sentences: SentenceInput[];
   prerequisites: string[];
   found_in_kanjis?: string[];
+  similar_kanjis?: string[];
 }
 
 export default function AdminPage() {
@@ -95,7 +96,8 @@ export default function AdminPage() {
     readings: [],
     context_sentences: [],
     prerequisites: [],
-    found_in_kanjis: []
+    found_in_kanjis: [],
+    similar_kanjis: []
   };
 
   const [formItem, setFormItem] = useState<ItemInput>(initialFormState);
@@ -311,6 +313,21 @@ export default function AdminPage() {
       }
     }
 
+    let similarKanjis: string[] = [];
+    if (item.type === 'kanji') {
+      try {
+        const { data: simData } = await supabase
+          .from('item_similar_kanji')
+          .select('similar_item_id')
+          .eq('item_id', item.id);
+        if (simData) {
+          similarKanjis = simData.map((s: any) => s.similar_item_id);
+        }
+      } catch (err) {
+        console.error('Error fetching similar kanji:', err);
+      }
+    }
+
     setFormItem({
       id: item.id,
       type: item.type,
@@ -348,7 +365,8 @@ export default function AdminPage() {
       prerequisites: item.item_prerequisites && item.item_prerequisites.length > 0
         ? item.item_prerequisites.map((p: any) => p.requires_item_id)
         : [],
-      found_in_kanjis: foundInKanjis
+      found_in_kanjis: foundInKanjis,
+      similar_kanjis: similarKanjis
     });
     setIsModalOpen(true);
   };
@@ -506,6 +524,37 @@ export default function AdminPage() {
           }));
           const { error: pErr } = await supabase.from('item_prerequisites').insert(prereqsToInsert);
           if (pErr) throw pErr;
+        }
+
+        if (formItem.type === 'kanji') {
+          // Delete existing pairs involving this itemId
+          await supabase
+            .from('item_similar_kanji')
+            .delete()
+            .or(`item_id.eq.${itemId},similar_item_id.eq.${itemId}`);
+
+          const selectedSimilarIds = formItem.similar_kanjis || [];
+          const pairsToInsert: { item_id: string; similar_item_id: string }[] = [];
+          const pairSet = new Set<string>();
+
+          for (const simId of selectedSimilarIds) {
+            if (simId === itemId) continue;
+            const p1 = `${itemId}:${simId}`;
+            const p2 = `${simId}:${itemId}`;
+            if (!pairSet.has(p1)) {
+              pairSet.add(p1);
+              pairsToInsert.push({ item_id: itemId, similar_item_id: simId });
+            }
+            if (!pairSet.has(p2)) {
+              pairSet.add(p2);
+              pairsToInsert.push({ item_id: simId, similar_item_id: itemId });
+            }
+          }
+
+          if (pairsToInsert.length > 0) {
+            const { error: simErr } = await supabase.from('item_similar_kanji').insert(pairsToInsert);
+            if (simErr) throw simErr;
+          }
         }
       }
 

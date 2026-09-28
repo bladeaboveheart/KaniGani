@@ -99,12 +99,180 @@ export function expandAcceptedMeanings(meanings: string[]): string[] {
   return Array.from(result);
 }
 
+/**
+ * Creates QuizCard instances for items.
+ * Radical: 1 meaning card.
+ * Kanji & Vocabulary: 1 meaning card and 1 reading card.
+ */
+export function createCardsForItems(items: Item[]): QuizCard[] {
+  const cards: QuizCard[] = [];
+  items.forEach((item) => {
+    if (item.type === 'radical') {
+      cards.push({
+        itemId: item.id,
+        type: 'radical',
+        character: item.character,
+        cardType: 'meaning',
+        item,
+        attempts: 0,
+      });
+    } else {
+      cards.push({
+        itemId: item.id,
+        type: item.type,
+        character: item.character,
+        cardType: 'meaning',
+        item,
+        attempts: 0,
+      });
+      cards.push({
+        itemId: item.id,
+        type: item.type,
+        character: item.character,
+        cardType: 'reading',
+        item,
+        attempts: 0,
+      });
+    }
+  });
+  return cards;
+}
+
+/**
+ * Schedules cards with a minimum distance constraint between cards of the same item.
+ * Ensures meaning and reading for the same item do not appear back-to-back immediately,
+ * but are separated by several cards from other active items.
+ */
+export function scheduleCardQueue(cards: QuizCard[], minDistance = 2): QuizCard[] {
+  if (cards.length <= 2) return [...cards].sort(() => Math.random() - 0.5);
+
+  for (let attempt = 0; attempt < 50; attempt++) {
+    const pool = [...cards].sort(() => Math.random() - 0.5);
+    const result: QuizCard[] = [];
+
+    while (pool.length > 0) {
+      const recentItemIds = new Set(result.slice(-minDistance).map((c) => c.itemId));
+      const candidateIndex = pool.findIndex((c) => !recentItemIds.has(c.itemId));
+
+      if (candidateIndex !== -1) {
+        result.push(pool.splice(candidateIndex, 1)[0]);
+      } else {
+        const lastItemId = result.length > 0 ? result[result.length - 1].itemId : null;
+        const fallbackIndex = pool.findIndex((c) => c.itemId !== lastItemId);
+        if (fallbackIndex !== -1) {
+          result.push(pool.splice(fallbackIndex, 1)[0]);
+        } else {
+          result.push(pool.shift()!);
+        }
+      }
+    }
+
+    let hasConsecutive = false;
+    for (let i = 0; i < result.length - 1; i++) {
+      if (result[i].itemId === result[i + 1].itemId) {
+        hasConsecutive = true;
+        break;
+      }
+    }
+
+    if (!hasConsecutive) {
+      return result;
+    }
+  }
+
+  return [...cards].sort(() => Math.random() - 0.5);
+}
+
+/**
+ * Interleaves newly added cards into the active queue.
+ * Keeps the immediate head cards (next to be answered) stable,
+ * and schedules the remaining tail together with the new cards.
+ */
+export function interleaveCardsIntoQueue(queue: QuizCard[], cardsToAdd: QuizCard[]): QuizCard[] {
+  if (cardsToAdd.length === 0) return queue;
+  if (queue.length === 0) return scheduleCardQueue(cardsToAdd, 2);
+
+  const keepCount = Math.min(queue.length, 2);
+  const head = queue.slice(0, keepCount);
+  const tail = queue.slice(keepCount);
+
+  const scheduledTail = scheduleCardQueue([...tail, ...cardsToAdd], 2);
+
+  if (scheduledTail.length > 1 && scheduledTail[0].itemId === head[head.length - 1].itemId) {
+    const swapIdx = scheduledTail.findIndex((c) => c.itemId !== head[head.length - 1].itemId);
+    if (swapIdx !== -1) {
+      const temp = scheduledTail[0];
+      scheduledTail[0] = scheduledTail[swapIdx];
+      scheduledTail[swapIdx] = temp;
+    }
+  }
+
+  return [...head, ...scheduledTail];
+}
+
+const ACTIVE_POOL_SIZE = 10;
+
+/**
+ * Replenishes the active queue to maintain up to 10 unique active items.
+ * Pulls from reserveItems first; if reserve is exhausted, pulls from requeuedCards.
+ */
+export function replenishQueue(
+  currentQueue: QuizCard[],
+  reserveItems: Item[],
+  requeuedCards: QuizCard[],
+  wrapUpActive: boolean
+): {
+  newQueue: QuizCard[];
+  newReserveItems: Item[];
+  newRequeuedCards: QuizCard[];
+} {
+  let queue = [...currentQueue];
+  let reserve = [...reserveItems];
+  let requeued = [...requeuedCards];
+
+  if (wrapUpActive) {
+    if (queue.length === 0 && requeued.length > 0) {
+      queue = scheduleCardQueue(requeued, 2);
+      requeued = [];
+    }
+    return { newQueue: queue, newReserveItems: reserve, newRequeuedCards: requeued };
+  }
+
+  const activeItemIds = new Set(queue.map((c) => c.itemId));
+
+  // 1. Pull new items from reserve while active unique items < ACTIVE_POOL_SIZE
+  while (activeItemIds.size < ACTIVE_POOL_SIZE && reserve.length > 0) {
+    const nextItem = reserve.shift()!;
+    activeItemIds.add(nextItem.id);
+    const newCards = createCardsForItems([nextItem]);
+    queue = interleaveCardsIntoQueue(queue, newCards);
+  }
+
+  // 2. If reserve is empty and active items < ACTIVE_POOL_SIZE, pull from requeuedCards
+  while (activeItemIds.size < ACTIVE_POOL_SIZE && requeued.length > 0) {
+    const nextCard = requeued.shift()!;
+    activeItemIds.add(nextCard.itemId);
+    queue = interleaveCardsIntoQueue(queue, [nextCard]);
+  }
+
+  // 3. If queue is completely empty (all remaining active cards were answered or requeued)
+  if (queue.length === 0 && requeued.length > 0) {
+    queue = scheduleCardQueue(requeued, 2);
+    requeued = [];
+  }
+
+  return { newQueue: queue, newReserveItems: reserve, newRequeuedCards: requeued };
+}
+
 interface QuizStore {
   // Session States
   mode: 'lesson' | 'review';
   originalItems: Item[];
   queue: QuizCard[];
+  reserveItems: Item[];
+  requeuedCards: QuizCard[];
   untrimmedQueue: QuizCard[] | null; // Keep track of untrimmed queue during Wrap-Up toggle
+  untrimmedReserve: Item[] | null; // Keep track of reserve items during Wrap-Up toggle
   sessionTotalCards: number; // Keep track of total cards in current active session for dynamic progress bar
   wrongCounts: Record<string, number>;
   meaningWrongCounts: Record<string, number>;
@@ -144,7 +312,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   mode: 'review',
   originalItems: [],
   queue: [],
+  reserveItems: [],
+  requeuedCards: [],
   untrimmedQueue: null,
+  untrimmedReserve: null,
   sessionTotalCards: 0,
   wrongCounts: {},
   meaningWrongCounts: {},
@@ -167,7 +338,10 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     set({
       originalItems: [],
       queue: [],
+      reserveItems: [],
+      requeuedCards: [],
       untrimmedQueue: null,
+      untrimmedReserve: null,
       sessionTotalCards: 0,
       wrongCounts: {},
       meaningWrongCounts: {},
@@ -243,7 +417,6 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   },
 
   initializeSession: (items: Item[], mode: 'lesson' | 'review') => {
-    const cards: QuizCard[] = [];
     const progress: Record<string, { meaningCorrect: boolean; readingCorrect: boolean }> = {};
 
     items.forEach((item) => {
@@ -251,50 +424,38 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         meaningCorrect: false,
         readingCorrect: item.type === 'radical' ? true : false,
       };
-
-      if (item.type === 'radical') {
-        cards.push({
-          itemId: item.id,
-          type: 'radical',
-          character: item.character,
-          cardType: 'meaning',
-          item,
-          attempts: 0,
-        });
-      } else {
-        cards.push({
-          itemId: item.id,
-          type: item.type,
-          character: item.character,
-          cardType: 'meaning',
-          item,
-          attempts: 0,
-        });
-        cards.push({
-          itemId: item.id,
-          type: item.type,
-          character: item.character,
-          cardType: 'reading',
-          item,
-          attempts: 0,
-        });
-      }
     });
 
-    const shuffledCards = cards.sort(() => Math.random() - 0.5);
+    let initialActiveItems: Item[] = [];
+    let reserveItems: Item[] = [];
+
+    if (mode === 'lesson' || items.length <= ACTIVE_POOL_SIZE) {
+      initialActiveItems = [...items];
+      reserveItems = [];
+    } else {
+      const shuffledItems = [...items].sort(() => Math.random() - 0.5);
+      initialActiveItems = shuffledItems.slice(0, ACTIVE_POOL_SIZE);
+      reserveItems = shuffledItems.slice(ACTIVE_POOL_SIZE);
+    }
+
+    const activeCards = createCardsForItems(initialActiveItems);
+    const scheduledQueue = scheduleCardQueue(activeCards, 2);
 
     set({
       mode,
       originalItems: items,
-      queue: shuffledCards,
+      queue: scheduledQueue,
+      reserveItems,
+      requeuedCards: [],
       untrimmedQueue: null,
-      sessionTotalCards: shuffledCards.length,
+      untrimmedReserve: null,
+      sessionTotalCards: scheduledQueue.length,
       itemProgress: progress,
       wrongCounts: {},
       meaningWrongCounts: {},
       readingWrongCounts: {},
       isSubmitting: false,
-      activeCard: shuffledCards[0] || null,
+      activeCard: scheduledQueue[0] || null,
       userInput: '',
       isAnswerSubmitted: false,
       isCorrect: false,
@@ -512,22 +673,33 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       activeCard,
       isCorrect,
       itemProgress,
+      reserveItems,
+      requeuedCards,
+      wrapUpActive,
     } = get();
 
     if (!activeCard) return;
 
-    // Jika jawaban salah, kembalikan kartu ke akhir antrean untuk diulang nanti di sesi ini (WaniKani style)
+    const itemId = activeCard.itemId;
+
+    // 1. Wrong answer: push card to requeuedCards, and replenish queue with replacement item from reserve
     if (!isCorrect) {
-      const updatedQueue = [...queue];
-      const current = updatedQueue.shift();
-      if (current) {
-        current.attempts++;
-        updatedQueue.push(current);
-      }
+      const remainingQueue = queue.slice(1);
+      const updatedCard = { ...activeCard, attempts: activeCard.attempts + 1 };
+      const updatedRequeued = [...requeuedCards, updatedCard];
+
+      const { newQueue, newReserveItems, newRequeuedCards } = replenishQueue(
+        remainingQueue,
+        reserveItems,
+        updatedRequeued,
+        wrapUpActive
+      );
 
       set({
-        queue: updatedQueue,
-        activeCard: updatedQueue[0] || null,
+        queue: newQueue,
+        activeCard: newQueue[0] || null,
+        reserveItems: newReserveItems,
+        requeuedCards: newRequeuedCards,
         userInput: '',
         isAnswerSubmitted: false,
         isCorrect: false,
@@ -541,27 +713,34 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       return;
     }
 
-    // Jika benar, tandai progres
-    const itemId = activeCard.itemId;
+    // 2. Correct answer: update itemProgress and replenish if an item is completed
     const progress = { ...itemProgress };
-
     if (activeCard.cardType === 'meaning') {
       progress[itemId] = { ...progress[itemId], meaningCorrect: true };
     } else {
       progress[itemId] = { ...progress[itemId], readingCorrect: true };
     }
 
-    const updatedQueue = queue.filter((_, idx) => idx !== 0);
+    const remainingQueue = queue.slice(1);
+
+    const { newQueue, newReserveItems, newRequeuedCards } = replenishQueue(
+      remainingQueue,
+      reserveItems,
+      requeuedCards,
+      wrapUpActive
+    );
 
     set({
-      queue: updatedQueue,
-      activeCard: updatedQueue[0] || null,
+      queue: newQueue,
+      activeCard: newQueue[0] || null,
+      reserveItems: newReserveItems,
+      requeuedCards: newRequeuedCards,
+      itemProgress: progress,
       userInput: '',
       isAnswerSubmitted: false,
       isCorrect: false,
       showFeedback: false,
       incorrectActive: false,
-      itemProgress: progress,
       isAlmostCorrect: false,
       closestAcceptedMeaning: '',
       warningMsg: '',
@@ -570,40 +749,47 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
   },
 
   toggleWrapUp: () => {
-    const { queue, wrapUpActive, untrimmedQueue } = get();
+    const { queue, wrapUpActive, reserveItems, untrimmedReserve, untrimmedQueue } = get();
     if (wrapUpActive) {
-      // Deactivating wrap up: restore remaining cards from untrimmedQueue
+      // Deactivating wrap up: restore remaining reserve items and untrimmedQueue if present
+      const restoredReserve = untrimmedReserve || reserveItems;
+      let restoredQueue = queue;
+
       if (untrimmedQueue) {
         const currentItemIds = new Set(queue.map(c => c.itemId));
         const restoredCards = untrimmedQueue.filter(c => !currentItemIds.has(c.itemId));
-        const restoredQueue = [...queue, ...restoredCards];
-
-        set({
-          queue: restoredQueue,
-          wrapUpActive: false,
-          untrimmedQueue: null,
-          sessionTotalCards: restoredQueue.length,
-        });
-      } else {
-        set({ wrapUpActive: false });
+        restoredQueue = [...queue, ...restoredCards];
       }
+
+      set({
+        queue: restoredQueue,
+        wrapUpActive: false,
+        reserveItems: restoredReserve,
+        untrimmedReserve: null,
+        untrimmedQueue: null,
+        sessionTotalCards: restoredQueue.length,
+      });
     } else {
-      // Activating wrap up: lock up to 10 unique items currently in queue
+      // Activating wrap up: lock out reserve so no more items will enter
       const uniqueItemIds = Array.from(new Set(queue.map(c => c.itemId)));
-      if (uniqueItemIds.length <= 10) {
+      if (uniqueItemIds.length <= ACTIVE_POOL_SIZE) {
         set({
           wrapUpActive: true,
+          untrimmedReserve: reserveItems,
+          reserveItems: [],
           untrimmedQueue: queue,
           sessionTotalCards: queue.length,
         });
         return;
       }
 
-      const targetIds = new Set(uniqueItemIds.slice(0, 10));
+      const targetIds = new Set(uniqueItemIds.slice(0, ACTIVE_POOL_SIZE));
       const trimmedQueue = queue.filter(c => targetIds.has(c.itemId));
 
       set({
         untrimmedQueue: queue,
+        untrimmedReserve: reserveItems,
+        reserveItems: [],
         queue: trimmedQueue,
         activeCard: trimmedQueue[0] || null,
         wrapUpActive: true,

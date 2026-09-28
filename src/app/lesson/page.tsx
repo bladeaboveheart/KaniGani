@@ -13,7 +13,7 @@ import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import {
-  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp, Languages, Layers, ExternalLink
+  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp, Languages, Layers, ExternalLink, Edit3
 } from 'lucide-react';
 
 // Modular Quiz Components
@@ -27,6 +27,7 @@ import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
+import QuickItemEditorModal from '@/components/admin/QuickItemEditorModal';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -72,6 +73,43 @@ export default function LessonPage() {
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
+  const handleItemUpdated = (updatedItem: Item) => {
+    // 1. Update in-memory batch & lessons list
+    setCurrentBatch(prev => prev.map(it => it.id === updatedItem.id ? updatedItem : it));
+    setLessons(prev => prev.map(it => it.id === updatedItem.id ? updatedItem : it));
+
+    // 2. If quiz is running, update quiz store state
+    const state = useQuizStore.getState();
+    if (state.activeCard && state.activeCard.itemId === updatedItem.id) {
+      useQuizStore.setState({
+        activeCard: {
+          ...state.activeCard,
+          item: updatedItem,
+          character: updatedItem.character,
+        }
+      });
+    }
+
+    const updatedQueue = state.queue.map(c => {
+      if (c.itemId === updatedItem.id) {
+        return {
+          ...c,
+          item: updatedItem,
+          character: updatedItem.character,
+        };
+      }
+      return c;
+    });
+
+    const updatedOriginal = state.originalItems.map(it => it.id === updatedItem.id ? updatedItem : it);
+
+    useQuizStore.setState({
+      queue: updatedQueue,
+      originalItems: updatedOriginal,
+    });
+  };
 
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -828,6 +866,24 @@ export default function LessonPage() {
               {/* TAB 1: MEANINGS & INFO */}
               {activeTab === 'info' && (
                 <div className="space-y-4">
+                  {/* Developer Quick Edit Action */}
+                  {globalDevMode && (
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
+                      <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-3xs font-black uppercase tracking-wider">DEV MODE</span>
+                        <span className="hidden sm:inline">Perbaiki atau tambah alternatif kata</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditModalOpen(true)}
+                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition-all shadow-sm shadow-amber-500/20 hover:scale-102 active:scale-98 cursor-pointer ml-auto"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                        <span>Edit Item Ini</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Arti Utama & Arti Alternatif Dua Sub-kolom */}
                   {(() => {
                     const rawMeanings = currentItem.meanings || [];
@@ -1401,12 +1457,24 @@ export default function LessonPage() {
                   <QuizInfoDrawer
                     item={activeCard.item}
                     cardType={activeCard.cardType}
+                    devMode={globalDevMode}
+                    onEditItem={() => setEditModalOpen(true)}
                   />
                 </div>
               )}
             </div>
           );
         })()}
+
+        {/* Quick Item Editor for Developer Mode */}
+        {globalDevMode && (
+          <QuickItemEditorModal
+            isOpen={editModalOpen}
+            setIsOpen={setEditModalOpen}
+            item={phase === 'learn' ? currentItem : (activeCard?.item || null)}
+            onItemUpdated={handleItemUpdated}
+          />
+        )}
 
         {/* PHASE 3: BATCH COMPLETED SUMMARY */}
         {phase === 'summary' && (
