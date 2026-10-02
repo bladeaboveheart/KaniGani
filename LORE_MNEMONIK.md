@@ -1,6 +1,6 @@
 # LORE & STANDAR MNEMONIK KANIGANI (Level 1 — 60)
 
-Dokumen ini adalah **Buku Panduan Utama (*Casting Bible & Style Guide*)** untuk memastikan seluruh cerita mnemonik di KaniGani konsisten, padat, mengocok perut (lucu), dan kekinian dari Level 1 hingga Level 60.
+Dokumen ini adalah **Buku Panduan Utama (*Casting & Style Guide*)** untuk memastikan seluruh cerita mnemonik di KaniGani konsisten, padat, lucu, dan kekinian dari Level 1 hingga Level 60.
 
 ---
 
@@ -15,7 +15,7 @@ Agar cerita mnemonik menancap kuat di otak pembelajar dan tidak membosankan, sel
 3. **Kultur Populer & Arketipe Abadi Indonesia**:
    - Menggunakan figur dan situasi kultural yang *relatable* lintas generasi di Indonesia: *warkop 24 jam, tukang bakso keliling, ibu kos galak nagih sewa, satpam komplek berkumis, kating ambis berkacamata, emak-emak matic sen kiri belok kanan, pendekar silat, bocil komplek, kucing oyen, dll.* Hindari lelucon slang/meme internet musiman yang cepat kedaluwarsa dalam 1–2 tahun.
 4. **Aturan Bacaan Ganda (*Multi-Reading Integrity*)**:
-   - Jika suatu kanji memiliki lebih dari satu cara baca penting (misal: *on'yomi* ganda seperti 力 `ryoku`/`riki`, atau kombinasi *on/kun*), **seluruh variasi bacaan wajib terangkai dalam satu adegan yang sama**.
+   - Jika suatu kanji memiliki lebih dari satu cara baca penting (misal: *on'yomi* ganda seperti 力 `ryoku`/`riki`, atau kombinasi *on/kun*), **seluruh variasi bacaan wajib terangkai dalam satu adegan yang sama atau memiliki dua adegan yang berbeda(1 adegan untuk masing-masing cara baca)**.
 5. **Prinsip Arketipe Abadi (*Timeless Over Ephemeral*)**:
    - Utamakan profesi klasik, karakter khas masyarakat nusantara, dan arketipe fiksi abadi (Tukang Bakso, Ibu Kos Galak, Satpam Komplek, Kating Ambis, Pendekar Silat, Kucing Oyen, Geng Motor, Pelatih Killer). Hindari nama akun viral sesaat atau tren media sosial sesaat agar mnemonik tetap relevan dan lucu puluhan tahun ke depan.
 6. **Tagging Semantik Wajib**:
