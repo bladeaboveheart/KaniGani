@@ -127,11 +127,12 @@ export default function GanikaniLessonPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (showItemInfo) return;
 
+      // Jika fokus sedang di input, input onKeyDown yang menangani secara eksklusif
+      if (e.target === inputRef.current) return;
+
       if (e.key === 'Enter') {
-        if (isAnswerSubmitted) {
-          e.preventDefault();
-          handleQuizNext();
-        }
+        e.preventDefault();
+        handleQuizAction();
       } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
         e.preventDefault();
         handleRedo();
@@ -140,7 +141,7 @@ export default function GanikaniLessonPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, isAnswerSubmitted, isCorrect, showItemInfo, activeQuizItem, quizQueue, requeuedItems]);
+  }, [phase, isAnswerSubmitted, isCorrect, showItemInfo, activeQuizItem, quizQueue, requeuedItems, userInput]);
 
   // Submit Answer in Quiz Phase
   const handleQuizSubmit = () => {
@@ -155,6 +156,14 @@ export default function GanikaniLessonPage() {
 
     setIsCorrect(match);
     setIsAnswerSubmitted(true);
+  };
+
+  const handleQuizAction = () => {
+    if (!isAnswerSubmitted) {
+      handleQuizSubmit();
+    } else {
+      handleQuizNext();
+    }
   };
 
   // Next Card in Quiz Phase
@@ -506,17 +515,7 @@ export default function GanikaniLessonPage() {
 
         {/* Input & Feedback Area */}
         <div className="space-y-4">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!isAnswerSubmitted) {
-                handleQuizSubmit();
-              } else {
-                handleQuizNext();
-              }
-            }}
-            className="relative"
-          >
+          <div className="relative">
             <input
               ref={inputRef}
               type="text"
@@ -529,13 +528,11 @@ export default function GanikaniLessonPage() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (!isAnswerSubmitted) {
-                    handleQuizSubmit();
-                  } else {
-                    handleQuizNext();
-                  }
+                  e.stopPropagation();
+                  handleQuizAction();
                 } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleRedo();
                 } else if (e.key.toLowerCase() === 'f') {
                   if (isAnswerSubmitted || userInput.trim() === '') {
@@ -563,7 +560,8 @@ export default function GanikaniLessonPage() {
 
             {/* Submit / Proceed Button */}
             <button
-              type="submit"
+              type="button"
+              onClick={handleQuizAction}
               disabled={savingLesson}
               className={`mt-4 w-full py-3.5 px-6 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 ${
                 isAnswerSubmitted
@@ -581,7 +579,7 @@ export default function GanikaniLessonPage() {
                 <span>Kirim Jawaban</span>
               )}
             </button>
-          </form>
+          </div>
 
           {/* Redo Helper button when wrong */}
           {isAnswerSubmitted && !isCorrect && (

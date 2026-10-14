@@ -124,27 +124,25 @@ export default function GanikaniReviewPage() {
         return;
       }
 
-      const activeEl = document.activeElement;
-      const isInputFocused = activeEl === inputRef.current;
+      // Jika fokus sedang di input, input onKeyDown yang menangani secara eksklusif
+      if (e.target === inputRef.current) return;
 
       // Enter Shortcut to advance when answer submitted
-      if (e.key === 'Enter' && isAnswerSubmitted) {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        handleProceedNext();
+        handleReviewAction();
       }
 
       // Wrap Up Shortcut (W)
-      if (e.key.toLowerCase() === 'w' && !isInputFocused) {
+      if (e.key.toLowerCase() === 'w') {
         e.preventDefault();
         toggleWrapUp();
       }
 
       // Info Drawer Shortcut (F)
       if (e.key.toLowerCase() === 'f') {
-        if (!isInputFocused || userInput.trim() === '' || isAnswerSubmitted) {
-          e.preventDefault();
-          setShowItemInfo((prev) => !prev);
-        }
+        e.preventDefault();
+        setShowItemInfo((prev) => !prev);
       }
 
       // Redo Shortcut (Backspace when answer is wrong)
@@ -268,6 +266,17 @@ export default function GanikaniReviewPage() {
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
     setShowItemInfo(false);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 20);
+  };
+
+  const handleReviewAction = () => {
+    if (!isAnswerSubmitted) {
+      handleSubmitAnswer();
+    } else {
+      handleProceedNext();
+    }
   };
 
   // Redo / Typo Undo
@@ -486,17 +495,7 @@ export default function GanikaniReviewPage() {
 
       {/* Input & Feedback Area */}
       <div className="space-y-4">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (!isAnswerSubmitted) {
-              handleSubmitAnswer();
-            } else {
-              handleProceedNext();
-            }
-          }}
-          className="relative"
-        >
+        <div className="relative">
           <input
             ref={inputRef}
             type="text"
@@ -510,14 +509,17 @@ export default function GanikaniReviewPage() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
-                if (!isAnswerSubmitted) {
-                  handleSubmitAnswer();
-                } else {
-                  handleProceedNext();
-                }
+                e.stopPropagation();
+                handleReviewAction();
               } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
                 e.preventDefault();
+                e.stopPropagation();
                 handleRedo();
+              } else if (e.key.toLowerCase() === 'f') {
+                if (isAnswerSubmitted || userInput.trim() === '') {
+                  e.preventDefault();
+                  setShowItemInfo((prev) => !prev);
+                }
               }
             }}
             readOnly={isAnswerSubmitted}
@@ -539,7 +541,8 @@ export default function GanikaniReviewPage() {
 
           {/* Proceed Button */}
           <button
-            type="submit"
+            type="button"
+            onClick={handleReviewAction}
             className={`mt-4 w-full py-3.5 px-6 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 ${
               isAnswerSubmitted
                 ? isCorrect
@@ -554,7 +557,7 @@ export default function GanikaniReviewPage() {
               <span>Kirim Jawaban</span>
             )}
           </button>
-        </form>
+        </div>
 
         {/* Redo Helper button when wrong */}
         {isAnswerSubmitted && !isCorrect && (

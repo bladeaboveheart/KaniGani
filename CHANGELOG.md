@@ -10,8 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **GaniKani Wanakana Romaji-to-Kana IME Keystroke Conversion:**
   - Replaced naive `wanakana.toHiragana(val)` on every keystroke with `wanakana.toKana(val, { IMEMode: true })` in Lesson, Review, and Synonym Editor. Previously, typing isolated letters like `n` in `nanatsu` prematurely converted to `ん`, resulting in corrupt strings like `んあんあつ`. With `IMEMode: true`, syllable buffers are respected, correctly yielding `ななつ`.
 - **GaniKani Lesson & Review Enter-to-Next Progression:**
-  - Replaced `disabled={isAnswerSubmitted}` on the quiz input with `readOnly={isAnswerSubmitted}` so that the input retains focus after submitting an answer.
-  - Added global keydown listeners and `onKeyDown` handlers on the input so that pressing `Enter` the second time reliably triggers `handleQuizNext()` / `handleProceedNext()` to advance to the next card without requiring mouse clicks.
+  - Replaced `<form>` wrapper with `<div className="relative">` and unified action triggers under `handleQuizAction()` and `handleReviewAction()`.
+  - Added `e.stopPropagation()` on input `onKeyDown` and target input guards (`e.target === inputRef.current`) on global window listeners to eliminate event bubbling race conditions where a single `Enter` keypress simultaneously submitted the answer and advanced to the next card.
+  - Replaced `disabled={isAnswerSubmitted}` with `readOnly={isAnswerSubmitted}` and ensured automatic refocus (`setTimeout(..., 20)`), so the first `Enter` properly presents the card result with "Lanjut (Tekan Enter)", and the second `Enter` advances to the next card cleanly.
 - **Level Progression & WaniKani Baseline Level Advancement:**
   - Fixed `calculateUserLevel` in `src/lib/levelLogic.ts` so `profileLevel` serves as a minimum baseline rather than an unconditional ceiling, allowing accounts imported at Level 14 to advance to Level 15+ when 90% of Level 14 kanji reach Guru.
 - **Lesson Queue Sorting & Auto-Unlock Restriction:**
