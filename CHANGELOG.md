@@ -5,12 +5,13 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
-- **PostgREST 1,000-Row Query Limit Mitigation Across Platform:**
-  - `fetchDictionaryTierItems()` in `src/services/itemsService.ts`: Added dynamic 1,000-row chunking to prevent PostgREST silent truncation on vocabulary tiers exceeding 1,000 items (e.g. Level 10 was missing 123 items, and Levels 18–20 were completely truncated).
-  - `fetchReferenceItems()` in `src/services/itemsService.ts`: Added chunking to retrieve all 2,500+ radicals and kanji without cutting off at 1,000 items.
-  - `fetchAllItemPrerequisites()` in `src/services/itemsService.ts`: Replaced hardcoded chunk ranges (capped at 7,000) with dynamic count-based chunking supporting all 17,014+ prerequisite relations.
-  - `ProgressInspector.tsx` in `src/components/admin/ProgressInspector.tsx`: Chunked user progress queries so admin can inspect accounts with >1,000 items.
-  - `fetchActivityLogs()` in `src/services/statsService.ts`: Added descending sort and chunking for heatmap activity records.
+- **GaniKani PostgREST 1,000-Row Limit & Dashboard Lesson Counter:**
+  - In `src/services/ganikaniService.ts`, implemented `fetchAllGanikaniProgress`, `fetchAllEligibleKaniGaniVocab`, and `fetchAllDueGanikaniReviews` using adaptive parallel chunking (`generateChunkRanges`). Eliminated the silent 1,000-row cap so that users with thousands of eligible Guru vocabulary items see their true, accurate lesson and review counts (e.g. >1,000 Kosakata Baru Tersedia).
+- **GaniKani Wanakana Romaji-to-Kana IME Keystroke Conversion:**
+  - Replaced naive `wanakana.toHiragana(val)` on every keystroke with `wanakana.toKana(val, { IMEMode: true })` in Lesson, Review, and Synonym Editor. Previously, typing isolated letters like `n` in `nanatsu` prematurely converted to `ん`, resulting in corrupt strings like `んあんあつ`. With `IMEMode: true`, syllable buffers are respected, correctly yielding `ななつ`.
+- **GaniKani Lesson & Review Enter-to-Next Progression:**
+  - Replaced `disabled={isAnswerSubmitted}` on the quiz input with `readOnly={isAnswerSubmitted}` so that the input retains focus after submitting an answer.
+  - Added global keydown listeners and `onKeyDown` handlers on the input so that pressing `Enter` the second time reliably triggers `handleQuizNext()` / `handleProceedNext()` to advance to the next card without requiring mouse clicks.
 - **Level Progression & WaniKani Baseline Level Advancement:**
   - Fixed `calculateUserLevel` in `src/lib/levelLogic.ts` so `profileLevel` serves as a minimum baseline rather than an unconditional ceiling, allowing accounts imported at Level 14 to advance to Level 15+ when 90% of Level 14 kanji reach Guru.
 - **Lesson Queue Sorting & Auto-Unlock Restriction:**

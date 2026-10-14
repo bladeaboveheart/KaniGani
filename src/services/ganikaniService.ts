@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
 import { calculatePenalty, getNextReviewDate } from '@/lib/levelLogic';
+import { generateChunkRanges } from '@/lib/userProgress';
 
 export interface GanikaniSettings {
   user_id: string;
@@ -87,21 +88,131 @@ export async function updateGanikaniSettings(
 }
 
 /**
+ * Mengambil semua baris ganikani_progress pengguna tanpa batasan 1000 rows PostgREST
+ */
+async function fetchAllGanikaniProgress(userId: string) {
+  const buildQuery = () =>
+    supabase
+      .from('ganikani_progress')
+      .select('item_id, srs_stage, next_review_at')
+      .eq('user_id', userId)
+      .order('item_id', { ascending: true });
+
+  const firstChunk = await buildQuery().range(0, 999);
+  if (firstChunk.error) {
+    console.error('Error fetching ganikani progress:', firstChunk.error);
+    return [];
+  }
+  const firstData = firstChunk.data || [];
+  if (firstData.length < 1000) return firstData;
+
+  const { count } = await supabase
+    .from('ganikani_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  const total = count || 12000;
+  const ranges = generateChunkRanges(total, 1000, 1000);
+  const remaining = await Promise.all(
+    ranges.map(([from, to]) => buildQuery().range(from, to))
+  );
+
+  const all = [...firstData];
+  for (const res of remaining) {
+    if (res.data) all.push(...res.data);
+  }
+  return all;
+}
+
+/**
+ * Mengambil semua kosakata KaniGani yang memenuhi syarat unlock_stage tanpa batasan 1000 rows PostgREST
+ */
+async function fetchAllEligibleKaniGaniVocab(userId: string, unlockStage: number) {
+  const buildQuery = () =>
+    supabase
+      .from('user_progress')
+      .select('item_id, srs_stage, items!inner(id, level, lesson_position, type)')
+      .eq('user_id', userId)
+      .eq('items.type', 'vocabulary')
+      .gte('srs_stage', unlockStage)
+      .order('item_id', { ascending: true });
+
+  const firstChunk = await buildQuery().range(0, 999);
+  if (firstChunk.error) {
+    console.error('Error fetching eligible vocab:', firstChunk.error);
+    return [];
+  }
+  const firstData = firstChunk.data || [];
+  if (firstData.length < 1000) return firstData;
+
+  const { count } = await supabase
+    .from('user_progress')
+    .select('*, items!inner(type)', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .eq('items.type', 'vocabulary')
+    .gte('srs_stage', unlockStage);
+
+  const total = count || 15000;
+  const ranges = generateChunkRanges(total, 1000, 1000);
+  const remaining = await Promise.all(
+    ranges.map(([from, to]) => buildQuery().range(from, to))
+  );
+
+  const all = [...firstData];
+  for (const res of remaining) {
+    if (res.data) all.push(...res.data);
+  }
+  return all;
+}
+
+/**
+ * Mengambil semua review GaniKani yang jatuh tempo tanpa batasan 1000 rows
+ */
+async function fetchAllDueGanikaniReviews(userId: string, now: string) {
+  const buildQuery = () =>
+    supabase
+      .from('ganikani_progress')
+      .select('item_id, srs_stage, next_review_at')
+      .eq('user_id', userId)
+      .lte('next_review_at', now)
+      .order('next_review_at', { ascending: true });
+
+  const firstChunk = await buildQuery().range(0, 999);
+  if (firstChunk.error) {
+    console.error('Error fetching due reviews:', firstChunk.error);
+    return [];
+  }
+  const firstData = firstChunk.data || [];
+  if (firstData.length < 1000) return firstData;
+
+  const { count } = await supabase
+    .from('ganikani_progress')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .lte('next_review_at', now);
+
+  const total = count || 12000;
+  const ranges = generateChunkRanges(total, 1000, 1000);
+  const remaining = await Promise.all(
+    ranges.map(([from, to]) => buildQuery().range(from, to))
+  );
+
+  const all = [...firstData];
+  for (const res of remaining) {
+    if (res.data) all.push(...res.data);
+  }
+  return all;
+}
+
+/**
  * Mengambil ringkasan statistik Dashboard GaniKani
  */
 export async function getGanikaniDashboardStats(userId: string): Promise<GanikaniDashboardStats> {
   const settings = await getGanikaniSettings(userId);
   const now = new Date().toISOString();
 
-  // 1. Ambil semua progres GaniKani pengguna
-  const { data: progressRows, error: progErr } = await supabase
-    .from('ganikani_progress')
-    .select('item_id, srs_stage, next_review_at')
-    .eq('user_id', userId);
-
-  if (progErr) {
-    console.error('Error fetching ganikani progress:', progErr);
-  }
+  // 1. Ambil semua progres GaniKani pengguna dengan chunking
+  const progressRows = await fetchAllGanikaniProgress(userId);
 
   const learnedItemIds = new Set<string>();
   let reviewsDue = 0;
@@ -111,7 +222,7 @@ export async function getGanikaniDashboardStats(userId: string): Promise<Ganikan
     5: 0, 6: 0, 7: 0, 8: 0, 9: 0,
   };
 
-  (progressRows || []).forEach(row => {
+  progressRows.forEach(row => {
     learnedItemIds.add(row.item_id);
     const stage = Number(row.srs_stage) || 1;
     if (byStage[stage] !== undefined) {
@@ -129,22 +240,13 @@ export async function getGanikaniDashboardStats(userId: string): Promise<Ganikan
     }
   });
 
-  // 2. Hitung jumlah Lesson yang tersedia (jika Follow ON)
+  // 2. Hitung jumlah Lesson yang tersedia dengan chunking (jika Follow ON)
   let lessonsAvailable = 0;
   if (settings.follow) {
-    // Ambil item bertipe vocabulary di KaniGani yang srs_stage >= unlock_stage
-    const { data: eligibleKaniGani, error: eligErr } = await supabase
-      .from('user_progress')
-      .select('item_id, srs_stage, items!inner(type)')
-      .eq('user_id', userId)
-      .eq('items.type', 'vocabulary')
-      .gte('srs_stage', settings.unlock_stage);
-
-    if (!eligErr && eligibleKaniGani) {
-      lessonsAvailable = eligibleKaniGani.filter(
-        row => !learnedItemIds.has(row.item_id)
-      ).length;
-    }
+    const eligibleKaniGani = await fetchAllEligibleKaniGaniVocab(userId, settings.unlock_stage);
+    lessonsAvailable = eligibleKaniGani.filter(
+      row => !learnedItemIds.has(row.item_id)
+    ).length;
   }
 
   return {
@@ -175,22 +277,13 @@ export async function getGanikaniLessonQueue(
   }
 
   // 1. Ambil ID yang sudah pernah dipelajari di GaniKani
-  const { data: existingProgress } = await supabase
-    .from('ganikani_progress')
-    .select('item_id')
-    .eq('user_id', userId);
+  const existingProgress = await fetchAllGanikaniProgress(userId);
+  const existingIds = new Set(existingProgress.map(p => p.item_id));
 
-  const existingIds = new Set((existingProgress || []).map(p => p.item_id));
+  // 2. Ambil semua item KaniGani yang memenuhi syarat (type = vocabulary, srs_stage >= unlock_stage)
+  const eligibleProgress = await fetchAllEligibleKaniGaniVocab(userId, settings.unlock_stage);
 
-  // 2. Ambil item KaniGani yang memenuhi syarat (type = vocabulary, srs_stage >= unlock_stage)
-  const { data: eligibleProgress, error: eligErr } = await supabase
-    .from('user_progress')
-    .select('item_id, srs_stage, items!inner(id, level, lesson_position, type)')
-    .eq('user_id', userId)
-    .eq('items.type', 'vocabulary')
-    .gte('srs_stage', settings.unlock_stage);
-
-  if (eligErr || !eligibleProgress || eligibleProgress.length === 0) {
+  if (eligibleProgress.length === 0) {
     return [];
   }
 
@@ -199,10 +292,10 @@ export async function getGanikaniLessonQueue(
     .filter(row => !existingIds.has(row.item_id))
     .sort((a: any, b: any) => {
       // Urutkan level ASC, lalu lesson_position ASC
-      if (a.items.level !== b.items.level) {
-        return a.items.level - b.items.level;
+      if (a.items?.level !== b.items?.level) {
+        return (a.items?.level || 0) - (b.items?.level || 0);
       }
-      return a.items.lesson_position - b.items.lesson_position;
+      return (a.items?.lesson_position || 0) - (b.items?.lesson_position || 0);
     })
     .slice(0, limit)
     .map(r => r.item_id);
@@ -220,15 +313,9 @@ export async function getGanikaniLessonQueue(
  */
 export async function getGanikaniReviewQueue(userId: string): Promise<Item[]> {
   const now = new Date().toISOString();
+  const dueRows = await fetchAllDueGanikaniReviews(userId, now);
 
-  const { data: dueRows, error: dueErr } = await supabase
-    .from('ganikani_progress')
-    .select('item_id, srs_stage, next_review_at')
-    .eq('user_id', userId)
-    .lte('next_review_at', now)
-    .order('next_review_at', { ascending: true });
-
-  if (dueErr || !dueRows || dueRows.length === 0) {
+  if (dueRows.length === 0) {
     return [];
   }
 

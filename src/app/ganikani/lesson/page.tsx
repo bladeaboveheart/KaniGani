@@ -120,6 +120,28 @@ export default function GanikaniLessonPage() {
     setPhase('quiz');
   };
 
+  // Global keyboard shortcuts for Quiz Phase (Enter to submit/advance, Backspace to redo)
+  useEffect(() => {
+    if (phase !== 'quiz') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (showItemInfo) return;
+
+      if (e.key === 'Enter') {
+        if (isAnswerSubmitted) {
+          e.preventDefault();
+          handleQuizNext();
+        }
+      } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase, isAnswerSubmitted, isCorrect, showItemInfo, activeQuizItem, quizQueue, requeuedItems]);
+
   // Submit Answer in Quiz Phase
   const handleQuizSubmit = () => {
     if (!activeQuizItem || isAnswerSubmitted) return;
@@ -127,7 +149,7 @@ export default function GanikaniLessonPage() {
     const trimmed = userInput.trim();
     if (!trimmed) return;
 
-    const kanaInput = wanakana.toHiragana(trimmed);
+    const kanaInput = wanakana.toKana(trimmed);
     const accepted = (activeQuizItem.accepted_readings || []).map((r) => r.trim());
     const match = accepted.includes(kanaInput) || accepted.includes(trimmed);
 
@@ -501,11 +523,18 @@ export default function GanikaniLessonPage() {
               value={userInput}
               onChange={(e) => {
                 if (!isAnswerSubmitted) {
-                  setUserInput(wanakana.toHiragana(e.target.value));
+                  setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
                 }
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!isAnswerSubmitted) {
+                    handleQuizSubmit();
+                  } else {
+                    handleQuizNext();
+                  }
+                } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
                   e.preventDefault();
                   handleRedo();
                 } else if (e.key.toLowerCase() === 'f') {
@@ -515,7 +544,7 @@ export default function GanikaniLessonPage() {
                   }
                 }
               }}
-              disabled={isAnswerSubmitted}
+              readOnly={isAnswerSubmitted}
               placeholder={
                 isAnswerSubmitted
                   ? isCorrect

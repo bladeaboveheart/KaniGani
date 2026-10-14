@@ -127,6 +127,12 @@ export default function GanikaniReviewPage() {
       const activeEl = document.activeElement;
       const isInputFocused = activeEl === inputRef.current;
 
+      // Enter Shortcut to advance when answer submitted
+      if (e.key === 'Enter' && isAnswerSubmitted) {
+        e.preventDefault();
+        handleProceedNext();
+      }
+
       // Wrap Up Shortcut (W)
       if (e.key.toLowerCase() === 'w' && !isInputFocused) {
         e.preventDefault();
@@ -150,7 +156,7 @@ export default function GanikaniReviewPage() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [settings.keyboard_shortcuts, isFinished, showItemInfo, isAnswerSubmitted, isCorrect, userInput]);
+  }, [settings.keyboard_shortcuts, isFinished, showItemInfo, isAnswerSubmitted, isCorrect, userInput, activeItem, queue, requeuedItems]);
 
   // Toggle Wrap Up
   const toggleWrapUp = () => {
@@ -176,7 +182,7 @@ export default function GanikaniReviewPage() {
     const trimmed = userInput.trim();
     if (!trimmed) return;
 
-    const kanaInput = wanakana.toHiragana(trimmed);
+    const kanaInput = wanakana.toKana(trimmed);
     const accepted = (activeItem.accepted_readings || []).map((r) => r.trim());
     const isAnswerMatch =
       accepted.includes(kanaInput) || accepted.includes(trimmed);
@@ -497,11 +503,24 @@ export default function GanikaniReviewPage() {
             value={userInput}
             onChange={(e) => {
               if (!isAnswerSubmitted) {
-                // Auto IME Romaji -> Hiragana
-                setUserInput(wanakana.toHiragana(e.target.value));
+                // Auto IME Romaji -> Hiragana dengan IMEMode
+                setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
               }
             }}
-            disabled={isAnswerSubmitted}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (!isAnswerSubmitted) {
+                  handleSubmitAnswer();
+                } else {
+                  handleProceedNext();
+                }
+              } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
+                e.preventDefault();
+                handleRedo();
+              }
+            }}
+            readOnly={isAnswerSubmitted}
             placeholder={
               isAnswerSubmitted
                 ? isCorrect

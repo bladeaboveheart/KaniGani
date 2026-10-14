@@ -143,4 +143,15 @@ describe('useGanikaniQuizStore', () => {
     expect(useGanikaniQuizStore.getState().wrapUpActive).toBe(false);
     expect(useGanikaniQuizStore.getState().queue.length).toBe(1);
   });
+
+  it('correctly converts incremental romaji "nanatsu" to "ななつ" using IMEMode', async () => {
+    const wanakana = await import('wanakana');
+    let buffer = '';
+    const word = 'nanatsu';
+    for (const char of word) {
+      buffer = wanakana.toKana(buffer + char, { IMEMode: true });
+    }
+    expect(buffer).toBe('ななつ');
+    expect(buffer).not.toContain('んあ');
+  });
 });

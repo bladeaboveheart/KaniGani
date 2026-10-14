@@ -70,8 +70,8 @@ export default function GanikaniReadingSynonymsEditor({
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
-    // Auto-convert Romaji to Hiragana using wanakana
-    const kanaVal = wanakana.toHiragana(val);
+    // Auto-convert Romaji to Hiragana using wanakana with IMEMode
+    const kanaVal = wanakana.toKana(val, { IMEMode: true });
     setInputValue(kanaVal);
   };
 
@@ -88,7 +88,7 @@ export default function GanikaniReadingSynonymsEditor({
   };
 
   const handleSaveAdd = async () => {
-    const trimmed = inputValue.trim();
+    const trimmed = wanakana.toKana(inputValue.trim());
     if (!trimmed) {
       handleCancelAdd();
       return;
