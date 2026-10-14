@@ -305,6 +305,19 @@ export default function Navbar() {
                           <span>Pengaturan</span>
                         </Link>
                         <Link
+                          href="/ganikani"
+                          onClick={() => setIsDropdownOpen(false)}
+                          className="flex items-center justify-between px-4 py-2.5 hover:bg-card-muted hover:text-amber-500 transition-colors cursor-pointer border-t border-card-border/60"
+                        >
+                          <span className="flex items-center space-x-2.5">
+                            <span className="text-base leading-none">🦀</span>
+                            <span className="font-semibold text-text-primary">GaniKani</span>
+                          </span>
+                          <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/30 uppercase tracking-wider">
+                            Reverse
+                          </span>
+                        </Link>
+                        <Link
                           href="/admin"
                           onClick={() => setIsDropdownOpen(false)}
                           className="flex items-center space-x-2.5 px-4 py-2.5 hover:bg-card-muted hover:text-emerald-500 transition-colors text-left border-t border-card-border/60 cursor-pointer"

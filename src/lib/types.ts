@@ -26,10 +26,26 @@ export interface Item {
   accepted_meanings?: string[];
   accepted_readings?: string[];
 
+  // User custom annotations
+  user_synonyms?: string[];
+  user_meaning_note?: string | null;
+  user_reading_note?: string | null;
+
   // Related items
   kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[]; item_readings?: any[] }>;
   radicals?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[] }>;
   similar_kanjis?: SimilarKanji[];
+}
+
+export interface UserItemData {
+  id: string;
+  user_id: string;
+  item_id: string;
+  meaning_synonyms: string[];
+  meaning_note: string | null;
+  reading_note: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SimilarKanji {

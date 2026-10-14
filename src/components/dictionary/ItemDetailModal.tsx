@@ -11,6 +11,7 @@ import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { supabase } from '@/lib/supabase';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
+import { UserSynonymsEditor, UserNoteEditor } from '@/components/user-annotations';
 
 interface ItemDetailModalProps {
   item: DictionaryItem | null;
@@ -225,13 +226,28 @@ export default function ItemDetailModal({
                   </div>
 
                   {/* Sub-kolom 2: Arti Alternatif */}
-                  <div className="border-t sm:border-t-0 sm:border-l border-card-border pt-3 sm:pt-0 sm:pl-4">
-                    <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
-                      Arti Alternatif
-                    </h3>
-                    <p className={`text-sm font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-muted' : 'text-primary'}`}>
-                      {alternativeMeaningsText}
-                    </p>
+                  <div className="border-t sm:border-t-0 sm:border-l border-card-border pt-3 sm:pt-0 sm:pl-4 space-y-2">
+                    <div>
+                      <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
+                        Arti Alternatif
+                      </h3>
+                      <p className={`text-sm font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-muted' : 'text-primary'}`}>
+                        {alternativeMeaningsText}
+                      </p>
+                    </div>
+
+                    {/* User Synonyms */}
+                    <div className="pt-2 border-t border-card-border">
+                      <UserSynonymsEditor
+                        itemId={item.id}
+                        initialSynonyms={(item as any).user_synonyms}
+                        onSynonymsChange={(syns) => {
+                          if (onItemUpdated) {
+                            onItemUpdated({ ...item, user_synonyms: syns });
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -384,6 +400,18 @@ export default function ItemDetailModal({
             </div>
           )}
 
+          {/* User Meaning Note */}
+          <UserNoteEditor
+            itemId={item.id}
+            type="meaning"
+            initialNote={(item as any).user_meaning_note}
+            onNoteChange={(newNote) => {
+              if (onItemUpdated) {
+                onItemUpdated({ ...item, user_meaning_note: newNote });
+              }
+            }}
+          />
+
           {/* Reading Mnemonic (Kanji & Vocab) */}
           {item.reading_mnemonic && (
             <div className="p-4 bg-pink-500/10 border border-pink-500/20 rounded-2xl">
@@ -394,6 +422,20 @@ export default function ItemDetailModal({
                 <FormattedText text={item.reading_mnemonic} />
               </p>
             </div>
+          )}
+
+          {/* User Reading Note */}
+          {type !== 'radical' && (
+            <UserNoteEditor
+              itemId={item.id}
+              type="reading"
+              initialNote={(item as any).user_reading_note}
+              onNoteChange={(newNote) => {
+                if (onItemUpdated) {
+                  onItemUpdated({ ...item, user_reading_note: newNote });
+                }
+              }}
+            />
           )}
 
           {/* Description if both exist and differ */}

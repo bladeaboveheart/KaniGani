@@ -20,6 +20,7 @@ import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
 import LevelUpModal from '@/components/quiz/LevelUpModal';
 import QuickItemEditorModal from '@/components/admin/QuickItemEditorModal';
+import { getUserItemDataBatch } from '@/services/userItemDataService';
 
 function ReviewPageContent() {
   const router = useRouter();
@@ -50,7 +51,8 @@ function ReviewPageContent() {
     toggleWrapUp,
     initializeSession,
     resetStore,
-    undoActiveCard
+    undoActiveCard,
+    addCustomSynonymAndValidate,
   } = useQuizStore();
 
   const [loading, setLoading] = useState(true);
@@ -256,6 +258,10 @@ function ReviewPageContent() {
         data.forEach((row: any) => progressMap.set(row.item_id, row.srs_stage));
       }
 
+      // Load custom user annotations (synonyms and personal notes)
+      const itemIds = rawItems.map((item: any) => item.id);
+      const userAnnotationsMap = await getUserItemDataBatch(itemIds);
+
       const initialItemsWithDetails: Item[] = rawItems.map((item: any) => {
         const mList = item.item_meanings || [];
         const rList = item.item_readings || [];
@@ -271,6 +277,16 @@ function ReviewPageContent() {
         if (acceptedMeanings.length === 0 && primaryMeaning) {
           acceptedMeanings.push(primaryMeaning.toLowerCase().trim());
         }
+
+        // Merge user custom synonyms into accepted meanings
+        const userAnnotation = userAnnotationsMap[item.id];
+        const userSynonyms: string[] = userAnnotation?.meaning_synonyms || [];
+        userSynonyms.forEach((syn) => {
+          const clean = syn.toLowerCase().trim();
+          if (clean && !acceptedMeanings.includes(clean)) {
+            acceptedMeanings.push(clean);
+          }
+        });
 
         const acceptedReadings = rList
           .filter((r: any) => r.accepted_answer)
@@ -290,6 +306,9 @@ function ReviewPageContent() {
           accepted_meanings: acceptedMeanings,
           accepted_readings: acceptedReadings,
           audios: aList,
+          user_synonyms: userSynonyms,
+          user_meaning_note: userAnnotation?.meaning_note ?? null,
+          user_reading_note: userAnnotation?.reading_note ?? null,
         };
       });
 
@@ -724,6 +743,7 @@ function ReviewPageContent() {
                     cardType={activeCard.cardType}
                     devMode={globalDevMode}
                     onEditItem={() => setEditModalOpen(true)}
+                    onSynonymAdded={(synonym) => addCustomSynonymAndValidate(activeCard.itemId, synonym)}
                   />
                 </div>
               )}

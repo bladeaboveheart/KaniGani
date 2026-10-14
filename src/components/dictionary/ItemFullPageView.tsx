@@ -24,6 +24,7 @@ import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import ItemEditorModal from '@/components/admin/ItemEditorModal';
 import { PartOfSpeechBadge, PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
+import { UserSynonymsEditor, UserNoteEditor } from '@/components/user-annotations';
 import { getPartOfSpeechMeta } from '@/lib/partsOfSpeech';
 import { ItemInput } from '@/lib/types';
 import {
@@ -423,13 +424,28 @@ export default function ItemFullPageView({
                   </div>
 
                   {/* Sub-kolom 2: Arti Alternatif */}
-                  <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-5">
-                    <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                      Arti Alternatif
-                    </h3>
-                    <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
-                      {alternativeMeaningsText}
-                    </p>
+                  <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-5 space-y-3">
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                        Arti Alternatif
+                      </h3>
+                      <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                        {alternativeMeaningsText}
+                      </p>
+                    </div>
+
+                    {/* User Synonyms */}
+                    <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                      <UserSynonymsEditor
+                        itemId={itemToDisplay.id}
+                        initialSynonyms={itemToDisplay.user_synonyms}
+                        onSynonymsChange={(syns) => {
+                          if (onItemUpdated) {
+                            onItemUpdated({ ...itemToDisplay, user_synonyms: syns });
+                          }
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -604,6 +620,18 @@ export default function ItemFullPageView({
               </div>
             )}
 
+            {/* User Meaning Note */}
+            <UserNoteEditor
+              itemId={itemToDisplay.id}
+              type="meaning"
+              initialNote={itemToDisplay.user_meaning_note}
+              onNoteChange={(newNote) => {
+                if (onItemUpdated) {
+                  onItemUpdated({ ...itemToDisplay, user_meaning_note: newNote });
+                }
+              }}
+            />
+
             {/* Additional Description if both exist and differ */}
             {itemToDisplay.meaning_mnemonic &&
               itemToDisplay.description &&
@@ -629,6 +657,20 @@ export default function ItemFullPageView({
                   <FormattedText text={itemToDisplay.reading_mnemonic} />
                 </p>
               </div>
+            )}
+
+            {/* User Reading Note */}
+            {type !== 'radical' && (
+              <UserNoteEditor
+                itemId={itemToDisplay.id}
+                type="reading"
+                initialNote={itemToDisplay.user_reading_note}
+                onNoteChange={(newNote) => {
+                  if (onItemUpdated) {
+                    onItemUpdated({ ...itemToDisplay, user_reading_note: newNote });
+                  }
+                }}
+              />
             )}
           </div>
 

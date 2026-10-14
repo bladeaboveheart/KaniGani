@@ -10,12 +10,15 @@ import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
+import UserSynonymsEditor from '@/components/user-annotations/UserSynonymsEditor';
+import UserNoteEditor from '@/components/user-annotations/UserNoteEditor';
 
 interface QuizInfoDrawerProps {
   item: Item | null;
   cardType: 'meaning' | 'reading';
   devMode?: boolean;
   onEditItem?: () => void;
+  onSynonymAdded?: (synonym: string) => void;
 }
 
 export default function QuizInfoDrawer({
@@ -23,6 +26,7 @@ export default function QuizInfoDrawer({
   cardType: _cardType,
   devMode = false,
   onEditItem,
+  onSynonymAdded,
 }: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
   const [fallbackSimilar, setFallbackSimilar] = useState<SimilarKanji[]>([]);
@@ -150,13 +154,24 @@ export default function QuizInfoDrawer({
           </div>
 
           {/* Sub-kolom 2: Arti Alternatif */}
-          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4">
-            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-              Arti Alternatif
-            </h4>
-            <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
-              {alternativeMeaningsText}
-            </p>
+          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4 space-y-3">
+            <div>
+              <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                Arti Alternatif
+              </h4>
+              <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                {alternativeMeaningsText}
+              </p>
+            </div>
+
+            {/* User Synonyms */}
+            <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+              <UserSynonymsEditor
+                itemId={item.id}
+                initialSynonyms={item.user_synonyms}
+                onSynonymAdded={onSynonymAdded}
+              />
+            </div>
           </div>
         </div>
 
@@ -173,6 +188,13 @@ export default function QuizInfoDrawer({
             <p className="text-teal-900 dark:text-teal-100 mt-1.5"><FormattedText text={item.meaning_mnemonic} /></p>
           </div>
         )}
+
+        {/* User Meaning Note */}
+        <UserNoteEditor
+          itemId={item.id}
+          type="meaning"
+          initialNote={item.user_meaning_note}
+        />
 
         {item.description && (
           <div className="p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
@@ -277,6 +299,13 @@ export default function QuizInfoDrawer({
               <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={item.reading_mnemonic} /></p>
             </div>
           )}
+
+          {/* User Reading Note */}
+          <UserNoteEditor
+            itemId={item.id}
+            type="reading"
+            initialNote={item.user_reading_note}
+          />
 
           {/* Context sentence - Vocab only */}
           {item.type === 'vocabulary' && item.context_sentences && item.context_sentences.length > 0 && (

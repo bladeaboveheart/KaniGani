@@ -306,6 +306,7 @@ interface QuizStore {
   toggleWrapUp: (completedCount?: number) => void;
   resetStore: () => void;
   undoActiveCard: () => void;
+  addCustomSynonymAndValidate: (itemId: string, synonym: string) => void;
 }
 
 export const useQuizStore = create<QuizStore>((set, get) => ({
@@ -796,5 +797,103 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
         sessionTotalCards: trimmedQueue.length,
       });
     }
+  },
+
+  addCustomSynonymAndValidate: (itemId: string, synonym: string) => {
+    const cleanSynonym = synonym.trim().toLowerCase();
+    if (!cleanSynonym) return;
+
+    const {
+      activeCard,
+      queue,
+      requeuedCards,
+      originalItems,
+      reserveItems,
+      userInput,
+      isAnswerSubmitted,
+      isCorrect,
+      wrongCounts,
+      meaningWrongCounts,
+    } = get();
+
+    // Helper to update item in list
+    const updateItemAccepted = (it: Item): Item => {
+      if (it.id !== itemId) return it;
+      const currentAccepted = it.accepted_meanings || [];
+      const updatedAccepted = currentAccepted.includes(cleanSynonym)
+        ? currentAccepted
+        : [...currentAccepted, cleanSynonym];
+      const currentSynonyms = it.user_synonyms || [];
+      const updatedSynonyms = currentSynonyms.some(s => s.toLowerCase() === cleanSynonym)
+        ? currentSynonyms
+        : [...currentSynonyms, synonym.trim()];
+      return {
+        ...it,
+        accepted_meanings: updatedAccepted,
+        user_synonyms: updatedSynonyms,
+      };
+    };
+
+    const updateCard = (card: QuizCard): QuizCard => {
+      if (card.itemId !== itemId) return card;
+      return {
+        ...card,
+        item: updateItemAccepted(card.item),
+      };
+    };
+
+    const updatedQueue = queue.map(updateCard);
+    const updatedRequeued = requeuedCards.map(updateCard);
+    const updatedOriginal = originalItems.map(updateItemAccepted);
+    const updatedReserve = reserveItems.map(updateItemAccepted);
+
+    let updatedActiveCard = activeCard ? updateCard(activeCard) : null;
+    let newIsCorrect = isCorrect;
+    let newIncorrectActive = get().incorrectActive;
+    let newWrongCounts = { ...wrongCounts };
+    let newMeaningWrongCounts = { ...meaningWrongCounts };
+    let finalRequeued = updatedRequeued;
+
+    // Check if retroactive override applies for the current active card
+    if (
+      activeCard &&
+      activeCard.itemId === itemId &&
+      activeCard.cardType === 'meaning' &&
+      isAnswerSubmitted &&
+      !isCorrect
+    ) {
+      const trimmedInput = userInput.trim().toLowerCase();
+      const isMatch = trimmedInput === cleanSynonym || isAlmostCorrect(trimmedInput, cleanSynonym);
+
+      if (isMatch) {
+        newIsCorrect = true;
+        newIncorrectActive = false;
+
+        // Anulir hitungan kesalahan untuk item ini
+        if (newWrongCounts[itemId] && newWrongCounts[itemId] > 0) {
+          newWrongCounts[itemId] -= 1;
+        }
+        if (newMeaningWrongCounts[itemId] && newMeaningWrongCounts[itemId] > 0) {
+          newMeaningWrongCounts[itemId] -= 1;
+        }
+
+        // Hapus kartu ini dari antrean ulang jika tadi sempat dimasukkan
+        finalRequeued = finalRequeued.filter(
+          c => !(c.itemId === itemId && c.cardType === 'meaning')
+        );
+      }
+    }
+
+    set({
+      queue: updatedQueue,
+      requeuedCards: finalRequeued,
+      originalItems: updatedOriginal,
+      reserveItems: updatedReserve,
+      activeCard: updatedActiveCard,
+      isCorrect: newIsCorrect,
+      incorrectActive: newIncorrectActive,
+      wrongCounts: newWrongCounts,
+      meaningWrongCounts: newMeaningWrongCounts,
+    });
   },
 }));

@@ -28,6 +28,9 @@ import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 import QuickItemEditorModal from '@/components/admin/QuickItemEditorModal';
+import UserSynonymsEditor from '@/components/user-annotations/UserSynonymsEditor';
+import UserNoteEditor from '@/components/user-annotations/UserNoteEditor';
+import { getUserItemDataBatch } from '@/services/userItemDataService';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -52,7 +55,8 @@ export default function LessonPage() {
     proceedNext,
     toggleItemInfo,
     initializeSession,
-    resetStore
+    resetStore,
+    addCustomSynonymAndValidate,
   } = useQuizStore();
 
   // Lesson states
@@ -305,13 +309,14 @@ export default function LessonPage() {
         const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
         const vocabIds = rawItems.filter((i: any) => i.type === 'vocabulary').map((i: any) => i.id);
 
-        // Phase 1: Critical card presentation path (meanings, readings, audios)
-        const [meaningsRes, readingsRes, audiosRes] = await Promise.all([
+        // Phase 1: Critical card presentation path (meanings, readings, audios, user annotations)
+        const [meaningsRes, readingsRes, audiosRes, userAnnotationsMap] = await Promise.all([
           supabase.from('item_meanings').select('*').in('item_id', itemIds),
           supabase.from('item_readings').select('*').in('item_id', itemIds),
           vocabIds.length > 0
             ? supabase.from('item_audios').select('*').in('item_id', vocabIds)
             : Promise.resolve({ data: [] }),
+          getUserItemDataBatch(itemIds),
         ]);
 
         const meanings = meaningsRes.data || [];
@@ -336,6 +341,21 @@ export default function LessonPage() {
           const progressRow = data.find((row: any) => row.item_id === item.id);
           const srsStage = progressRow ? progressRow.srs_stage : 1;
 
+          const baseAcceptedMeanings = (() => {
+            const list = mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim());
+            return list.length ? list : (primaryMeaning ? [primaryMeaning.toLowerCase().trim()] : []);
+          })();
+
+          // Merge custom user synonyms
+          const userAnnotation = userAnnotationsMap[item.id];
+          const userSynonyms: string[] = userAnnotation?.meaning_synonyms || [];
+          userSynonyms.forEach(syn => {
+            const clean = syn.toLowerCase().trim();
+            if (clean && !baseAcceptedMeanings.includes(clean)) {
+              baseAcceptedMeanings.push(clean);
+            }
+          });
+
           return {
             ...item,
             srs_stage: srsStage,
@@ -344,10 +364,7 @@ export default function LessonPage() {
             context_sentences: [],
             primary_meaning: primaryMeaning,
             primary_reading: primaryReading,
-            accepted_meanings: (() => {
-              const list = mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim());
-              return list.length ? list : (primaryMeaning ? [primaryMeaning.toLowerCase().trim()] : []);
-            })(),
+            accepted_meanings: baseAcceptedMeanings,
             accepted_readings: (() => {
               const list = rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim());
               return list.length ? list : (primaryReading ? [primaryReading.toLowerCase().trim()] : []);
@@ -355,6 +372,9 @@ export default function LessonPage() {
             kanjis: item.type === 'radical' ? [] : undefined,
             similar_kanjis: item.type === 'kanji' ? [] : undefined,
             audios: item.type === 'vocabulary' ? (audiosMap.get(item.id) || []) : undefined,
+            user_synonyms: userSynonyms,
+            user_meaning_note: userAnnotation?.meaning_note ?? null,
+            user_reading_note: userAnnotation?.reading_note ?? null,
           };
         });
 
@@ -908,13 +928,24 @@ export default function LessonPage() {
                           </div>
 
                           {/* Sub-kolom 2: Arti Alternatif */}
-                          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4">
-                            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                              Arti Alternatif
-                            </h3>
-                            <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                              {alternativeMeaningsText}
-                            </p>
+                          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4 space-y-3">
+                            <div>
+                              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                                Arti Alternatif
+                              </h3>
+                              <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                                {alternativeMeaningsText}
+                              </p>
+                            </div>
+
+                            {/* User Synonyms */}
+                            <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                              <UserSynonymsEditor
+                                itemId={currentItem.id}
+                                initialSynonyms={currentItem.user_synonyms}
+                                onSynonymAdded={(syn) => addCustomSynonymAndValidate(currentItem.id, syn)}
+                              />
+                            </div>
                           </div>
                         </div>
 
@@ -1043,6 +1074,13 @@ export default function LessonPage() {
                       <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic} /></p>
                     </div>
                   )}
+
+                  {/* User Meaning Note */}
+                  <UserNoteEditor
+                    itemId={currentItem.id}
+                    type="meaning"
+                    initialNote={currentItem.user_meaning_note}
+                  />
 
                   {/* Visually Similar Kanji in Lesson */}
                   {currentItem.type === 'kanji' && currentItem.similar_kanjis && currentItem.similar_kanjis.length > 0 && (
@@ -1277,6 +1315,13 @@ export default function LessonPage() {
                     </div>
                   )}
 
+                  {/* User Reading Note */}
+                  <UserNoteEditor
+                    itemId={currentItem.id}
+                    type="reading"
+                    initialNote={currentItem.user_reading_note}
+                  />
+
                   {/* Context sentence - Vocab only */}
                   {currentItem.type === 'vocabulary' && (
                     <div className="border-t border-slate-200 dark:border-slate-800 pt-6 mt-6 space-y-4">
@@ -1459,6 +1504,7 @@ export default function LessonPage() {
                     cardType={activeCard.cardType}
                     devMode={globalDevMode}
                     onEditItem={() => setEditModalOpen(true)}
+                    onSynonymAdded={(synonym) => addCustomSynonymAndValidate(activeCard.itemId, synonym)}
                   />
                 </div>
               )}
