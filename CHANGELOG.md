@@ -32,6 +32,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dictionary Pages Layout Spacing:** Added `pb-16` bottom padding to `src/app/radical/page.tsx`, `src/app/kanji/page.tsx`, and `src/app/vocabulary/page.tsx` so cards at the bottom of the page have generous breathing room above the footer.
 
 ### Added
+- **GaniKani Mobile UX Layout Alignment (Ala KaniGani):**
+  - **Single Unified Card Container**: Redesigned Lesson Quiz and Review Quiz to use a unified, continuous card (`rounded-3xl border shadow-xl overflow-hidden`) with a top hero banner, prompt divider strip (`Ketik Cara Baca Kosakata (Kana)`), and integrated top navbar (Home exit button, Session title, accuracy %, completed count, and remaining count).
+  - **Embedded Arrow Submit Button in Input (`QuizInput` style)**: Relocated the giant standalone submit button into a compact, responsive circular action button nested directly inside the right edge of the input field (`ArrowRight`), preventing virtual keyboard shift and unnecessary scrolling on mobile devices.
+  - **Mobile Thumb-Zone Action Buttons**: Placed the action controls (`[Wrap Up]`, `[Redo / Undo]`, `[Detail Info (F)]`) directly under the input field in a centered, ergonomic button row for effortless one-handed thumb interaction on mobile devices.
+  - **Inline Feedback Strip (`QuizFeedback` style)**: Added real-time inline verdict strips below the action buttons showing confirmation text, SRS stage progress (`Stage X ↑`), and the correct answer upon mistakes.
+  - **Tabbed Lesson Learn Phase with Mobile Swipe Gestures**: Replaced the long vertical scrolling lesson slide with a compact card featuring three interactive tabs (`Info`, `Mnemonic`, and `Kalimat Contoh`) and integrated `useSwipeGesture` for intuitive left/right swiping on touchscreens.
 - **User-Scoped Custom Synonyms & Personal Notes (WaniKani-Style):**
   - **Database & RLS**: Created `public.user_item_data` with Row Level Security (`auth.uid() = user_id`) to persist personal alternative meanings (`meaning_synonyms: text[]`), meaning mnemonics (`meaning_note: text`), and reading mnemonics (`reading_note: text`) per user without modifying global catalog items.
   - **Inline Minimalist UI**: Built `UserSynonymsEditor` (interactive chip list with inline input, `+`, edit pencil, trash icons) and `UserNoteEditor` (collapsible rich-text note editor supporting `<FormattedText />` semantic tags). Zero popups or redirects.

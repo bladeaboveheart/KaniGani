@@ -11,11 +11,13 @@ import {
   completeGanikaniLesson,
 } from '@/services/ganikaniService';
 import { formatMoraLabel } from '@/lib/moraCounter';
-import { PartOfSpeechBadge } from '@/components/ui/PartOfSpeechBadge';
+import { PartOfSpeechBadge, PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import FormattedText from '@/components/FormattedText';
 import GanikaniFrontCard from '@/components/ganikani/GanikaniFrontCard';
 import GanikaniInfoDrawer from '@/components/ganikani/GanikaniInfoDrawer';
+import CrabBackground from '@/components/CrabBackground';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import {
   ArrowLeft,
   ArrowRight,
@@ -26,6 +28,9 @@ import {
   Sparkles,
   Loader2,
   Eye,
+  Home,
+  Languages,
+  XCircle,
 } from 'lucide-react';
 
 export default function GanikaniLessonPage() {
@@ -37,6 +42,26 @@ export default function GanikaniLessonPage() {
 
   // Slide Phase States
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [slideTab, setSlideTab] = useState<'info' | 'mnemonic' | 'context'>('info');
+
+  // Reset tab when slide changes
+  useEffect(() => {
+    setSlideTab('info');
+  }, [currentSlideIndex]);
+
+  // Mobile swipe gestures for learn phase
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: () => {
+      if (currentSlideIndex < items.length - 1) {
+        setCurrentSlideIndex((prev) => prev + 1);
+      }
+    },
+    onSwipeRight: () => {
+      if (currentSlideIndex > 0) {
+        setCurrentSlideIndex((prev) => prev - 1);
+      }
+    },
+  });
 
   // Quiz Phase States
   const [quizQueue, setQuizQueue] = useState<Item[]>([]);
@@ -343,142 +368,245 @@ export default function GanikaniLessonPage() {
     const moraLabel = formatMoraLabel(item.primary_reading);
 
     return (
-      <div className="max-w-3xl mx-auto w-full px-4 py-8 flex flex-col flex-1 justify-between space-y-8 animate-fade-in">
-        {/* Progress header */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-xs font-bold text-text-muted">
-            <span className="uppercase tracking-widest text-amber-500">
-              Fase Pengenalan (Slide {currentSlideIndex + 1} dari {items.length})
-            </span>
-            <span>Batch {items.length} Kosakata</span>
-          </div>
-          <div className="w-full h-1.5 bg-card-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-amber-500 transition-all duration-300"
-              style={{
-                width: `${((currentSlideIndex + 1) / items.length) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
+      <div className="min-h-screen flex flex-col relative transition-colors duration-300">
+        <CrabBackground />
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
+          <div
+            {...swipeHandlers}
+            className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-colors duration-200 animate-fade-in"
+          >
+            {/* Header Hero Banner with Integrated Navbar */}
+            <div className="relative pt-16 pb-10 px-6 flex flex-col items-center justify-center text-center bg-gradient-to-b from-amber-500/10 via-card-muted/50 to-card border-b border-card-border">
+              {/* Absolute Top Bar */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres lesson belum disimpan.')) {
+                      router.push('/ganikani');
+                    }
+                  }}
+                  title="Kembali ke Dashboard GaniKani"
+                  className="flex items-center justify-center text-text-muted hover:text-text-primary hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-card-muted cursor-pointer"
+                >
+                  <Home className="w-5 h-5" />
+                </button>
 
-        {/* Slide Card Content */}
-        <div className="rounded-3xl border border-card-border bg-card p-6 sm:p-10 space-y-8 shadow-xl">
-          {/* Top Badge: POS + Mora */}
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {item.parts_of_speech && item.parts_of_speech.length > 0 ? (
-              item.parts_of_speech.slice(0, 2).map((pos, idx) => (
-                <PartOfSpeechBadge key={idx} item={pos} size="sm" />
-              ))
-            ) : (
-              <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-card-muted text-text-muted border border-card-border">
-                Kosakata
-              </span>
-            )}
+                <div className="text-xs sm:text-sm font-bold text-text-secondary">
+                  Lesson ({currentSlideIndex + 1}/{items.length})
+                </div>
+              </div>
 
-            {moraLabel && (
-              <span className="inline-flex items-center text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/25">
-                {moraLabel}
-              </span>
-            )}
-          </div>
+              {/* Badges: POS & Mora */}
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+                {item.parts_of_speech && item.parts_of_speech.length > 0 ? (
+                  item.parts_of_speech.slice(0, 2).map((pos, idx) => (
+                    <PartOfSpeechBadge key={idx} item={pos} size="sm" />
+                  ))
+                ) : (
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-medium bg-card-muted text-text-muted border border-card-border">
+                    Kosakata
+                  </span>
+                )}
+                {moraLabel && (
+                  <span className="inline-flex items-center text-xs font-bold px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/25">
+                    {moraLabel}
+                  </span>
+                )}
+              </div>
 
-          {/* Target Kanji & Reading Audio */}
-          <div className="flex flex-col items-center justify-center text-center space-y-3">
-            <h2 className="text-5xl sm:text-7xl font-black text-text-primary tracking-wider">
-              {item.character}
-            </h2>
+              {/* Big Kanji Character */}
+              <h1 className="text-6xl sm:text-7xl font-black text-text-primary tracking-wide text-center">
+                {item.character}
+              </h1>
 
-            <div className="flex items-center space-x-3">
-              <span className="text-2xl sm:text-3xl font-black text-amber-500 dark:text-amber-400">
-                {item.primary_reading}
-              </span>
-              {item.audios && item.audios.length > 0 && (
-                <AudioPlayerButton audios={item.audios} variant="compact" />
+              {/* Kana Reading + Audio Player */}
+              <div className="flex items-center justify-center space-x-3 mt-3">
+                <span className="text-2xl sm:text-3xl font-black text-amber-500 dark:text-amber-400 tracking-wider">
+                  {item.primary_reading}
+                </span>
+                {item.audios && item.audios.length > 0 && (
+                  <AudioPlayerButton audios={item.audios} variant="compact" />
+                )}
+              </div>
+
+              {/* Meaning */}
+              <p className="text-lg sm:text-xl font-bold tracking-wide mt-3 uppercase text-text-secondary">
+                {item.primary_meaning}
+              </p>
+            </div>
+
+            {/* Explanation Navigation Tabs */}
+            <div className="flex border-b border-card-border bg-card-muted/50 select-none">
+              <button
+                type="button"
+                onClick={() => setSlideTab('info')}
+                className={`flex-1 py-3.5 text-center text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
+                  slideTab === 'info'
+                    ? 'border-amber-500 text-amber-500 bg-card'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                <BookOpen className="w-4 h-4" />
+                <span>Info</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSlideTab('mnemonic')}
+                className={`flex-1 py-3.5 text-center text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
+                  slideTab === 'mnemonic'
+                    ? 'border-amber-500 text-amber-500 bg-card'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Mnemonic</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSlideTab('context')}
+                className={`flex-1 py-3.5 text-center text-xs sm:text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
+                  slideTab === 'context'
+                    ? 'border-amber-500 text-amber-500 bg-card'
+                    : 'border-transparent text-text-muted hover:text-text-primary'
+                }`}
+              >
+                <Languages className="w-4 h-4" />
+                <span>Kalimat Contoh</span>
+              </button>
+            </div>
+
+            {/* Tab Body */}
+            <div className="p-6 flex-1 text-left space-y-6">
+              {slideTab === 'info' && (
+                <div className="space-y-6 animate-fade-in">
+                  <div>
+                    <span className="text-xxs font-extrabold text-text-muted uppercase tracking-widest block mb-1">
+                      Arti Utama
+                    </span>
+                    <p className="text-xl font-bold text-text-primary capitalize">
+                      {item.primary_meaning}
+                    </p>
+                    {item.meanings && item.meanings.length > 1 && (
+                      <p className="text-xs text-text-secondary mt-1">
+                        Alternatif:{' '}
+                        {item.meanings
+                          .filter((m) => !m.primary_meaning)
+                          .map((m) => m.meaning)
+                          .join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {item.parts_of_speech && item.parts_of_speech.length > 0 && (
+                    <div>
+                      <span className="text-xxs font-extrabold text-text-muted uppercase tracking-widest block mb-2">
+                        Jenis Kata (Part of Speech)
+                      </span>
+                      <PartOfSpeechList partsOfSpeech={item.parts_of_speech} size="sm" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {slideTab === 'mnemonic' && (
+                <div className="space-y-4 animate-fade-in">
+                  {item.reading_mnemonic ? (
+                    <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 space-y-1">
+                      <span className="text-xxs font-extrabold text-indigo-400 uppercase tracking-widest block">
+                        Mnemonic Bacaan (Reading)
+                      </span>
+                      <div className="text-sm text-text-primary leading-relaxed">
+                        <FormattedText text={item.reading_mnemonic} />
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-text-muted italic">Tidak ada mnemonic bacaan khusus.</p>
+                  )}
+
+                  {item.meaning_mnemonic && (
+                    <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
+                      <span className="text-xxs font-extrabold text-emerald-400 uppercase tracking-widest block">
+                        Mnemonic Arti (Meaning)
+                      </span>
+                      <div className="text-sm text-text-primary leading-relaxed">
+                        <FormattedText text={item.meaning_mnemonic} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {slideTab === 'context' && (
+                <div className="space-y-4 animate-fade-in">
+                  {item.context_sentences && item.context_sentences.length > 0 ? (
+                    <div className="space-y-3">
+                      <span className="text-xxs font-extrabold text-text-muted uppercase tracking-widest block">
+                        Contoh Kalimat ({item.context_sentences.length})
+                      </span>
+                      <div className="space-y-2">
+                        {item.context_sentences.map((sent, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3.5 rounded-2xl bg-card-muted/60 border border-card-border space-y-1"
+                          >
+                            <p className="text-base font-semibold text-text-primary">
+                              {sent.japanese}
+                            </p>
+                            <p className="text-xs text-text-secondary">
+                              {sent.indonesian}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-text-muted italic">Belum ada contoh kalimat untuk item ini.</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Bottom Navigation Buttons */}
+            <div className="p-4 sm:p-6 border-t border-card-border bg-card-muted/30 flex items-center justify-between gap-4 select-none">
+              <button
+                type="button"
+                onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentSlideIndex === 0}
+                className={`flex items-center space-x-1.5 px-5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
+                  currentSlideIndex === 0
+                    ? 'opacity-30 pointer-events-none text-text-muted'
+                    : 'bg-card-muted hover:bg-card border border-card-border text-text-primary active:scale-95'
+                }`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Sebelumnya</span>
+              </button>
+
+              {currentSlideIndex < items.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentSlideIndex((prev) => prev + 1)}
+                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
+                >
+                  <span>Selanjutnya</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={startQuizPhase}
+                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer animate-pulse"
+                >
+                  <span>Mulai Kuis Lesson ({items.length} Item)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               )}
             </div>
           </div>
-
-          {/* Meaning & Secondary */}
-          <div className="text-center space-y-2 pt-4 border-t border-card-border">
-            <span className="text-xxs font-extrabold uppercase tracking-widest text-text-muted">
-              Arti Utama
-            </span>
-            <p className="text-2xl sm:text-3xl font-bold text-text-primary capitalize">
-              {item.primary_meaning}
-            </p>
-            {item.meanings && item.meanings.length > 1 && (
-              <p className="text-xs text-text-secondary mt-1">
-                Alternatif:{' '}
-                {item.meanings
-                  .filter((m) => !m.primary_meaning)
-                  .map((m) => m.meaning)
-                  .join(', ')}
-              </p>
-            )}
-          </div>
-
-          {/* Mnemonic Bacaan */}
-          {item.reading_mnemonic && (
-            <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-left space-y-1">
-              <span className="text-xxs font-extrabold text-indigo-400 uppercase tracking-widest block">
-                Mnemonic Bacaan (Kana)
-              </span>
-              <div className="text-xs text-text-primary leading-relaxed">
-                <FormattedText text={item.reading_mnemonic} />
-              </div>
-            </div>
-          )}
-
-          {/* Context sentence preview */}
-          {item.context_sentences && item.context_sentences.length > 0 && (
-            <div className="p-4 rounded-2xl bg-card-muted/50 border border-card-border text-left space-y-1">
-              <span className="text-xxs font-extrabold text-text-muted uppercase tracking-widest block">
-                Contoh Kalimat
-              </span>
-              <p className="text-sm font-semibold text-text-primary">
-                {item.context_sentences[0].japanese}
-              </p>
-              <p className="text-xs text-text-secondary">
-                {item.context_sentences[0].indonesian}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Footer Navigation Buttons */}
-        <div className="flex items-center justify-between gap-4">
-          <button
-            onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
-            disabled={currentSlideIndex === 0}
-            className={`flex items-center space-x-1.5 px-5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
-              currentSlideIndex === 0
-                ? 'opacity-30 pointer-events-none text-text-muted'
-                : 'bg-card-muted hover:bg-card border border-card-border text-text-primary'
-            }`}
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span>Sebelumnya</span>
-          </button>
-
-          {currentSlideIndex < items.length - 1 ? (
-            <button
-              onClick={() => setCurrentSlideIndex((prev) => prev + 1)}
-              className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-md shadow-amber-500/20 cursor-pointer"
-            >
-              <span>Selanjutnya</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={startQuizPhase}
-              className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 cursor-pointer"
-            >
-              <span>Mulai Kuis Lesson ({items.length} Item)</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          )}
-        </div>
+        </main>
       </div>
     );
   }
@@ -487,145 +615,195 @@ export default function GanikaniLessonPage() {
   // PHASE 2: QUIZ PHASE (Reverse Testing)
   // ==========================================
   if (phase === 'quiz' && activeQuizItem) {
-    const isFinishedAll =
-      quizQueue.length === 0 && requeuedItems.length === 0;
-
     return (
-      <div className="max-w-2xl mx-auto w-full px-4 py-8 flex flex-col flex-1 justify-between space-y-6">
-        {/* Quiz Header Bar */}
-        <div className="flex items-center justify-between border-b border-card-border pb-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-xs font-black uppercase tracking-widest px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-              Kuis Lesson
-            </span>
-            <span className="text-xs font-bold text-text-muted">
-              Sisa antrean: {quizQueue.length + 1}
-            </span>
-          </div>
+      <div className="min-h-screen flex flex-col relative transition-colors duration-300">
+        <CrabBackground />
+        <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
+          <div className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
+            {/* Top Hero Banner with Integrated Header Bar */}
+            <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border">
+              {/* Integrated Top Bar */}
+              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)] z-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm('Apakah Anda yakin ingin keluar? Progres kuis lesson ini belum disimpan.')) {
+                      router.push('/ganikani');
+                    }
+                  }}
+                  title="Kembali ke Dashboard GaniKani"
+                  className="flex items-center justify-center text-text-muted hover:text-text-primary hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-card-muted cursor-pointer"
+                >
+                  <Home className="w-5 h-5" />
+                </button>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                if (isAnswerSubmitted) {
-                  setShowItemInfo((prev) => !prev);
-                }
-              }}
-              disabled={!isAnswerSubmitted}
-              className={`p-2 rounded-xl border transition-colors ${
-                isAnswerSubmitted
-                  ? 'bg-card-muted hover:bg-card border-card-border text-text-secondary hover:text-text-primary cursor-pointer'
-                  : 'opacity-40 border-card-border/50 text-text-muted cursor-not-allowed'
-              }`}
-              title={
-                isAnswerSubmitted
-                  ? 'Buka Info Detail (F)'
-                  : 'Info detail tersedia setelah menjawab'
-              }
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30">
+                    Kuis Lesson
+                  </span>
+                  <span className="text-xs font-bold text-text-secondary px-2 py-0.5 rounded-lg bg-card-muted border border-card-border">
+                    Sisa: {quizQueue.length + 1}
+                  </span>
+                </div>
+              </div>
 
-        {/* Front Card (Meaning -> Kana) */}
-        <div className="rounded-3xl border border-card-border bg-card shadow-lg p-6 flex flex-col items-center">
-          <GanikaniFrontCard
-            item={activeQuizItem}
-            isAnswerSubmitted={isAnswerSubmitted}
-            isCorrect={isCorrect}
-            showKanjiRevealed={isCorrect}
-          />
-        </div>
+              {/* Front Card Content (Meaning -> Kana) */}
+              <GanikaniFrontCard
+                item={activeQuizItem}
+                isAnswerSubmitted={isAnswerSubmitted}
+                isCorrect={isCorrect}
+                showKanjiRevealed={isCorrect}
+                className="py-0 px-4"
+              />
+            </div>
 
-        {/* Input & Feedback Area */}
-        <div className="space-y-4">
-          <div className="relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={userInput}
-              onChange={(e) => {
-                if (!isAnswerSubmitted) {
-                  setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleQuizAction();
-                } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleRedo();
-                } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowItemInfo((prev) => !prev);
-                }
-              }}
-              readOnly={isAnswerSubmitted}
-              placeholder={
-                isAnswerSubmitted
-                  ? isCorrect
-                    ? 'Benar! Tekan Enter untuk lanjut'
-                    : 'Salah! Tekan Enter untuk lanjut atau Backspace untuk redo'
-                  : 'Ketik bacaan Kana (romaji otomatis)...'
-              }
-              className={`w-full text-center text-xl sm:text-2xl font-bold py-4 px-6 rounded-2xl border transition-all outline-hidden ${
-                isAnswerSubmitted
-                  ? isCorrect
-                    ? 'bg-emerald-500/15 border-emerald-500 text-emerald-500'
-                    : 'bg-rose-500/15 border-rose-500 text-rose-500'
-                  : 'bg-card border-card-border text-text-primary focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'
-              }`}
-            />
+            {/* Prompt Strip */}
+            <div className="w-full py-2.5 border-b border-card-border flex items-center justify-center text-xs font-semibold tracking-wider uppercase select-none bg-card-muted/60 text-text-secondary">
+              <span>Ketik Cara Baca <span className="font-black text-text-primary">Kosakata</span> (Kana)</span>
+            </div>
 
-            {/* Submit / Proceed Button */}
-            <button
-              type="button"
-              onClick={handleQuizAction}
-              disabled={savingLesson}
-              className={`mt-4 w-full py-3.5 px-6 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 ${
-                isAnswerSubmitted
-                  ? isCorrect
-                    ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
-                    : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/20'
-              }`}
-            >
-              {savingLesson ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : isAnswerSubmitted ? (
-                <span>Lanjut (Tekan Enter)</span>
-              ) : (
-                <span>Kirim Jawaban</span>
-              )}
-            </button>
-          </div>
+            {/* Input Area with Integrated Arrow Submit Button */}
+            <div className="pt-6 pb-2 px-4 sm:px-8 flex flex-col items-center space-y-4 w-full">
+              <div className="w-full max-w-md relative select-none mx-auto">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  placeholder={
+                    isAnswerSubmitted
+                      ? isCorrect
+                        ? 'Benar! Tekan Enter untuk lanjut'
+                        : 'Salah! Tekan Enter untuk lanjut atau Undo'
+                      : 'Ketik bacaan Kana (romaji otomatis)...'
+                  }
+                  value={userInput}
+                  onChange={(e) => {
+                    if (!isAnswerSubmitted) {
+                      setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleQuizAction();
+                    } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRedo();
+                    } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setShowItemInfo((prev) => !prev);
+                    }
+                  }}
+                  readOnly={isAnswerSubmitted}
+                  className={`w-full py-3.5 pl-6 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent ${
+                    isAnswerSubmitted
+                      ? isCorrect
+                        ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400'
+                      : 'bg-card border-card-border text-text-primary'
+                  }`}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
+                />
 
-          {/* Redo Helper button when wrong */}
-          {isAnswerSubmitted && !isCorrect && (
-            <div className="flex items-center justify-center">
+                {/* Integrated Submit Action Button inside the input box */}
+                <button
+                  type="button"
+                  disabled={!isAnswerSubmitted && userInput.trim() === ''}
+                  onClick={handleQuizAction}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-200 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed z-10 ${
+                    isAnswerSubmitted
+                      ? isCorrect
+                        ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md cursor-pointer'
+                        : 'bg-rose-500 hover:bg-rose-600 text-white shadow-md cursor-pointer'
+                      : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 cursor-pointer'
+                  }`}
+                  title={isAnswerSubmitted ? 'Lanjut (Enter)' : 'Kirim Jawaban (Enter)'}
+                >
+                  {savingLesson ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Action Buttons Row (Mobile Thumb Zone directly below Input) */}
+            <div className="flex justify-center items-center gap-3.5 w-full max-w-md mx-auto pt-1 pb-3 select-none z-10 self-center">
+              {/* Redo Button */}
               <button
                 type="button"
+                disabled={!isAnswerSubmitted}
                 onClick={handleRedo}
-                className="flex items-center space-x-1.5 text-xs text-text-muted hover:text-amber-500 font-bold transition-colors cursor-pointer"
+                title="Salah ketik? Ulangi kartu ini (Backspace)"
+                className="w-12 h-12 flex items-center justify-center rounded-2xl border border-card-border bg-card text-text-secondary hover:bg-card-muted shadow-xs transition-all duration-200 active:scale-90 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Salah ketik? Ulangi kartu ini (Backspace)</span>
+                <RotateCcw className="w-5 h-5" />
+              </button>
+
+              {/* Eye Button (Toggle Info Drawer) */}
+              <button
+                type="button"
+                disabled={!isAnswerSubmitted}
+                onClick={() => setShowItemInfo((prev) => !prev)}
+                title={
+                  isAnswerSubmitted
+                    ? 'Buka Info Detail (F)'
+                    : 'Info detail tersedia setelah menjawab'
+                }
+                className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xs transition-all duration-200 active:scale-90 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                  showItemInfo
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                    : 'bg-card border-card-border text-text-secondary hover:bg-card-muted'
+                }`}
+              >
+                <Eye className="w-5 h-5" />
               </button>
             </div>
-          )}
-        </div>
 
-        {/* Info Drawer */}
+            {/* Inline Answer Feedback */}
+            {isAnswerSubmitted && (
+              <div
+                className={`p-4 text-center text-sm border-t font-semibold ${
+                  isCorrect
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                    : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+                }`}
+              >
+                <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-1">
+                  {isCorrect ? (
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>Benar! Tekan Enter atau tombol panah untuk lanjut.</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-1">
+                      <div className="flex items-center space-x-1.5 text-rose-600 dark:text-rose-400 font-bold">
+                        <XCircle className="w-4 h-4 shrink-0" />
+                        <span>Jawaban Salah!</span>
+                      </div>
+                      <span className="font-extrabold text-xs sm:text-sm tracking-wide">
+                        Jawaban benar: {activeQuizItem.primary_reading} {activeQuizItem.character ? `(${activeQuizItem.character})` : ''}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
+
+        {/* Info Drawer Modal */}
         <GanikaniInfoDrawer
           item={activeQuizItem}
           isOpen={showItemInfo}
           onClose={() => setShowItemInfo(false)}
           onReadingSynonymAdded={(syn) => {
-            // Check if matches input
             const inputKana = wanakana.toHiragana(userInput.trim());
             if (inputKana === syn) {
               setIsCorrect(true);

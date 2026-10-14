@@ -11,6 +11,7 @@ interface GanikaniFrontCardProps {
   isAnswerSubmitted?: boolean;
   isCorrect?: boolean;
   showKanjiRevealed?: boolean;
+  className?: string;
 }
 
 export default function GanikaniFrontCard({
@@ -18,6 +19,7 @@ export default function GanikaniFrontCard({
   isAnswerSubmitted = false,
   isCorrect = false,
   showKanjiRevealed = false,
+  className = '',
 }: GanikaniFrontCardProps) {
   // Primary meaning (Indonesian)
   const primaryMeaning =
@@ -43,7 +45,7 @@ export default function GanikaniFrontCard({
   const moraLabel = formatMoraLabel(primaryReading);
 
   return (
-    <div className="w-full flex flex-col items-center justify-center text-center px-4 py-8 select-none">
+    <div className={`w-full flex flex-col items-center justify-center text-center px-4 py-6 select-none ${className}`}>
       {/* Header Badges: [ Part of Speech • X音 ] */}
       <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
         {item.parts_of_speech && item.parts_of_speech.length > 0 ? (

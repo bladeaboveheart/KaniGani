@@ -15,6 +15,7 @@ import {
 } from '@/services/ganikaniService';
 import GanikaniFrontCard from '@/components/ganikani/GanikaniFrontCard';
 import GanikaniInfoDrawer from '@/components/ganikani/GanikaniInfoDrawer';
+import CrabBackground from '@/components/CrabBackground';
 import {
   Clock,
   Eye,
@@ -25,7 +26,26 @@ import {
   ArrowRight,
   Loader2,
   Volume2,
+  Home,
+  ThumbsUp,
+  Check,
+  Inbox,
+  ArrowUp,
 } from 'lucide-react';
+
+const getSrsStageName = (stage: number | undefined | null) => {
+  if (!stage) return '';
+  if (stage === 1) return 'Pemula 1';
+  if (stage === 2) return 'Pemula 2';
+  if (stage === 3) return 'Pemula 3';
+  if (stage === 4) return 'Pemula 4';
+  if (stage === 5) return 'Lulus 1';
+  if (stage === 6) return 'Lulus 2';
+  if (stage === 7) return 'Mahir';
+  if (stage === 8) return 'Ahli';
+  if (stage === 9) return 'Tuntas';
+  return `Stage ${stage}`;
+};
 
 export default function GanikaniReviewPage() {
   const router = useRouter();
@@ -54,6 +74,7 @@ export default function GanikaniReviewPage() {
   const [userInput, setUserInput] = useState('');
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [currentResultStage, setCurrentResultStage] = useState<number | null>(null);
   const [showItemInfo, setShowItemInfo] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
@@ -212,6 +233,7 @@ export default function GanikaniReviewPage() {
       if (userId) {
         try {
           const res = await submitGanikaniReview(userId, activeItem.id, wrongCount);
+          setCurrentResultStage(res.newStage);
           setReviewedItems((prev) => [
             ...prev,
             { item: activeItem, wrongs: wrongCount, newStage: res.newStage },
@@ -268,6 +290,7 @@ export default function GanikaniReviewPage() {
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
     setShowItemInfo(false);
+    setCurrentResultStage(null);
     setTimeout(() => {
       inputRef.current?.focus();
     }, 20);
@@ -296,6 +319,7 @@ export default function GanikaniReviewPage() {
     setUserInput('');
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
+    setCurrentResultStage(null);
     inputRef.current?.focus();
   };
 
@@ -443,150 +467,230 @@ export default function GanikaniReviewPage() {
   if (!activeItem) return null;
 
   const remainingCount = queue.length + 1;
+  const totalReviewed = reviewedItems.length;
+  const cleanFirstTries = reviewedItems.filter((r) => r.wrongs === 0).length;
+  const accuracyPct =
+    totalReviewed > 0 ? Math.round((cleanFirstTries / totalReviewed) * 100) : 100;
 
   return (
-    <div className="max-w-2xl mx-auto w-full px-4 py-8 flex flex-col flex-1 justify-between space-y-6">
-      {/* Top Bar: Remaining count, Wrap Up, Info */}
-      <div className="flex items-center justify-between border-b border-card-border pb-4">
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30">
-            Sisa: {remainingCount}
-          </span>
-          {wrapUpActive && (
-            <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-500 border border-amber-500/30 animate-pulse">
-              Wrap Up Aktif
-            </span>
-          )}
-        </div>
+    <div className="min-h-screen flex flex-col relative transition-colors duration-300">
+      <CrabBackground />
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
+        <div className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
+          {/* Top Hero Banner with Integrated Header Bar */}
+          <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border">
+            {/* Integrated Top Bar */}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)] z-10">
+              <button
+                type="button"
+                onClick={() => {
+                  if (confirm('Apakah Anda yakin ingin keluar? Progres item yang dijawab benar sudah tersimpan di server.')) {
+                    router.push('/ganikani');
+                  }
+                }}
+                title="Kembali ke Dashboard GaniKani"
+                className="flex items-center justify-center text-text-muted hover:text-text-primary hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-card-muted cursor-pointer"
+              >
+                <Home className="w-5 h-5" />
+              </button>
 
-        <div className="flex items-center space-x-2">
-          {/* Wrap Up button (W) */}
-          <button
-            onClick={toggleWrapUp}
-            className={`p-2 rounded-xl border text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              wrapUpActive
-                ? 'bg-amber-500 text-white border-amber-500'
-                : 'bg-card-muted hover:bg-card border-card-border text-text-secondary hover:text-text-primary'
-            }`}
-            title="Selesaikan sesi lebih awal (W)"
-          >
-            <Clock className="w-4 h-4" />
-            <span className="hidden sm:inline">Wrap Up</span>
-          </button>
+              <div className="flex items-center space-x-2 sm:space-x-3 text-xs font-bold text-text-secondary">
+                <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded-lg bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30 text-xs font-black uppercase tracking-wider">
+                  Review GaniKani
+                </span>
 
-          {/* Info Drawer button (F) */}
-          <button
-            onClick={() => {
-              if (isAnswerSubmitted) {
-                setShowItemInfo((prev) => !prev);
-              }
-            }}
-            disabled={!isAnswerSubmitted}
-            className={`p-2 rounded-xl border transition-colors ${
-              isAnswerSubmitted
-                ? 'bg-card-muted hover:bg-card border-card-border text-text-secondary hover:text-text-primary cursor-pointer'
-                : 'opacity-40 border-card-border/50 text-text-muted cursor-not-allowed'
-            }`}
-            title={
-              isAnswerSubmitted
-                ? 'Buka Info Detail Kosakata & Tambah Sinonim (F)'
-                : 'Info detail tersedia setelah menjawab'
-            }
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+                {wrapUpActive && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-500 border border-amber-500/30 animate-pulse text-xs">
+                    Wrap Up
+                  </span>
+                )}
 
-      {/* Front Card (Meaning -> Kana) */}
-      <div className="rounded-3xl border border-card-border bg-card shadow-lg p-6 flex flex-col items-center">
-        <GanikaniFrontCard
-          item={activeItem}
-          isAnswerSubmitted={isAnswerSubmitted}
-          isCorrect={isCorrect}
-          showKanjiRevealed={isCorrect}
-        />
-      </div>
+                {/* Accuracy */}
+                <div className="flex items-center space-x-1" title="Akurasi Sesi">
+                  <ThumbsUp className="w-3.5 h-3.5 text-text-muted" />
+                  <span>{accuracyPct}%</span>
+                </div>
 
-      {/* Input & Feedback Area */}
-      <div className="space-y-4">
-        <div className="relative">
-          <input
-            ref={inputRef}
-            type="text"
-            value={userInput}
-            onChange={(e) => {
-              if (!isAnswerSubmitted) {
-                // Auto IME Romaji -> Hiragana dengan IMEMode
-                setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
-              }
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                e.stopPropagation();
-                handleReviewAction();
-              } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
-                e.preventDefault();
-                e.stopPropagation();
-                handleRedo();
-              } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
-                e.preventDefault();
-                e.stopPropagation();
-                setShowItemInfo((prev) => !prev);
-              }
-            }}
-            readOnly={isAnswerSubmitted}
-            placeholder={
-              isAnswerSubmitted
-                ? isCorrect
-                  ? 'Benar! Tekan Enter untuk lanjut'
-                  : 'Salah! Tekan Enter untuk lanjut atau Backspace untuk redo'
-                : 'Ketik bacaan Kana (romaji otomatis)...'
-            }
-            className={`w-full text-center text-xl sm:text-2xl font-bold py-4 px-6 rounded-2xl border transition-all outline-hidden ${
-              isAnswerSubmitted
-                ? isCorrect
-                  ? 'bg-emerald-500/15 border-emerald-500 text-emerald-500 font-black'
-                  : 'bg-rose-500/15 border-rose-500 text-rose-500 font-black'
-                : 'bg-card border-card-border text-text-primary focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'
-            }`}
-          />
+                {/* Completed */}
+                <div className="flex items-center space-x-1" title="Item Selesai">
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>{totalReviewed}</span>
+                </div>
 
-          {/* Proceed Button */}
-          <button
-            type="button"
-            onClick={handleReviewAction}
-            className={`mt-4 w-full py-3.5 px-6 rounded-2xl font-bold text-sm transition-all cursor-pointer shadow-md flex items-center justify-center space-x-2 ${
-              isAnswerSubmitted
-                ? isCorrect
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-emerald-500/20'
-                  : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20'
-                : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-indigo-600/20'
-            }`}
-          >
-            {isAnswerSubmitted ? (
-              <span>Lanjut (Tekan Enter)</span>
-            ) : (
-              <span>Kirim Jawaban</span>
-            )}
-          </button>
-        </div>
+                {/* Remaining */}
+                <div className="flex items-center space-x-1" title="Item Tersisa">
+                  <Inbox className="w-3.5 h-3.5 text-text-muted" />
+                  <span>{remainingCount}</span>
+                </div>
+              </div>
+            </div>
 
-        {/* Redo Helper button when wrong */}
-        {isAnswerSubmitted && !isCorrect && (
-          <div className="flex items-center justify-center">
+            {/* Front Card Content (Meaning -> Kana) */}
+            <GanikaniFrontCard
+              item={activeItem}
+              isAnswerSubmitted={isAnswerSubmitted}
+              isCorrect={isCorrect}
+              showKanjiRevealed={isCorrect}
+              className="py-0 px-4"
+            />
+          </div>
+
+          {/* Prompt Strip */}
+          <div className="w-full py-2.5 border-b border-card-border flex items-center justify-center text-xs font-semibold tracking-wider uppercase select-none bg-card-muted/60 text-text-secondary">
+            <span>Ketik Cara Baca <span className="font-black text-text-primary">Kosakata</span> (Kana)</span>
+          </div>
+
+          {/* Input Area with Integrated Arrow Submit Button */}
+          <div className="pt-6 pb-2 px-4 sm:px-8 flex flex-col items-center space-y-4 w-full">
+            <div className="w-full max-w-md relative select-none mx-auto">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={
+                  isAnswerSubmitted
+                    ? isCorrect
+                      ? 'Benar! Tekan Enter untuk lanjut'
+                      : 'Salah! Tekan Enter untuk lanjut atau Undo'
+                    : 'Ketik bacaan Kana (romaji otomatis)...'
+                }
+                value={userInput}
+                onChange={(e) => {
+                  if (!isAnswerSubmitted) {
+                    setUserInput(wanakana.toKana(e.target.value, { IMEMode: true }));
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleReviewAction();
+                  } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleRedo();
+                  } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setShowItemInfo((prev) => !prev);
+                  }
+                }}
+                readOnly={isAnswerSubmitted}
+                className={`w-full py-3.5 pl-6 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent ${
+                  isAnswerSubmitted
+                    ? isCorrect
+                      ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-rose-500/15 border-rose-500 text-rose-600 dark:text-rose-400'
+                    : 'bg-card border-card-border text-text-primary'
+                }`}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck="false"
+              />
+
+              {/* Integrated Submit Action Button inside the input box */}
+              <button
+                type="button"
+                disabled={!isAnswerSubmitted && userInput.trim() === ''}
+                onClick={handleReviewAction}
+                className={`absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-xl shadow-xs transition-all duration-200 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed z-10 ${
+                  isAnswerSubmitted
+                    ? isCorrect
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md cursor-pointer'
+                      : 'bg-rose-500 hover:bg-rose-600 text-white shadow-md cursor-pointer'
+                    : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 cursor-pointer'
+                }`}
+                title={isAnswerSubmitted ? 'Lanjut (Enter)' : 'Kirim Jawaban (Enter)'}
+              >
+                <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Action Buttons Row (Mobile Thumb Zone directly below Input) */}
+          <div className="flex justify-center items-center gap-3.5 w-full max-w-md mx-auto pt-1 pb-3 select-none z-10 self-center">
+            {/* 1. Wrap Up Button */}
             <button
               type="button"
-              onClick={handleRedo}
-              className="flex items-center space-x-1.5 text-xs text-text-muted hover:text-amber-500 font-bold transition-colors cursor-pointer"
+              onClick={toggleWrapUp}
+              title="Wrap Up (Selesaikan sesi lebih awal - W)"
+              className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xs transition-all duration-200 active:scale-90 cursor-pointer ${
+                wrapUpActive
+                  ? 'bg-amber-500 border-amber-500 text-white shadow-md'
+                  : 'bg-card border-card-border text-text-secondary hover:bg-card-muted'
+              }`}
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Salah ketik? Ulangi kartu ini (Backspace)</span>
+              <Clock className="w-5 h-5" />
+            </button>
+
+            {/* 2. Redo Button */}
+            <button
+              type="button"
+              disabled={!isAnswerSubmitted}
+              onClick={handleRedo}
+              title="Salah ketik? Ulangi kartu ini (Backspace)"
+              className="w-12 h-12 flex items-center justify-center rounded-2xl border border-card-border bg-card text-text-secondary hover:bg-card-muted shadow-xs transition-all duration-200 active:scale-90 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+
+            {/* 3. Eye Button (Toggle Info Drawer) */}
+            <button
+              type="button"
+              disabled={!isAnswerSubmitted}
+              onClick={() => setShowItemInfo((prev) => !prev)}
+              title={
+                isAnswerSubmitted
+                  ? 'Buka Info Detail Kosakata & Tambah Sinonim (F)'
+                  : 'Info detail tersedia setelah menjawab'
+              }
+              className={`w-12 h-12 flex items-center justify-center rounded-2xl border shadow-xs transition-all duration-200 active:scale-90 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed ${
+                showItemInfo
+                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-md'
+                  : 'bg-card border-card-border text-text-secondary hover:bg-card-muted'
+              }`}
+            >
+              <Eye className="w-5 h-5" />
             </button>
           </div>
-        )}
-      </div>
+
+          {/* Inline Answer Feedback */}
+          {isAnswerSubmitted && (
+            <div
+              className={`p-4 text-center text-sm border-t font-semibold ${
+                isCorrect
+                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
+              }`}
+            >
+              <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-1">
+                {isCorrect ? (
+                  <div className="flex items-center space-x-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>Sangat Bagus! Jawaban Anda Benar.</span>
+                    {currentResultStage && (
+                      <span className="px-2 py-0.5 bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-xs flex items-center space-x-1">
+                        <span>{getSrsStageName(currentResultStage)}</span>
+                        <ArrowUp className="w-3 h-3 stroke-[3]" />
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="flex items-center space-x-1.5 text-rose-600 dark:text-rose-400 font-bold">
+                      <XCircle className="w-4 h-4 shrink-0" />
+                      <span>Jawaban Salah!</span>
+                    </div>
+                    <span className="font-extrabold text-xs sm:text-sm tracking-wide">
+                      Jawaban benar: {activeItem.primary_reading} {activeItem.character ? `(${activeItem.character})` : ''}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </main>
 
       {/* Info Drawer (with Reading Synonyms Editor inside) */}
       <GanikaniInfoDrawer
@@ -594,7 +698,6 @@ export default function GanikaniReviewPage() {
         isOpen={showItemInfo}
         onClose={() => setShowItemInfo(false)}
         onReadingSynonymAdded={(synonym) => {
-          // If the user's current input matches the newly added synonym, flip to correct retroactively!
           const inputKana = wanakana.toHiragana(userInput.trim());
           if (inputKana === synonym) {
             setIsCorrect(true);
