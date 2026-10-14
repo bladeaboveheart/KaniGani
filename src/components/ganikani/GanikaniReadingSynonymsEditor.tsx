@@ -201,6 +201,7 @@ export default function GanikaniReadingSynonymsEditor({
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={(e) => {
+              e.stopPropagation();
               if (e.key === 'Enter') {
                 e.preventDefault();
                 handleSaveAdd();

@@ -125,7 +125,15 @@ export default function GanikaniLessonPage() {
     if (phase !== 'quiz') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (showItemInfo) return;
+      if (showItemInfo) {
+        const isInputField =
+          e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+        if (!isInputField && (e.key.toLowerCase() === 'f' || e.key === 'Escape')) {
+          e.preventDefault();
+          setShowItemInfo(false);
+        }
+        return;
+      }
 
       // Jika fokus sedang di input, input onKeyDown yang menangani secara eksklusif
       if (e.target === inputRef.current) return;
@@ -136,6 +144,9 @@ export default function GanikaniLessonPage() {
       } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
         e.preventDefault();
         handleRedo();
+      } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
+        e.preventDefault();
+        setShowItemInfo(true);
       }
     };
 
@@ -494,9 +505,22 @@ export default function GanikaniLessonPage() {
 
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setShowItemInfo(true)}
-              className="p-2 rounded-xl bg-card-muted hover:bg-card border border-card-border text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
-              title="Buka Info Detail (F)"
+              onClick={() => {
+                if (isAnswerSubmitted) {
+                  setShowItemInfo((prev) => !prev);
+                }
+              }}
+              disabled={!isAnswerSubmitted}
+              className={`p-2 rounded-xl border transition-colors ${
+                isAnswerSubmitted
+                  ? 'bg-card-muted hover:bg-card border-card-border text-text-secondary hover:text-text-primary cursor-pointer'
+                  : 'opacity-40 border-card-border/50 text-text-muted cursor-not-allowed'
+              }`}
+              title={
+                isAnswerSubmitted
+                  ? 'Buka Info Detail (F)'
+                  : 'Info detail tersedia setelah menjawab'
+              }
             >
               <Eye className="w-4 h-4" />
             </button>
@@ -534,11 +558,10 @@ export default function GanikaniLessonPage() {
                   e.preventDefault();
                   e.stopPropagation();
                   handleRedo();
-                } else if (e.key.toLowerCase() === 'f') {
-                  if (isAnswerSubmitted || userInput.trim() === '') {
-                    e.preventDefault();
-                    setShowItemInfo(true);
-                  }
+                } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowItemInfo((prev) => !prev);
                 }
               }}
               readOnly={isAnswerSubmitted}

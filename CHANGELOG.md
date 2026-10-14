@@ -5,6 +5,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **GaniKani 'F' Key Detail Drawer Shortcut Restricted to Submitted Cards:**
+  - In `src/app/ganikani/lesson/page.tsx` and `src/app/ganikani/review/page.tsx`, restricted the `F` shortcut and Eye toggle button strictly to cards where `isAnswerSubmitted === true`. Previously, when `userInput.trim() === ''`, pressing `f` as the initial letter triggered `showItemInfo` and prevented default keystroke handling, blocking users from typing vocabulary starting with `f` (such as `futatsu` / `ふたつ`, `fune`, `furui`).
+  - Added input element target guards (`!(e.target instanceof HTMLInputElement)`) and `e.stopPropagation()` in `GanikaniReadingSynonymsEditor.tsx` so typing `f` inside custom synonym inputs also avoids accidentally closing or toggling the info drawer modal.
 - **GaniKani PostgREST 1,000-Row Limit & Dashboard Lesson Counter:**
   - In `src/services/ganikaniService.ts`, implemented `fetchAllGanikaniProgress`, `fetchAllEligibleKaniGaniVocab`, and `fetchAllDueGanikaniReviews` using adaptive parallel chunking (`generateChunkRanges`). Eliminated the silent 1,000-row cap so that users with thousands of eligible Guru vocabulary items see their true, accurate lesson and review counts (e.g. >1,000 Kosakata Baru Tersedia).
 - **GaniKani Wanakana Romaji-to-Kana IME Keystroke Conversion:**
