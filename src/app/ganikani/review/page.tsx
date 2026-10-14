@@ -143,15 +143,15 @@ export default function GanikaniReviewPage() {
         if (!isInputField && (e.key.toLowerCase() === 'f' || e.key === 'Escape')) {
           e.preventDefault();
           setShowItemInfo(false);
+          return;
         }
-        return;
       }
 
       // Jika fokus sedang di input, input onKeyDown yang menangani secara eksklusif
       if (e.target === inputRef.current) return;
 
-      // Enter Shortcut to advance when answer submitted
-      if (e.key === 'Enter') {
+      // Enter or ArrowRight Shortcut to advance when answer submitted
+      if (e.key === 'Enter' || (e.key === 'ArrowRight' && isAnswerSubmitted)) {
         e.preventDefault();
         handleReviewAction();
       }
@@ -475,10 +475,10 @@ export default function GanikaniReviewPage() {
   return (
     <div className="min-h-screen flex flex-col relative transition-colors duration-300">
       <CrabBackground />
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
-        <div className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-0 sm:px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
+        <div className="w-full bg-card rounded-none sm:rounded-3xl border-x-0 sm:border-x border-t-0 sm:border-t border-b border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
           {/* Top Hero Banner with Integrated Header Bar */}
-          <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border">
+          <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border select-text">
             {/* Integrated Top Bar */}
             <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)] z-10">
               <button
@@ -530,7 +530,7 @@ export default function GanikaniReviewPage() {
               item={activeItem}
               isAnswerSubmitted={isAnswerSubmitted}
               isCorrect={isCorrect}
-              showKanjiRevealed={isCorrect}
+              showKanjiRevealed={false}
               className="py-0 px-4"
             />
           </div>
@@ -549,7 +549,7 @@ export default function GanikaniReviewPage() {
                 placeholder={
                   isAnswerSubmitted
                     ? isCorrect
-                      ? 'Benar! Tekan Enter untuk lanjut'
+                      ? 'Benar! Tekan Enter atau Panah Kanan untuk lanjut'
                       : 'Salah! Tekan Enter untuk lanjut atau Undo'
                     : 'Ketik bacaan Kana (romaji otomatis)...'
                 }
@@ -560,7 +560,7 @@ export default function GanikaniReviewPage() {
                   }
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' || (e.key === 'ArrowRight' && isAnswerSubmitted)) {
                     e.preventDefault();
                     e.stopPropagation();
                     handleReviewAction();
@@ -600,7 +600,7 @@ export default function GanikaniReviewPage() {
                       : 'bg-rose-500 hover:bg-rose-600 text-white shadow-md cursor-pointer'
                     : 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-500/20 cursor-pointer'
                 }`}
-                title={isAnswerSubmitted ? 'Lanjut (Enter)' : 'Kirim Jawaban (Enter)'}
+                title={isAnswerSubmitted ? 'Lanjut (Enter / Panah Kanan)' : 'Kirim Jawaban (Enter)'}
               >
                 <ArrowRight className="w-5 h-5" />
               </button>
@@ -665,14 +665,26 @@ export default function GanikaniReviewPage() {
             >
               <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-1">
                 {isCorrect ? (
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>Sangat Bagus! Jawaban Anda Benar.</span>
-                    {currentResultStage && (
-                      <span className="px-2 py-0.5 bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-xs flex items-center space-x-1">
-                        <span>{getSrsStageName(currentResultStage)}</span>
-                        <ArrowUp className="w-3 h-3 stroke-[3]" />
-                      </span>
+                  <div className="flex flex-col items-center justify-center space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                      <span>Benar! Tekan Enter atau tombol panah untuk lanjut.</span>
+                      {currentResultStage && (
+                        <span className="px-2 py-0.5 bg-emerald-500 text-white font-extrabold text-xs rounded-lg shadow-xs flex items-center space-x-1">
+                          <span>{getSrsStageName(currentResultStage)}</span>
+                          <ArrowUp className="w-3 h-3 stroke-[3]" />
+                        </span>
+                      )}
+                    </div>
+                    {activeItem && (
+                      <div className="flex items-center space-x-3 pt-1 animate-fade-in select-text">
+                        <span className="text-2xl sm:text-3xl font-black text-text-primary tracking-wide">
+                          {activeItem.character}
+                        </span>
+                        <span className="text-base sm:text-lg font-bold text-amber-500 dark:text-amber-400 tracking-wider">
+                          {activeItem.primary_reading}
+                        </span>
+                      </div>
                     )}
                   </div>
                 ) : (
@@ -681,51 +693,53 @@ export default function GanikaniReviewPage() {
                       <XCircle className="w-4 h-4 shrink-0" />
                       <span>Jawaban Salah!</span>
                     </div>
-                    <span className="font-extrabold text-xs sm:text-sm tracking-wide">
-                      Jawaban benar: {activeItem.primary_reading} {activeItem.character ? `(${activeItem.character})` : ''}
+                    <span className="font-extrabold text-xs sm:text-sm tracking-wide select-text">
+                      Jawaban benar: {activeItem?.primary_reading} {activeItem?.character ? `(${activeItem.character})` : ''}
                     </span>
                   </div>
                 )}
               </div>
             </div>
           )}
+
+          {/* Collapsible Info Drawer - Expands Downward Inline */}
+          {showItemInfo && (
+            <GanikaniInfoDrawer
+              item={activeItem}
+              isOpen={showItemInfo}
+              onClose={() => setShowItemInfo(false)}
+              onReadingSynonymAdded={(synonym) => {
+                const inputKana = wanakana.toHiragana(userInput.trim());
+                if (inputKana === synonym) {
+                  setIsCorrect(true);
+                  setIsAnswerSubmitted(true);
+
+                  // Revert wrong count if already counted
+                  if (activeItem && itemWrongs[activeItem.id] && itemWrongs[activeItem.id] > 0) {
+                    setItemWrongs((prev) => ({
+                      ...prev,
+                      [activeItem.id]: prev[activeItem.id] - 1,
+                    }));
+                  }
+
+                  // Submit review if user is logged in
+                  if (userId && activeItem) {
+                    const currentWrong = Math.max(0, (itemWrongs[activeItem.id] || 1) - 1);
+                    submitGanikaniReview(userId, activeItem.id, currentWrong)
+                      .then((res) => {
+                        setReviewedItems((prev) => [
+                          ...prev,
+                          { item: activeItem, wrongs: currentWrong, newStage: res.newStage },
+                        ]);
+                      })
+                      .catch((err) => console.error(err));
+                  }
+                }
+              }}
+            />
+          )}
         </div>
       </main>
-
-      {/* Info Drawer (with Reading Synonyms Editor inside) */}
-      <GanikaniInfoDrawer
-        item={activeItem}
-        isOpen={showItemInfo}
-        onClose={() => setShowItemInfo(false)}
-        onReadingSynonymAdded={(synonym) => {
-          const inputKana = wanakana.toHiragana(userInput.trim());
-          if (inputKana === synonym) {
-            setIsCorrect(true);
-            setIsAnswerSubmitted(true);
-
-            // Revert wrong count if already counted
-            if (activeItem && itemWrongs[activeItem.id] && itemWrongs[activeItem.id] > 0) {
-              setItemWrongs((prev) => ({
-                ...prev,
-                [activeItem.id]: prev[activeItem.id] - 1,
-              }));
-            }
-
-            // Submit review if user is logged in
-            if (userId && activeItem) {
-              const currentWrong = Math.max(0, (itemWrongs[activeItem.id] || 1) - 1);
-              submitGanikaniReview(userId, activeItem.id, currentWrong)
-                .then((res) => {
-                  setReviewedItems((prev) => [
-                    ...prev,
-                    { item: activeItem, wrongs: currentWrong, newStage: res.newStage },
-                  ]);
-                })
-                .catch((err) => console.error(err));
-            }
-          }
-        }}
-      />
     </div>
   );
 }

@@ -12,6 +12,7 @@ export default function GanikaniLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const isLessonOrReview = pathname === '/ganikani/lesson' || pathname === '/ganikani/review';
 
   const navLinks = [
     { href: '/ganikani', label: 'Dashboard', icon: Compass },
@@ -22,8 +23,9 @@ export default function GanikaniLayout({
 
   return (
     <div className="min-h-screen bg-background text-text-primary flex flex-col font-sans transition-colors duration-200">
-      {/* Minimalist Spartan Header */}
-      <header className="sticky top-0 z-40 bg-card/85 backdrop-blur-md border-b border-card-border">
+      {/* Minimalist Spartan Header - Hidden during Lesson & Review */}
+      {!isLessonOrReview && (
+        <header className="sticky top-0 z-40 bg-card/85 backdrop-blur-md border-b border-card-border">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Sisi Kiri: Brand GaniKani */}
           <LinkComponent
@@ -77,6 +79,7 @@ export default function GanikaniLayout({
           </div>
         </div>
       </header>
+      )}
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col">{children}</main>

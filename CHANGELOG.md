@@ -5,6 +5,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Fixed
+- **GaniKani Lesson & Review UX & Layout Alignment:**
+  - **Navbar Hiding**: In `src/app/ganikani/layout.tsx`, hidden the top navigation bar when on `/ganikani/lesson` and `/ganikani/review` routes so the quiz session is distraction-free.
+  - **Top-Flush Card Boundary**: Changed `<main>` padding to `pt-0 px-0 sm:px-4` and card styling to `rounded-none sm:rounded-3xl border-x-0 sm:border-x border-t-0 sm:border-t`, making the card attach flush to the top edge of the screen seamlessly on mobile and desktop.
+  - **Arrow Keys & Tab Navigation Sequence**: In `src/app/ganikani/lesson/page.tsx`, updated the right arrow key (`ArrowRight`), swipe gesture, and "Selanjutnya" button to step sequentially through the slide tabs (`Info` $\rightarrow$ `Mnemonic` $\rightarrow$ `Kalimat Contoh` $\rightarrow$ next item), with the left arrow (`ArrowLeft`) and "Sebelumnya" reversing the sequence.
+  - **Inline Downward Detail Drawer (Ala KaniGani)**: Converted `src/components/ganikani/GanikaniInfoDrawer.tsx` from a modal popup overlay into an inline collapsible drawer nested directly beneath the answer feedback strip inside the card, toggled via the Eye button or 'F' shortcut without auto-scroll.
+  - **Selectable Text**: Replaced `select-none` with `select-text` across `GanikaniFrontCard.tsx`, Lesson slide hero and tabs, Quiz hero, Feedback strip, and Review card, enabling smooth user text highlighting and copying.
+  - **Revealed Kanji & Reading Placement**: Moved the revealed target kanji and kana reading directly beneath the verdict text `"Benar! Tekan Enter atau tombol panah untuk lanjut."` in the feedback strip upon answering correctly, removing the inside-card top reveal block.
+  - **ArrowRight Quiz Progression**: Supported `ArrowRight` alongside `Enter` to advance to the next card once an answer is submitted in both Lesson Quiz and Review Quiz.
 - **GaniKani 'F' Key Detail Drawer Shortcut Restricted to Submitted Cards:**
   - In `src/app/ganikani/lesson/page.tsx` and `src/app/ganikani/review/page.tsx`, restricted the `F` shortcut and Eye toggle button strictly to cards where `isAnswerSubmitted === true`. Previously, when `userInput.trim() === ''`, pressing `f` as the initial letter triggered `showItemInfo` and prevented default keystroke handling, blocking users from typing vocabulary starting with `f` (such as `futatsu` / `ふたつ`, `fune`, `furui`).
   - Added input element target guards (`!(e.target instanceof HTMLInputElement)`) and `e.stopPropagation()` in `GanikaniReadingSynonymsEditor.tsx` so typing `f` inside custom synonym inputs also avoids accidentally closing or toggling the info drawer modal.

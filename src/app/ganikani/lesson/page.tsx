@@ -44,25 +44,6 @@ export default function GanikaniLessonPage() {
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [slideTab, setSlideTab] = useState<'info' | 'mnemonic' | 'context'>('info');
 
-  // Reset tab when slide changes
-  useEffect(() => {
-    setSlideTab('info');
-  }, [currentSlideIndex]);
-
-  // Mobile swipe gestures for learn phase
-  const swipeHandlers = useSwipeGesture({
-    onSwipeLeft: () => {
-      if (currentSlideIndex < items.length - 1) {
-        setCurrentSlideIndex((prev) => prev + 1);
-      }
-    },
-    onSwipeRight: () => {
-      if (currentSlideIndex > 0) {
-        setCurrentSlideIndex((prev) => prev - 1);
-      }
-    },
-  });
-
   // Quiz Phase States
   const [quizQueue, setQuizQueue] = useState<Item[]>([]);
   const [requeuedItems, setRequeuedItems] = useState<Item[]>([]);
@@ -75,6 +56,55 @@ export default function GanikaniLessonPage() {
   const [savingLesson, setSavingLesson] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const startQuizPhase = () => {
+    const shuffled = [...items].sort(() => Math.random() - 0.5);
+    setQuizQueue(shuffled.slice(1));
+    setActiveQuizItem(shuffled[0] || null);
+    setRequeuedItems([]);
+    setCompletedItemIds([]);
+    setUserInput('');
+    setIsAnswerSubmitted(false);
+    setIsCorrect(false);
+    setShowItemInfo(false);
+    setPhase('quiz');
+  };
+
+  const handleSlideNext = () => {
+    if (items.length === 0) return;
+    if (slideTab === 'info') {
+      setSlideTab('mnemonic');
+    } else if (slideTab === 'mnemonic') {
+      setSlideTab('context');
+    } else if (slideTab === 'context') {
+      if (currentSlideIndex < items.length - 1) {
+        setCurrentSlideIndex((prev) => prev + 1);
+        setSlideTab('info');
+      } else {
+        startQuizPhase();
+      }
+    }
+  };
+
+  const handleSlidePrev = () => {
+    if (items.length === 0) return;
+    if (slideTab === 'context') {
+      setSlideTab('mnemonic');
+    } else if (slideTab === 'mnemonic') {
+      setSlideTab('info');
+    } else if (slideTab === 'info') {
+      if (currentSlideIndex > 0) {
+        setCurrentSlideIndex((prev) => prev - 1);
+        setSlideTab('context');
+      }
+    }
+  };
+
+  // Mobile swipe gestures for learn phase (swiping left advances tab/item)
+  const swipeHandlers = useSwipeGesture({
+    onSwipeLeft: handleSlideNext,
+    onSwipeRight: handleSlidePrev,
+  });
 
   const loadLessons = async () => {
     setLoading(true);
@@ -92,6 +122,7 @@ export default function GanikaniLessonPage() {
       const queue = await getGanikaniLessonQueue(user.id, 5);
       setItems(queue);
       setCurrentSlideIndex(0);
+      setSlideTab('info');
       setPhase('slide');
     } catch (err) {
       console.error('Error fetching lessons:', err);
@@ -104,27 +135,23 @@ export default function GanikaniLessonPage() {
     loadLessons();
   }, []);
 
-  // Keyboard navigation for Slide Phase
+  // Keyboard navigation for Slide Phase (ArrowRight/Enter steps through info -> mnemonic -> context -> next item)
   useEffect(() => {
     if (phase !== 'slide') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
-        if (currentSlideIndex < items.length - 1) {
-          setCurrentSlideIndex((prev) => prev + 1);
-        } else if (currentSlideIndex === items.length - 1) {
-          startQuizPhase();
-        }
+        e.preventDefault();
+        handleSlideNext();
       } else if (e.key === 'ArrowLeft') {
-        if (currentSlideIndex > 0) {
-          setCurrentSlideIndex((prev) => prev - 1);
-        }
+        e.preventDefault();
+        handleSlidePrev();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [phase, currentSlideIndex, items.length]);
+  }, [phase, slideTab, currentSlideIndex, items.length]);
 
   // Focus input on Quiz Phase
   useEffect(() => {
@@ -133,37 +160,26 @@ export default function GanikaniLessonPage() {
     }
   }, [phase, activeQuizItem, isAnswerSubmitted]);
 
-  const startQuizPhase = () => {
-    const shuffled = [...items].sort(() => Math.random() - 0.5);
-    setQuizQueue(shuffled.slice(1));
-    setActiveQuizItem(shuffled[0] || null);
-    setRequeuedItems([]);
-    setCompletedItemIds([]);
-    setUserInput('');
-    setIsAnswerSubmitted(false);
-    setIsCorrect(false);
-    setPhase('quiz');
-  };
-
-  // Global keyboard shortcuts for Quiz Phase (Enter to submit/advance, Backspace to redo)
+  // Global keyboard shortcuts for Quiz Phase (Enter to submit/advance, ArrowRight to advance, Backspace to redo, F to toggle drawer)
   useEffect(() => {
     if (phase !== 'quiz') return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const isInputField =
+        e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+
       if (showItemInfo) {
-        const isInputField =
-          e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
         if (!isInputField && (e.key.toLowerCase() === 'f' || e.key === 'Escape')) {
           e.preventDefault();
           setShowItemInfo(false);
+          return;
         }
-        return;
       }
 
       // Jika fokus sedang di input, input onKeyDown yang menangani secara eksklusif
       if (e.target === inputRef.current) return;
 
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || (e.key === 'ArrowRight' && isAnswerSubmitted)) {
         e.preventDefault();
         handleQuizAction();
       } else if (e.key === 'Backspace' && isAnswerSubmitted && !isCorrect) {
@@ -171,7 +187,7 @@ export default function GanikaniLessonPage() {
         handleRedo();
       } else if (e.key.toLowerCase() === 'f' && isAnswerSubmitted) {
         e.preventDefault();
-        setShowItemInfo(true);
+        setShowItemInfo((prev) => !prev);
       }
     };
 
@@ -258,6 +274,7 @@ export default function GanikaniLessonPage() {
     setUserInput('');
     setIsAnswerSubmitted(false);
     setIsCorrect(false);
+    setShowItemInfo(false);
   };
 
   const handleRedo = () => {
@@ -370,13 +387,13 @@ export default function GanikaniLessonPage() {
     return (
       <div className="min-h-screen flex flex-col relative transition-colors duration-300">
         <CrabBackground />
-        <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
+        <main className="flex-1 max-w-4xl w-full mx-auto px-0 sm:px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
           <div
             {...swipeHandlers}
-            className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-colors duration-200 animate-fade-in"
+            className="w-full bg-card rounded-none sm:rounded-3xl border-x-0 sm:border-x border-t-0 sm:border-t border-b border-card-border shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-colors duration-200 animate-fade-in"
           >
             {/* Header Hero Banner with Integrated Navbar */}
-            <div className="relative pt-16 pb-10 px-6 flex flex-col items-center justify-center text-center bg-gradient-to-b from-amber-500/10 via-card-muted/50 to-card border-b border-card-border">
+            <div className="relative pt-16 pb-10 px-6 flex flex-col items-center justify-center text-center bg-gradient-to-b from-amber-500/10 via-card-muted/50 to-card border-b border-card-border select-text">
               {/* Absolute Top Bar */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)]">
                 <button
@@ -479,7 +496,7 @@ export default function GanikaniLessonPage() {
             </div>
 
             {/* Tab Body */}
-            <div className="p-6 flex-1 text-left space-y-6">
+            <div className="p-6 flex-1 text-left space-y-6 select-text">
               {slideTab === 'info' && (
                 <div className="space-y-6 animate-fade-in">
                   <div>
@@ -573,10 +590,10 @@ export default function GanikaniLessonPage() {
             <div className="p-4 sm:p-6 border-t border-card-border bg-card-muted/30 flex items-center justify-between gap-4 select-none">
               <button
                 type="button"
-                onClick={() => setCurrentSlideIndex((prev) => Math.max(0, prev - 1))}
-                disabled={currentSlideIndex === 0}
+                onClick={handleSlidePrev}
+                disabled={currentSlideIndex === 0 && slideTab === 'info'}
                 className={`flex items-center space-x-1.5 px-5 py-3 rounded-2xl font-bold text-xs transition-all cursor-pointer ${
-                  currentSlideIndex === 0
+                  currentSlideIndex === 0 && slideTab === 'info'
                     ? 'opacity-30 pointer-events-none text-text-muted'
                     : 'bg-card-muted hover:bg-card border border-card-border text-text-primary active:scale-95'
                 }`}
@@ -585,22 +602,22 @@ export default function GanikaniLessonPage() {
                 <span>Sebelumnya</span>
               </button>
 
-              {currentSlideIndex < items.length - 1 ? (
-                <button
-                  type="button"
-                  onClick={() => setCurrentSlideIndex((prev) => prev + 1)}
-                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
-                >
-                  <span>Selanjutnya</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              ) : (
+              {currentSlideIndex === items.length - 1 && slideTab === 'context' ? (
                 <button
                   type="button"
                   onClick={startQuizPhase}
                   className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer animate-pulse"
                 >
                   <span>Mulai Kuis Lesson ({items.length} Item)</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleSlideNext}
+                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs transition-all shadow-md shadow-amber-500/20 active:scale-95 cursor-pointer"
+                >
+                  <span>Selanjutnya</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
@@ -618,10 +635,10 @@ export default function GanikaniLessonPage() {
     return (
       <div className="min-h-screen flex flex-col relative transition-colors duration-300">
         <CrabBackground />
-        <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-2 pb-6 sm:pb-12">
-          <div className="w-full bg-card rounded-3xl border border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
+        <main className="flex-1 max-w-4xl w-full mx-auto px-0 sm:px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
+          <div className="w-full bg-card rounded-none sm:rounded-3xl border-x-0 sm:border-x border-t-0 sm:border-t border-b border-card-border shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
             {/* Top Hero Banner with Integrated Header Bar */}
-            <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border">
+            <div className="relative pt-16 pb-8 flex flex-col items-center justify-center bg-gradient-to-b from-card-muted/70 to-card border-b border-card-border select-text">
               {/* Integrated Top Bar */}
               <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-text-primary select-none w-[calc(100%-2rem)] z-10">
                 <button
@@ -652,7 +669,7 @@ export default function GanikaniLessonPage() {
                 item={activeQuizItem}
                 isAnswerSubmitted={isAnswerSubmitted}
                 isCorrect={isCorrect}
-                showKanjiRevealed={isCorrect}
+                showKanjiRevealed={false}
                 className="py-0 px-4"
               />
             </div>
@@ -671,7 +688,7 @@ export default function GanikaniLessonPage() {
                   placeholder={
                     isAnswerSubmitted
                       ? isCorrect
-                        ? 'Benar! Tekan Enter untuk lanjut'
+                        ? 'Benar! Tekan Enter atau Panah Kanan untuk lanjut'
                         : 'Salah! Tekan Enter untuk lanjut atau Undo'
                       : 'Ketik bacaan Kana (romaji otomatis)...'
                   }
@@ -682,7 +699,7 @@ export default function GanikaniLessonPage() {
                     }
                   }}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || (e.key === 'ArrowRight' && isAnswerSubmitted)) {
                       e.preventDefault();
                       e.stopPropagation();
                       handleQuizAction();
@@ -722,7 +739,7 @@ export default function GanikaniLessonPage() {
                         : 'bg-rose-500 hover:bg-rose-600 text-white shadow-md cursor-pointer'
                       : 'bg-amber-500 hover:bg-amber-600 text-white shadow-md shadow-amber-500/20 cursor-pointer'
                   }`}
-                  title={isAnswerSubmitted ? 'Lanjut (Enter)' : 'Kirim Jawaban (Enter)'}
+                  title={isAnswerSubmitted ? 'Lanjut (Enter / Panah Kanan)' : 'Kirim Jawaban (Enter)'}
                 >
                   {savingLesson ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -777,9 +794,19 @@ export default function GanikaniLessonPage() {
               >
                 <div className="max-w-md mx-auto flex flex-col items-center justify-center space-y-1">
                   {isCorrect ? (
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>Benar! Tekan Enter atau tombol panah untuk lanjut.</span>
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <span>Benar! Tekan Enter atau tombol panah untuk lanjut.</span>
+                      </div>
+                      <div className="flex items-center space-x-3 pt-1 animate-fade-in select-text">
+                        <span className="text-2xl sm:text-3xl font-black text-text-primary tracking-wide">
+                          {activeQuizItem.character}
+                        </span>
+                        <span className="text-base sm:text-lg font-bold text-amber-500 dark:text-amber-400 tracking-wider">
+                          {activeQuizItem.primary_reading}
+                        </span>
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center space-y-1">
@@ -787,7 +814,7 @@ export default function GanikaniLessonPage() {
                         <XCircle className="w-4 h-4 shrink-0" />
                         <span>Jawaban Salah!</span>
                       </div>
-                      <span className="font-extrabold text-xs sm:text-sm tracking-wide">
+                      <span className="font-extrabold text-xs sm:text-sm tracking-wide select-text">
                         Jawaban benar: {activeQuizItem.primary_reading} {activeQuizItem.character ? `(${activeQuizItem.character})` : ''}
                       </span>
                     </div>
@@ -795,22 +822,24 @@ export default function GanikaniLessonPage() {
                 </div>
               </div>
             )}
+
+            {/* Collapsible Info Drawer - Expands Downward Inline */}
+            {showItemInfo && (
+              <GanikaniInfoDrawer
+                item={activeQuizItem}
+                isOpen={showItemInfo}
+                onClose={() => setShowItemInfo(false)}
+                onReadingSynonymAdded={(syn) => {
+                  const inputKana = wanakana.toHiragana(userInput.trim());
+                  if (inputKana === syn) {
+                    setIsCorrect(true);
+                    setIsAnswerSubmitted(true);
+                  }
+                }}
+              />
+            )}
           </div>
         </main>
-
-        {/* Info Drawer Modal */}
-        <GanikaniInfoDrawer
-          item={activeQuizItem}
-          isOpen={showItemInfo}
-          onClose={() => setShowItemInfo(false)}
-          onReadingSynonymAdded={(syn) => {
-            const inputKana = wanakana.toHiragana(userInput.trim());
-            if (inputKana === syn) {
-              setIsCorrect(true);
-              setIsAnswerSubmitted(true);
-            }
-          }}
-        />
       </div>
     );
   }

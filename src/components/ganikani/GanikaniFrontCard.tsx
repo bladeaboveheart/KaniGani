@@ -45,7 +45,7 @@ export default function GanikaniFrontCard({
   const moraLabel = formatMoraLabel(primaryReading);
 
   return (
-    <div className={`w-full flex flex-col items-center justify-center text-center px-4 py-6 select-none ${className}`}>
+    <div className={`w-full flex flex-col items-center justify-center text-center px-4 py-6 select-text ${className}`}>
       {/* Header Badges: [ Part of Speech • X音 ] */}
       <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
         {item.parts_of_speech && item.parts_of_speech.length > 0 ? (
@@ -100,18 +100,6 @@ export default function GanikaniFrontCard({
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {/* Optional revealed target characters upon correct answer */}
-      {isAnswerSubmitted && isCorrect && showKanjiRevealed && (
-        <div className="mt-8 animate-fade-in flex flex-col items-center gap-1.5">
-          <span className="text-4xl sm:text-5xl font-black text-emerald-500 dark:text-emerald-400 tracking-wider">
-            {item.character}
-          </span>
-          <span className="text-lg font-bold text-text-secondary tracking-widest">
-            {primaryReading}
-          </span>
         </div>
       )}
     </div>
