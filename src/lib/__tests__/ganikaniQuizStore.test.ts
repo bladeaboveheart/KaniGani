@@ -21,8 +21,8 @@ const mockItems: Item[] = [
     primary_reading: 'たべる',
     accepted_meanings: ['Makan', 'Eat'],
     accepted_readings: ['たべる'],
-    meanings: [{ id: 'm1', meaning: 'Makan', primary_meaning: true, accepted_answer: true }],
-    readings: [{ id: 'r1', reading: 'たべる', reading_type: 'kunyomi', primary_reading: true, accepted_answer: true }],
+    meanings: [{ id: 'm1', item_id: 'item-1', meaning: 'Makan', primary_meaning: true, accepted_answer: true }],
+    readings: [{ id: 'r1', item_id: 'item-1', reading: 'たべる', reading_type: 'kunyomi', primary_reading: true, accepted_answer: true }],
     parts_of_speech: ['ichidan verb', 'transitive verb'],
   },
   {
@@ -38,8 +38,8 @@ const mockItems: Item[] = [
     primary_reading: 'のむ',
     accepted_meanings: ['Minum', 'Drink'],
     accepted_readings: ['のむ'],
-    meanings: [{ id: 'm2', meaning: 'Minum', primary_meaning: true, accepted_answer: true }],
-    readings: [{ id: 'r2', reading: 'のむ', reading_type: 'godan verb', primary_reading: true, accepted_answer: true }],
+    meanings: [{ id: 'm2', item_id: 'item-2', meaning: 'Minum', primary_meaning: true, accepted_answer: true }],
+    readings: [{ id: 'r2', item_id: 'item-2', reading: 'のむ', reading_type: 'kunyomi', primary_reading: true, accepted_answer: true }],
     parts_of_speech: ['godan verb', 'transitive verb'],
   },
 ];
@@ -67,7 +67,7 @@ describe('useGanikaniQuizStore', () => {
 
     // Type in Romaji for active item
     const active = useGanikaniQuizStore.getState().activeItem!;
-    const expectedRomaji = active.slug; // 'taberu' or 'nomu'
+    const expectedRomaji = active.slug || ''; // 'taberu' or 'nomu'
 
     store.setUserInput(expectedRomaji);
     await store.submitAnswer('user-123');

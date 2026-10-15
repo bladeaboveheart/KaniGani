@@ -208,10 +208,10 @@ export default function AudioPlayerButton({
         ) : (
           <Volume2 className={`w-3.5 h-3.5 ${isPlaying ? 'text-vocab animate-pulse' : 'text-slate-500'}`} />
         )}
-        <span className="text-3xs uppercase tracking-wider">Audio</span>
+        
       </button>
 
-      <div className="h-3 w-px bg-slate-300 dark:bg-slate-700" />
+      
 
       {/* Voice Toggle */}
       <div className="flex items-center space-x-1 text-4xs font-bold">

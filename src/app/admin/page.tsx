@@ -244,11 +244,30 @@ export default function AdminPage() {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_leaderboard');
-      if (error) throw error;
-      if (data) {
-        setUsers(data);
+      const [usersRes, overridesRes] = await Promise.all([
+        supabase.rpc('get_leaderboard'),
+        supabase
+          .from('user_level_override_history')
+          .select('id, user_id, previous_level, new_level, affected_items_count, created_at')
+          .is('reverted_at', null)
+          .order('created_at', { ascending: false })
+      ]);
+
+      if (usersRes.error) throw usersRes.error;
+
+      const activeOverrideMap = new Map<string, any>();
+      for (const ov of (overridesRes.data || [])) {
+        if (!activeOverrideMap.has(ov.user_id)) {
+          activeOverrideMap.set(ov.user_id, ov);
+        }
       }
+
+      const enriched = (usersRes.data || []).map((u: any) => ({
+        ...u,
+        active_override: activeOverrideMap.get(u.id) || null
+      }));
+
+      setUsers(enriched);
     } catch (err) {
       console.error('Error loading users:', err);
     }
@@ -257,16 +276,41 @@ export default function AdminPage() {
   const handleSetUserLevel = async (userId: string, newLevel: number | null) => {
     setUpdatingUserId(userId);
     try {
-      const { error } = await supabase.rpc('update_user_level', {
+      const { data, error } = await supabase.rpc('apply_admin_level_override', {
         p_user_id: userId,
-        p_level: newLevel
+        p_new_level: newLevel
       });
       if (error) throw error;
-      alert('Sukses! Level pengguna berhasil diperbarui.');
+      const affectedCount = data?.affected_items_count || 0;
+      if (newLevel !== null) {
+        alert(`Sukses! Pengguna di-set ke Level ${newLevel}. ${affectedCount} materi level sebelumnya dinaikkan ke SRS Level 5 (Guru) & siap direview.`);
+      } else {
+        alert('Sukses! Level pengguna dikembalikan ke mode dinamis (otomatis).');
+      }
       loadUsers();
     } catch (err: any) {
       console.error('Error updating user level:', err);
       alert('Gagal memperbarui level: ' + err.message);
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleRevertUserLevel = async (userId: string, historyId?: string) => {
+    setUpdatingUserId(userId);
+    try {
+      const { data, error } = await supabase.rpc('revert_admin_level_override', {
+        p_user_id: userId,
+        p_history_id: historyId || null
+      });
+      if (error) throw error;
+      const restoredLevel = data?.restored_level ? `Level ${data.restored_level}` : 'Dinamis';
+      const restoredItems = data?.restored_items_count || 0;
+      alert(`Sukses! Level berhasil di-revert ke ${restoredLevel}. ${restoredItems} materi dikembalikan ke status awal.`);
+      loadUsers();
+    } catch (err: any) {
+      console.error('Error reverting user level:', err);
+      alert('Gagal me-revert level: ' + err.message);
     } finally {
       setUpdatingUserId(null);
     }
@@ -744,6 +788,7 @@ export default function AdminPage() {
                 userSearchQuery={userSearchQuery}
                 setUserSearchQuery={setUserSearchQuery}
                 handleSetUserLevel={handleSetUserLevel}
+                handleRevertUserLevel={handleRevertUserLevel}
                 updatingUserId={updatingUserId}
                 loadUsers={loadUsers}
                 onInspectUser={(userId) => {

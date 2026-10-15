@@ -119,6 +119,18 @@ Menyimpan preferensi pengguna (berproteksi RLS `auth.uid() = user_id`):
 - `keyboard_shortcuts`: Boolean (Default: `true`)
 - `updated_at`: Timestamps
 
+### 5. Tabel Snapshot & Riwayat Override Level: `public.user_level_override_history`
+Menyimpan riwayat perubahan level manual oleh admin beserta snapshot progres materi sebelum perubahan untuk keperluan Revert/Rollback aman:
+- `id`: UUID (Primary Key, default `gen_random_uuid()`)
+- `user_id`: UUID (FK `auth.users`, berproteksi RLS)
+- `admin_id`: UUID (FK `auth.users`, nullable)
+- `previous_level`: Integer (Level sebelum override, null jika mode dinamis)
+- `new_level`: Integer (Level target setelah override)
+- `affected_items_count`: Integer (Jumlah item yang dinaikkan ke Guru 5 / dibuka)
+- `snapshot_data`: JSONB (Array snapshot lengkap status awal item: `item_id`, `srs_stage`, `unlocked_at`, `next_review`, `existed`)
+- `created_at`: Timestamp with time zone (Default: `NOW()`)
+- `reverted_at`: Timestamp with time zone (Nullable, diisi saat admin me-revert)
+
 ---
 
 ## 4. Strategi Penggunaan Ulang Kode (Ponytail Standard)

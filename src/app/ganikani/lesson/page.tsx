@@ -606,9 +606,9 @@ export default function GanikaniLessonPage() {
                 <button
                   type="button"
                   onClick={startQuizPhase}
-                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer animate-pulse"
+                  className="flex items-center space-x-1.5 px-6 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs transition-all shadow-md shadow-indigo-600/20 active:scale-95 cursor-pointer"
                 >
-                  <span>Mulai Kuis Lesson ({items.length} Item)</span>
+                  <span>Mulai Kuis</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (

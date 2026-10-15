@@ -40,6 +40,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Dictionary Pages Layout Spacing:** Added `pb-16` bottom padding to `src/app/radical/page.tsx`, `src/app/kanji/page.tsx`, and `src/app/vocabulary/page.tsx` so cards at the bottom of the page have generous breathing room above the footer.
 
 ### Added
+- **Admin Level Override with Automatic SRS Level 5 (Guru) Upgrade & Revert Snapshot:**
+  - **Database & RPC Functions**:
+    - Created `public.user_level_override_history` to track overrides with full JSONB snapshots of pre-change item progress (`item_id`, `srs_stage`, `unlocked_at`, `next_review`, `existed`).
+    - `apply_admin_level_override`: Upgrades all items (Radicals, Kanji, Vocabulary) in levels $1$ to $X-1$ with `srs_stage < 5` to **SRS Level 5 (Guru 1)** and schedules them for immediate review (`next_review = NOW()`). Preserves items already at Guru/Master/Enlightened/Burned (`srs_stage >= 5`). Automatically unlocks target radicals for Level $X$ (`srs_stage = 1, next_review = NULL`), keeping target kanji and vocab locked.
+    - `revert_admin_level_override`: Restores `profiles.level` to previous level and reverts all affected item rows from the JSONB snapshot back to their exact previous SRS stage, unlock timestamp, and review schedule.
+  - **Admin Safety Confirmation & Revert Modals:**
+    - [`LevelChangeConfirmModal.tsx`](src/components/admin/LevelChangeConfirmModal.tsx): Intercepts dropdown level selection in [`UserManager.tsx`](src/components/admin/UserManager.tsx) to display a detailed impact breakdown before executing changes.
+    - [`LevelRevertConfirmModal.tsx`](src/components/admin/LevelRevertConfirmModal.tsx) & Revert Badge: Displays an active override banner with a one-click `[Revert]` button on the user card in [`UserManager.tsx`](src/components/admin/UserManager.tsx), allowing instant rollback of any manual level adjustment.
+  - **Comprehensive Unit Testing**: Added [`src/lib/__tests__/adminLevelOverride.test.ts`](src/lib/__tests__/adminLevelOverride.test.ts) covering upgrade scoping, target radical unlocking, snapshot preservation, and full state restoration.
 - **GaniKani Mobile UX Layout Alignment (Ala KaniGani):**
   - **Single Unified Card Container**: Redesigned Lesson Quiz and Review Quiz to use a unified, continuous card (`rounded-3xl border shadow-xl overflow-hidden`) with a top hero banner, prompt divider strip (`Ketik Cara Baca Kosakata (Kana)`), and integrated top navbar (Home exit button, Session title, accuracy %, completed count, and remaining count).
   - **Embedded Arrow Submit Button in Input (`QuizInput` style)**: Relocated the giant standalone submit button into a compact, responsive circular action button nested directly inside the right edge of the input field (`ArrowRight`), preventing virtual keyboard shift and unnecessary scrolling on mobile devices.

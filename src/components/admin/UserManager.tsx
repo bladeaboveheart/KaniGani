@@ -1,12 +1,16 @@
 'use client';
 
-import { Search, RefreshCw, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Search, RefreshCw, Loader2, RotateCcw } from 'lucide-react';
+import LevelChangeConfirmModal from './LevelChangeConfirmModal';
+import LevelRevertConfirmModal from './LevelRevertConfirmModal';
 
 interface UserManagerProps {
   users: any[];
   userSearchQuery: string;
   setUserSearchQuery: (q: string) => void;
   handleSetUserLevel: (userId: string, level: number | null) => void;
+  handleRevertUserLevel?: (userId: string, historyId?: string) => void;
   updatingUserId: string | null;
   loadUsers: () => void;
   onInspectUser?: (userId: string) => void;
@@ -17,10 +21,18 @@ export default function UserManager({
   userSearchQuery,
   setUserSearchQuery,
   handleSetUserLevel,
+  handleRevertUserLevel,
   updatingUserId,
   loadUsers,
   onInspectUser
 }: UserManagerProps) {
+  const [pendingLevelChange, setPendingLevelChange] = useState<{
+    user: any;
+    targetLevel: number | null;
+  } | null>(null);
+
+  const [pendingRevertUser, setPendingRevertUser] = useState<any | null>(null);
+
   const filteredUsers = users.filter(u =>
     u.username.toLowerCase().includes(userSearchQuery.toLowerCase())
   );
@@ -85,10 +97,14 @@ export default function UserManager({
                     value={userItem.override_level !== null && userItem.override_level !== undefined ? userItem.override_level : "dynamic"}
                     onChange={(e) => {
                       const val = e.target.value;
-                      handleSetUserLevel(userItem.id, val === "dynamic" ? null : Number(val));
+                      const nextLvl = val === "dynamic" ? null : Number(val);
+                      // Jangan buka modal jika memilih level yang sama persis
+                      const currentVal = userItem.override_level !== null && userItem.override_level !== undefined ? userItem.override_level : null;
+                      if (nextLvl === currentVal) return;
+                      setPendingLevelChange({ user: userItem, targetLevel: nextLvl });
                     }}
                     disabled={updatingUserId === userItem.id}
-                    className="py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xxs font-extrabold rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50"
+                    className="py-1.5 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xxs font-extrabold rounded-xl focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 cursor-pointer"
                   >
                     <option value="dynamic">Otomatis (Dinamis)</option>
                     {Array.from({ length: 60 }, (_, idx) => (
@@ -97,6 +113,30 @@ export default function UserManager({
                   </select>
                 </div>
               </div>
+
+              {/* Revert Banner jika user memiliki riwayat override aktif */}
+              {userItem.active_override && (
+                <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-3 flex items-center justify-between gap-3 animate-fade-in">
+                  <div className="min-w-0">
+                    <div className="flex items-center space-x-1.5 text-amber-700 dark:text-amber-400 font-extrabold text-3xs uppercase tracking-wider">
+                      <RotateCcw className="w-3 h-3 shrink-0" />
+                      <span>Override Aktif (Lvl {userItem.active_override.new_level})</span>
+                    </div>
+                    <p className="text-4xs text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                      {userItem.active_override.affected_items_count} materi dinaikkan ke Guru • Awalnya {userItem.active_override.previous_level ? `Lvl ${userItem.active_override.previous_level}` : 'Dinamis'}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPendingRevertUser(userItem)}
+                    disabled={updatingUserId === userItem.id}
+                    className="px-2.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-3xs rounded-xl shadow-xs transition-all cursor-pointer shrink-0 flex items-center space-x-1 hover:scale-102 active:scale-98 disabled:opacity-50"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Revert</span>
+                  </button>
+                </div>
+              )}
 
               {onInspectUser && (
                 <button
@@ -122,6 +162,35 @@ export default function UserManager({
           <h3 className="font-bold text-sm">Sedang Memuat Pengguna...</h3>
         </section>
       )}
+
+      {/* Modal Konfirmasi Perubahan Level */}
+      <LevelChangeConfirmModal
+        isOpen={pendingLevelChange !== null}
+        onClose={() => setPendingLevelChange(null)}
+        onConfirm={async () => {
+          if (!pendingLevelChange) return;
+          const { user, targetLevel } = pendingLevelChange;
+          setPendingLevelChange(null);
+          handleSetUserLevel(user.id, targetLevel);
+        }}
+        user={pendingLevelChange?.user || null}
+        targetLevel={pendingLevelChange?.targetLevel ?? null}
+        loading={updatingUserId === pendingLevelChange?.user?.id}
+      />
+
+      {/* Modal Konfirmasi Revert Override */}
+      <LevelRevertConfirmModal
+        isOpen={pendingRevertUser !== null}
+        onClose={() => setPendingRevertUser(null)}
+        onConfirm={async () => {
+          if (!pendingRevertUser || !handleRevertUserLevel) return;
+          const user = pendingRevertUser;
+          setPendingRevertUser(null);
+          handleRevertUserLevel(user.id, user.active_override?.id);
+        }}
+        user={pendingRevertUser}
+        loading={updatingUserId === pendingRevertUser?.id}
+      />
     </div>
   );
 }
