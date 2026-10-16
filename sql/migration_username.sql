@@ -36,18 +36,44 @@ SET search_path = public
 AS $$
 DECLARE
   v_username TEXT;
+  v_base_username TEXT;
+  v_counter INT := 0;
 BEGIN
-  -- Dapatkan username dari metadata, jika kosong gunakan default random
-  v_username := COALESCE(NEW.raw_user_meta_data->>'username', 'user_' || substr(NEW.id::text, 1, 8));
+  -- 1. Check if user already exists in profiles
+  IF EXISTS (SELECT 1 FROM public.profiles WHERE id = NEW.id) THEN
+    RETURN NEW;
+  END IF;
 
-  -- Pastikan username unik di profiles (apabila bentrok tambahkan suffix random)
-  WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = v_username) LOOP
-    v_username := 'user_' || substr(md5(random()::text), 1, 8);
-  END LOOP;
+  -- 2. Ambil username dari metadata jika ada
+  v_username := NEW.raw_user_meta_data->>'username';
+
+  -- 3. Jika tidak ada (misal Google OAuth), generate dari email prefix
+  IF v_username IS NULL OR char_length(trim(v_username)) < 3 THEN
+    v_base_username := lower(regexp_replace(split_part(NEW.email, '@', 1), '[^a-zA-Z0-9_]', '', 'g'));
+    IF char_length(v_base_username) < 3 THEN
+      v_base_username := 'user_' || v_base_username;
+    END IF;
+    v_username := v_base_username;
+
+    -- Jika username sudah dipakai orang lain, tambahkan angka random
+    WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = v_username) LOOP
+      v_username := v_base_username || floor(1000 + random() * 9000)::text;
+      v_counter := v_counter + 1;
+      IF v_counter > 50 THEN
+        v_username := 'user_' || substr(md5(random()::text), 1, 8);
+        EXIT;
+      END IF;
+    END LOOP;
+  ELSE
+    WHILE EXISTS (SELECT 1 FROM public.profiles WHERE username = v_username) LOOP
+      v_username := v_username || floor(1000 + random() * 9000)::text;
+    END LOOP;
+  END IF;
 
   -- Sisipkan ke public.profiles
   INSERT INTO public.profiles (id, username, email)
-  VALUES (NEW.id, v_username, NEW.email);
+  VALUES (NEW.id, v_username, NEW.email)
+  ON CONFLICT (id) DO NOTHING;
 
   -- Inisialisasi progres default untuk level 1
   PERFORM public.initialize_user_progress(NEW.id);

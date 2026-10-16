@@ -4,6 +4,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Google OAuth Authentication:**
+  - Integrated Google Sign-In using Supabase OAuth on landing page (`src/app/page.tsx`).
+  - Added dedicated OAuth callback handler at `/auth/callback` (`src/app/auth/callback/page.tsx`).
+  - Updated database trigger `public.on_auth_user_created()` to extract and sanitize username from email prefix when signing up via Google.
+
 ### Fixed
 - **GaniKani Lesson & Review UX & Layout Alignment:**
   - **Navbar Hiding**: In `src/app/ganikani/layout.tsx`, hidden the top navigation bar when on `/ganikani/lesson` and `/ganikani/review` routes so the quiz session is distraction-free.
