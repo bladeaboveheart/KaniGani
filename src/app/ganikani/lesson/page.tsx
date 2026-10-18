@@ -195,6 +195,21 @@ export default function GanikaniLessonPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [phase, isAnswerSubmitted, isCorrect, showItemInfo, activeQuizItem, quizQueue, requeuedItems, userInput]);
 
+  // Global keyboard shortcuts for Completed Phase (Enter to load next lessons)
+  useEffect(() => {
+    if (phase !== 'completed') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        loadLessons();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [phase]);
+
   // Submit Answer in Quiz Phase
   const handleQuizSubmit = () => {
     if (!activeQuizItem || isAnswerSubmitted) return;
@@ -304,7 +319,7 @@ export default function GanikaniLessonPage() {
             Tidak Ada Lesson Tersedia
           </h2>
           <p className="text-text-secondary text-sm leading-relaxed">
-            Semua kosakata yang memenuhi syarat sudah kamu pelajari di GaniKani, atau belum ada kosakata baru di KaniGani yang mencapai tingkat Guru.
+            Semua kosakata yang memenuhi syarat sudah kamu pelajari di GaniKani.
           </p>
         </div>
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -338,7 +353,7 @@ export default function GanikaniLessonPage() {
             Lesson Selesai!
           </h2>
           <p className="text-text-secondary text-sm">
-            {items.length} kosakata baru berhasil diaktifkan ke dalam sistem SRS GaniKani (Stage 1 / Apprentice 1). Ulasan pertamamu akan siap dalam 4 jam ke depan.
+            {items.length} kosakata baru berhasil diaktifkan ke dalam sistem SRS GaniKani.
           </p>
         </div>
 
@@ -361,10 +376,14 @@ export default function GanikaniLessonPage() {
 
         <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
+            type="button"
             onClick={loadLessons}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-all shadow-md shadow-amber-500/20 cursor-pointer"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm transition-all shadow-md shadow-amber-500/20 cursor-pointer flex items-center justify-center space-x-2"
           >
-            Lanjut Lesson Berikutnya
+            <span>Lanjut Lesson Berikutnya</span>
+            <kbd className="px-1.5 py-0.5 rounded-md bg-white/20 text-white text-[11px] font-black tracking-wider uppercase border border-white/20 shadow-xs">
+              Enter
+            </kbd>
           </button>
           <Link
             href="/ganikani"
