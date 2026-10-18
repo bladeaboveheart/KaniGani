@@ -4,6 +4,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Database Meanings Overhaul (Full Database 100% Complete: Levels 1–60):**
+  - **Batch 1 (Levels 1–20)**: Standardized 112 items (32 kanji, 80 vocabulary) to have strictly one concise Primary Meaning.
+  - **Batch 2 (Levels 21–30)**: Standardized 463 items (4 radicals, 116 kanji, 343 vocabulary) to have strictly one concise Primary Meaning.
+  - **Batch 3 (Levels 31–39)**: Standardized 807 items (2 radicals, 168 kanji, 637 vocabulary) to have strictly one concise Primary Meaning (e.g., `'房'` $\rightarrow$ `'Tandan'` & `'Tandan Buah'`, `'内偵'` $\rightarrow$ `'Penyelidikan Rahasia'`).
+  - **Overall Impact**: Exactly **1,382 items** across all 60 levels evaluated and re-translated. Every item in the KaniGani database now has strictly **one clean Primary Meaning** without slashes (`/`), commas (`,`), or clutter.
+  - Migrated all secondary and alternative definitions into `item_meanings` with `primary_meaning = false` and `accepted_answer = true`, preserving 100% of review acceptance and user synonyms.
+  - Synchronized all `items.slug` to match their new primary meanings.
+  - Database integrity verified: **0 items** remaining with multi-meaning slashes or commas across all 60 levels.
+
 ### Added
 - **Google OAuth Authentication:**
   - Integrated Google Sign-In using Supabase OAuth on landing page (`src/app/page.tsx`).

@@ -11,9 +11,9 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: 'KaniGani — Belajar Karakter Jepang Berbahasa Indonesia',
+  title: 'KaniGani — Belajar Kanji dengan Sistem SRS',
   description:
-    'Aplikasi klon KaniGani terjemahan Bahasa Indonesia. Kuasai Kanji Jepang melalui alur linear Radical -> Kanji -> Kosakata dengan algoritma Spaced Repetition System (SRS) yang terbukti cerdas dan aman.',
+    'Aplikasi belajar Kanji dengan Sistem Spaced Repetition (SRS) yang ditujukan untuk orang Indonesia',
   keywords: 'kanigani, kanji, bahasa indonesia, bahasa jepang, srs, spaced repetition, belajar jepang, vocabulary, radical',
   icons: {
     icon: [

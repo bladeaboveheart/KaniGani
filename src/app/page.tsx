@@ -191,9 +191,6 @@ export default function AuthPage() {
           <span className="text-2xl sm:text-3xl font-black tracking-wider bg-gradient-to-r from-rose-500 via-pink-500 to-indigo-500 bg-clip-text text-transparent">
             KaniGani
           </span>
-          <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-bold border border-rose-500/20">
-            Bahasa Indonesia
-          </span>
         </div>
         <ThemeToggle />
       </header>
