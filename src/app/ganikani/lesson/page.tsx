@@ -695,7 +695,7 @@ export default function GanikaniLessonPage() {
 
             {/* Prompt Strip */}
             <div className="w-full py-2.5 border-b border-card-border flex items-center justify-center text-xs font-semibold tracking-wider uppercase select-none bg-card-muted/60 text-text-secondary">
-              <span>Ketik Cara Baca <span className="font-black text-text-primary">Kosakata</span> (Kana)</span>
+              <span>Ketik Cara Baca <span className="font-black text-text-primary">Kosakata</span></span>
             </div>
 
             {/* Input Area with Integrated Arrow Submit Button */}
@@ -709,7 +709,7 @@ export default function GanikaniLessonPage() {
                       ? isCorrect
                         ? 'Benar! Tekan Enter atau Panah Kanan untuk lanjut'
                         : 'Salah! Tekan Enter untuk lanjut atau Undo'
-                      : 'Ketik bacaan Kana (romaji otomatis)...'
+                      : '答え'
                   }
                   value={userInput}
                   onChange={(e) => {
@@ -733,7 +733,7 @@ export default function GanikaniLessonPage() {
                     }
                   }}
                   readOnly={isAnswerSubmitted}
-                  className={`w-full py-3.5 pl-6 pr-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent ${
+                  className={`w-full py-3.5 px-14 rounded-2xl text-center text-lg font-bold border shadow-xs transition-all focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-transparent ${
                     isAnswerSubmitted
                       ? isCorrect
                         ? 'bg-emerald-500/15 border-emerald-500 text-emerald-600 dark:text-emerald-400'

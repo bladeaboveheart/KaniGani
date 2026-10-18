@@ -27,6 +27,10 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Updated database trigger `public.on_auth_user_created()` to extract and sanitize username from email prefix when signing up via Google.
 
 ### Fixed
+- **GaniKani Lesson & Review Quiz Input Horizontal Centering:**
+  - Rebalanced input padding from asymmetrical `pl-6 pr-14` (24px left vs 56px right) to balanced `px-14` (56px both sides) in `src/app/ganikani/lesson/page.tsx` and `src/app/ganikani/review/page.tsx`.
+  - Placeholder (`答え`), typed kana, and feedback messages are now mathematically and visually centered with 100% precision relative to the card container, with safe clearance away from the absolute submit arrow button.
+  - Aligned prompt strip text and updated review placeholder to match `'答え'`.
 - **GaniKani Lesson & Review UX & Layout Alignment:**
   - **Navbar Hiding**: In `src/app/ganikani/layout.tsx`, hidden the top navigation bar when on `/ganikani/lesson` and `/ganikani/review` routes so the quiz session is distraction-free.
   - **Top-Flush Card Boundary**: Changed `<main>` padding to `pt-0 px-0 sm:px-4` and card styling to `rounded-none sm:rounded-3xl border-x-0 sm:border-x border-t-0 sm:border-t`, making the card attach flush to the top edge of the screen seamlessly on mobile and desktop.
