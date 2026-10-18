@@ -18,6 +18,8 @@ import {
   Compass,
   ArrowLeft,
   Loader2,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -28,6 +30,8 @@ export default function GanikaniSettingsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
 
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
   const [settings, setSettings] = useState<GanikaniSettings>({
     user_id: '',
     follow: true,
@@ -36,6 +40,32 @@ export default function GanikaniSettingsPage() {
     auto_play_audio: false,
     keyboard_shortcuts: true,
   });
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      setTheme('dark');
+    } else {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'dark') {
+        setTheme('dark');
+      } else {
+        setTheme('light');
+      }
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setTheme('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setTheme('light');
+    }
+  };
 
   useEffect(() => {
     async function load() {
@@ -140,7 +170,64 @@ export default function GanikaniSettingsPage() {
         </div>
       )}
 
-      {/* 1. Follow WaniKani / KaniGani */}
+      {/* 1. Tampilan & Tema (Dark / Light Mode) */}
+      <div className="rounded-3xl border border-card-border bg-card p-6 sm:p-8 space-y-4 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start space-x-3.5">
+            <div className={`p-2.5 rounded-2xl transition-colors ${
+              theme === 'dark'
+                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+            }`}>
+              {theme === 'dark' ? (
+                <Moon className="w-5 h-5 animate-fade-in" />
+              ) : (
+                <Sun className="w-5 h-5 animate-fade-in" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <h3 className="font-bold text-base text-text-primary">
+                  Tampilan & Tema
+                </h3>
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  theme === 'dark'
+                    ? 'bg-indigo-500/15 text-indigo-400 border border-indigo-500/30'
+                    : 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30'
+                }`}>
+                  {theme === 'dark' ? 'Mode Gelap' : 'Mode Terang'}
+                </span>
+              </div>
+              <p className="text-xs text-text-secondary leading-relaxed">
+                Beralih antara mode tampilan gelap dan terang sesuai kenyamanan visual mata Anda saat belajar.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Toggle tema gelap atau terang"
+            className={`w-14 h-8 flex items-center rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out shrink-0 ${
+              theme === 'dark' ? 'bg-indigo-600' : 'bg-amber-500'
+            }`}
+          >
+            <div
+              className={`bg-white w-6 h-6 rounded-full shadow-md flex items-center justify-center transform transition-transform duration-200 ease-in-out ${
+                theme === 'dark' ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            >
+              {theme === 'dark' ? (
+                <Moon className="w-3.5 h-3.5 text-indigo-600" />
+              ) : (
+                <Sun className="w-3.5 h-3.5 text-amber-500" />
+              )}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Follow WaniKani / KaniGani */}
       <div className="rounded-3xl border border-card-border bg-card p-6 sm:p-8 space-y-6 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">

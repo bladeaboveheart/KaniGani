@@ -15,6 +15,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Database integrity verified: **0 items** remaining with multi-meaning slashes or commas across all 60 levels.
 
 ### Added
+- **GaniKani Dark / Light Mode Toggle in Settings:**
+  - Added dedicated "Tampilan & Tema" card in `src/app/ganikani/settings/page.tsx` with smooth Sun/Moon icon toggle switch and real-time status badge ("Mode Gelap" / "Mode Terang").
+  - Seamlessly toggles the global theme class on `document.documentElement` and persists preference in `localStorage.setItem('theme', ...)` without intrusive toast alerts.
 - **Google OAuth Authentication:**
   - Integrated Google Sign-In using Supabase OAuth on landing page (`src/app/page.tsx`).
   - Added dedicated OAuth callback handler at `/auth/callback` (`src/app/auth/callback/page.tsx`).
