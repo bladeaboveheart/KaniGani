@@ -11,7 +11,7 @@ import { getSrsLabel, getSrsColorClass } from '@/lib/srs';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import {
   BookOpen, Sparkles, Clock, Calendar, CheckCircle2,
-  Flame, ArrowUpRight, Shield, Zap, ChevronRight, FlaskConical
+  Flame, ArrowUpRight, Shield, Zap, ChevronRight, FlaskConical, SlidersHorizontal
 } from 'lucide-react';
 
 // Modularized Dashboard Components
@@ -21,6 +21,7 @@ import SrsDistribution from '@/components/dashboard/SrsDistribution';
 import LeaderboardCard from '@/components/dashboard/LeaderboardCard';
 import HeatmapCard from '@/components/dashboard/HeatmapCard';
 import LessonPickerModal from '@/components/dashboard/LessonPickerModal';
+import AdvancedReviewModal from '@/components/dashboard/AdvancedReviewModal';
 import LeechTrackerCard from '@/components/dashboard/LeechTrackerCard';
 import { SrsBadge } from '@/components/ui';
 
@@ -46,6 +47,7 @@ export default function Dashboard() {
   const [betaTester, setBetaTester] = useState<boolean>(false);
   const [selectedHourIdx, setSelectedHourIdx] = useState<number>(0);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [advancedReviewOpen, setAdvancedReviewOpen] = useState(false);
   const [selectedLessonIds, setSelectedLessonIds] = useState<string[]>([]);
   const [interleaveLessons, setInterleaveLessons] = useState(true);
 
@@ -310,6 +312,17 @@ export default function Dashboard() {
                     >
                       <Zap className={`w-4 h-4 ${resetting ? 'animate-spin' : ''}`} />
                       <span className="text-xs hidden sm:inline">{resetting ? 'Memproses...' : 'Percepat'}</span>
+                    </button>
+                  )}
+
+                  {devMode && (
+                    <button
+                      onClick={() => setAdvancedReviewOpen(true)}
+                      title="Advanced Review (Dev Mode)"
+                      className="min-h-[44px] px-3.5 sm:px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/20 text-white font-bold rounded-xl shadow-xs flex items-center space-x-1.5 transition-all duration-200 select-none cursor-pointer text-xs sm:text-sm"
+                    >
+                      <SlidersHorizontal className="w-4 h-4" />
+                      <span>Advanced</span>
                     </button>
                   )}
 
@@ -586,6 +599,15 @@ export default function Dashboard() {
           setInterleaveLessons={setInterleaveLessons}
           startCustomLesson={startCustomLesson}
           setPickerOpen={setPickerOpen}
+        />
+      )}
+
+      {/* Advanced Review Modal Component (Dev Mode) */}
+      {devMode && advancedReviewOpen && (
+        <AdvancedReviewModal
+          isOpen={advancedReviewOpen}
+          onClose={() => setAdvancedReviewOpen(false)}
+          userLevel={stats?.level || 1}
         />
       )}
     </div>

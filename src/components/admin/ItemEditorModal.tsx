@@ -615,7 +615,7 @@ export default function ItemEditorModal({
                         <select
                           value={r.reading_type || 'onyomi'}
                           onChange={(e) => updateReadingField(idx, 'reading_type', e.target.value)}
-                          className="w-full px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-3xs font-extrabold rounded-xl focus:outline-none"
+                          className="w-full px-2.5 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-3xs font-extrabold rounded-xl focus:outline-none "
                         >
                           <option value="onyomi">Onyomi</option>
                           <option value="kunyomi">Kunyomi</option>

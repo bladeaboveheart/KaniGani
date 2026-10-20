@@ -15,6 +15,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Database integrity verified: **0 items** remaining with multi-meaning slashes or commas across all 60 levels.
 
 ### Added
+- **Advanced Review Feature (Developer Mode):**
+  - Added dedicated **"Advanced"** button on the Dashboard Review card (`src/app/dashboard/page.tsx`), visible strictly when Developer Mode is active (`kanigani-dev-mode === true`).
+  - Implemented `AdvancedReviewModal` (`src/components/dashboard/AdvancedReviewModal.tsx`) allowing users to filter SRS due items by:
+    - **Level Range**: Min Level (1–60) to Max Level (1–60) with quick presets ("Level Saat Ini", "Semua (1–60)", "1–10", "11–20", "21–30", "31–40", "41–50", "51–60").
+    - **Item Category**: Independent toggle pill buttons for Radikal, Kanji, and Kosakata.
+    - **Real-Time Due Count Preview**: Dynamically fetches and displays the exact count of due items matching the filters in real time.
+  - Passes stateless URL search parameters (`/review?minLevel=X&maxLevel=Y&types=...`) ensuring sessions are reload-safe and bookmarkable.
+  - Updated `/review` query builder with `items!inner(level, type)` filter constraints, displaying an informative "Advanced Review" banner and customized empty state.
 - **GaniKani Lesson Completed Celebration Screen Enter Shortcut:**
   - Added global keyboard listener for `Enter` on `/ganikani/lesson` when `phase === 'completed'` to immediately trigger "Lanjut Lesson Berikutnya" without requiring a mouse click.
   - Added visual keyboard badge (`<kbd>Enter</kbd>`) directly inside the "Lanjut Lesson Berikutnya" button.
@@ -27,6 +35,22 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Updated database trigger `public.on_auth_user_created()` to extract and sanitize username from email prefix when signing up via Google.
 
 ### Fixed
+- **Unfocused 'Enter' Keyboard Navigation & Submission in Review and Lesson Quiz:**
+  - Added global `onEnter` shortcut handler in `src/hooks/useQuizShortcuts.ts` and wired unified `handleEnterAction` in both Review (`src/app/review/page.tsx`) and Lesson Quiz (`src/app/lesson/page.tsx`).
+  - **Advancing Cards**: When an answer has been submitted (`isAnswerSubmitted === true`), pressing `Enter` or `ArrowRight` anywhere on the screen (even after opening the detail drawer with `F` or clicking outside the input box) immediately proceeds to the next quiz item and automatically refocuses the input box.
+  - **Submitting & Refocusing**: When an answer has not yet been submitted (`isAnswerSubmitted === false`):
+    - If the input contains text (or Developer Mode auto-answer is triggered), pressing `Enter` outside the input box submits the answer and refocuses.
+    - If the input is empty, pressing `Enter` seamlessly refocuses the input field so the user can immediately continue typing without reaching for the mouse.
+  - Safe guards prevent intercepting keystrokes when the user is actively typing in editable fields (e.g. synonym editor inputs or notes).
+- **Review Page Statement Timeout & Missing Database Indexes (Level 60 Admin Override):**
+  - **Database Index Optimization**: Fixed PostgreSQL statement timeout (`57014`) when loading reviews for accounts with massive review queues (9,000+ items).
+    - Added missing index `idx_item_context_sentences_item_id` on `public.item_context_sentences(item_id)`: previously, PostgREST nested queries executed a full table sequential scan across 16,600+ sentence rows for every single reviewed item.
+    - Added composite index `idx_user_progress_review_lookup` on `public.user_progress(user_id, srs_stage, next_review)` and `idx_user_progress_next_review` on `public.user_progress(user_id, next_review)` for fast SRS due-date filtering and sorting.
+    - Query latency dropped from statement timeout failure (>8s) down to ~15ms for standard 100-item review batches.
+  - **Review Page Robust Error & Loading States**:
+    - Updated `src/app/review/page.tsx` with proper error logging capturing complete PostgREST error messages instead of printing empty objects (`{}`).
+    - Added dedicated full-screen loading spinner and animated feedback while review sessions load.
+    - Added an error alert view with a "Coba Lagi" retry button and "Dashboard" fallback, eliminating blank-screen freezes.
 - **GaniKani Lesson & Review Quiz Input Horizontal Centering:**
   - Rebalanced input padding from asymmetrical `pl-6 pr-14` (24px left vs 56px right) to balanced `px-14` (56px both sides) in `src/app/ganikani/lesson/page.tsx` and `src/app/ganikani/review/page.tsx`.
   - Placeholder (`答え`), typed kana, and feedback messages are now mathematically and visually centered with 100% precision relative to the card container, with safe clearance away from the absolute submit arrow button.

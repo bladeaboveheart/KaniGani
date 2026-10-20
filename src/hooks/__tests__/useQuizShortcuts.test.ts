@@ -26,6 +26,7 @@ describe('useQuizShortcuts handler logic', () => {
     onToggleInfo?: () => void;
     onAdvance?: () => void;
     onPlayAudio?: () => void;
+    onEnter?: () => void;
   }) => {
     const handleKeyDown = (e: any) => {
       const target = e.target;
@@ -35,6 +36,24 @@ describe('useQuizShortcuts handler logic', () => {
         !target.hasAttribute?.('readonly');
 
       if (isInputActive) {
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation?.();
+        if (options.onEnter) {
+          options.onEnter();
+        } else if (options.isAnswerSubmitted && options.onAdvance) {
+          options.onAdvance();
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowRight' && options.isAnswerSubmitted && options.onAdvance) {
+        e.preventDefault();
+        e.stopPropagation?.();
+        options.onAdvance();
         return;
       }
 
@@ -174,6 +193,52 @@ describe('useQuizShortcuts handler logic', () => {
     expect(preventDefault3).not.toHaveBeenCalled();
     expect(preventDefault4).not.toHaveBeenCalled();
     expect(preventDefault5).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('triggers onEnter when Enter is pressed even if unfocused, but not when typing in input', () => {
+    const onEnter = vi.fn();
+
+    const cleanup = createHandler({
+      isAnswerSubmitted: false,
+      onEnter,
+    });
+
+    const preventDefault1 = vi.fn();
+    listeners['keydown']?.({ key: 'Enter', preventDefault: preventDefault1 });
+    expect(onEnter).toHaveBeenCalledTimes(1);
+    expect(preventDefault1).toHaveBeenCalledTimes(1);
+
+    const mockEditableInput = {
+      tagName: 'INPUT',
+      hasAttribute: (attr: string) => false,
+    };
+    const preventDefault2 = vi.fn();
+    listeners['keydown']?.({ key: 'Enter', target: mockEditableInput, preventDefault: preventDefault2 });
+    expect(onEnter).toHaveBeenCalledTimes(1); // Still 1, not called again
+    expect(preventDefault2).not.toHaveBeenCalled();
+
+    cleanup();
+  });
+
+  it('triggers onAdvance when ArrowRight or Enter (fallback without onEnter) is pressed and isAnswerSubmitted is true', () => {
+    const onAdvance = vi.fn();
+
+    const cleanup = createHandler({
+      isAnswerSubmitted: true,
+      onAdvance,
+    });
+
+    const preventDefault1 = vi.fn();
+    listeners['keydown']?.({ key: 'Enter', preventDefault: preventDefault1 });
+    expect(onAdvance).toHaveBeenCalledTimes(1);
+    expect(preventDefault1).toHaveBeenCalledTimes(1);
+
+    const preventDefault2 = vi.fn();
+    listeners['keydown']?.({ key: 'ArrowRight', preventDefault: preventDefault2 });
+    expect(onAdvance).toHaveBeenCalledTimes(2);
+    expect(preventDefault2).toHaveBeenCalledTimes(1);
 
     cleanup();
   });

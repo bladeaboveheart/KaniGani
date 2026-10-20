@@ -37,7 +37,7 @@ export default function QuizSummaryView({
 
   return (
     <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl p-8 text-center space-y-6 animate-fade-in my-12 select-none">
-      <Award className={`w-16 h-16 mx-auto animate-bounce ${isLesson ? 'text-teal-500' : 'text-pink-500'}`} />
+      <Award className={`w-16 h-16 mx-auto ${isLesson ? 'text-teal-500' : 'text-pink-500'}`} />
 
       <div className="space-y-1">
         <h2 className="text-2xl font-black">

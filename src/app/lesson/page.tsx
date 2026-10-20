@@ -157,14 +157,6 @@ export default function LessonPage() {
     }
   }, [phase, currentItem, activeCard]);
 
-  // Keyboard shortcut hook
-  useQuizShortcuts({
-    onToggleInfo: toggleItemInfo,
-    onAdvance: () => proceedNext(),
-    isAnswerSubmitted: phase === 'quiz' && isAnswerSubmitted,
-    onPlayAudio: playCurrentAudio,
-  });
-
   // Read global dev mode setting
   useEffect(() => {
     setTimeout(() => {
@@ -552,46 +544,54 @@ export default function LessonPage() {
     }, 20);
   };
 
-  const handleQuizSubmitAction = () => {
+  const handleEnterAction = () => {
+    if (phase !== 'quiz') return;
     if (!isAnswerSubmitted) {
-      if (userInput.trim() !== '') {
+      if (devMode && userInput.trim() === '') {
+        setUserInput(getDevModeAnswer());
+        setTimeout(() => {
+          submitAnswer();
+          inputRef.current?.focus();
+        }, 20);
+      } else if (userInput.trim() !== '') {
         submitAnswer();
         setTimeout(() => {
           inputRef.current?.focus();
         }, 20);
+      } else {
+        // Kotak input masih kosong: kembalikan fokus ke kotak jawaban
+        inputRef.current?.focus();
       }
     } else {
       handleProceedNext();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 20);
     }
+  };
+
+  const handleQuizSubmitAction = () => {
+    handleEnterAction();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (!isAnswerSubmitted) {
-        if (devMode && userInput.trim() === '') {
-          setUserInput(getDevModeAnswer());
-          setTimeout(() => {
-            submitAnswer();
-            inputRef.current?.focus();
-          }, 20);
-        } else if (userInput.trim() !== '') {
-          submitAnswer();
-          setTimeout(() => {
-            inputRef.current?.focus();
-          }, 20);
-        }
-      } else {
-        handleProceedNext();
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 20);
-      }
+      handleEnterAction();
     } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
       e.preventDefault();
       toggleItemInfo();
     }
   };
+
+  // Keyboard shortcut hook
+  useQuizShortcuts({
+    onToggleInfo: toggleItemInfo,
+    onAdvance: () => handleProceedNext(),
+    onEnter: handleEnterAction,
+    isAnswerSubmitted: phase === 'quiz' && isAnswerSubmitted,
+    onPlayAudio: playCurrentAudio,
+  });
 
   // Focus input automatically (skip on mobile)
   useEffect(() => {

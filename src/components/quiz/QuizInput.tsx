@@ -66,8 +66,8 @@ export default function QuizInput({
           type="text"
           placeholder={
             cardType === 'meaning'
-              ? 'Ketik arti ...'
-              : 'Ketik bacaan ...'
+              ? '答え'
+              : '答え'
           }
           value={userInput}
           onChange={handleInputChange}

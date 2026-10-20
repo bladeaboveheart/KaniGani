@@ -6,6 +6,7 @@ interface QuizShortcutsOptions {
   onToggleInfo?: () => void;
   onAdvance?: () => void;
   onPlayAudio?: () => void;
+  onEnter?: () => void;
   isAnswerSubmitted?: boolean;
 }
 
@@ -13,6 +14,7 @@ export function useQuizShortcuts({
   onToggleInfo,
   onAdvance,
   onPlayAudio,
+  onEnter,
   isAnswerSubmitted,
 }: QuizShortcutsOptions) {
   useEffect(() => {
@@ -25,6 +27,26 @@ export function useQuizShortcuts({
         !target.hasAttribute('readonly');
 
       if (isInputActive) {
+        return;
+      }
+
+      // Enter key shortcut when focus is outside the input box
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (onEnter) {
+          onEnter();
+        } else if (isAnswerSubmitted && onAdvance) {
+          onAdvance();
+        }
+        return;
+      }
+
+      // ArrowRight shortcut to advance when answer is submitted and not typing
+      if (e.key === 'ArrowRight' && isAnswerSubmitted && onAdvance) {
+        e.preventDefault();
+        e.stopPropagation();
+        onAdvance();
         return;
       }
 
@@ -48,5 +70,5 @@ export function useQuizShortcuts({
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [onToggleInfo, onAdvance, onPlayAudio, isAnswerSubmitted]);
+  }, [onToggleInfo, onAdvance, onPlayAudio, onEnter, isAnswerSubmitted]);
 }

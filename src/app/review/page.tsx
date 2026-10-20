@@ -9,7 +9,7 @@ import { Item, SimilarKanji } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
-import { Flame, ShieldAlert } from 'lucide-react';
+import { Flame, ShieldAlert, AlertTriangle, RotateCcw, ArrowLeft, SlidersHorizontal } from 'lucide-react';
 
 // Modular Quiz Components
 import QuizHeader from '@/components/quiz/QuizHeader';
@@ -26,6 +26,18 @@ function ReviewPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const isLeechMode = searchParams.get('mode') === 'leech';
+
+  // Advanced Review Filters (Dev Mode)
+  const minLevelParam = searchParams.get('minLevel');
+  const maxLevelParam = searchParams.get('maxLevel');
+  const typesParam = searchParams.get('types');
+  const minLevel = minLevelParam ? parseInt(minLevelParam, 10) : null;
+  const maxLevel = maxLevelParam ? parseInt(maxLevelParam, 10) : null;
+  const filterTypes = typesParam ? typesParam.split(',').map((s) => s.trim()).filter(Boolean) : null;
+  const isAdvancedFilter = (minLevel !== null && !isNaN(minLevel)) ||
+                           (maxLevel !== null && !isNaN(maxLevel)) ||
+                           (filterTypes !== null && filterTypes.length > 0 && filterTypes.length < 3);
+
   const { getAndResetSeconds } = useActiveTimer();
 
   // Zustand Store
@@ -56,6 +68,7 @@ function ReviewPageContent() {
   } = useQuizStore();
 
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [phase, setPhase] = useState<'quiz' | 'summary'>('quiz');
   const [totalItemsCount, setTotalItemsCount] = useState(0);
   const [totalDueCount, setTotalDueCount] = useState(0);
@@ -136,18 +149,11 @@ function ReviewPageContent() {
     }
   }, [activeCard]);
 
-  // Keyboard shortcut handler
-  useQuizShortcuts({
-    onToggleInfo: toggleItemInfo,
-    onAdvance: () => handleProceedNext(),
-    onPlayAudio: playCurrentAudio,
-    isAnswerSubmitted,
-  });
-
   // Fetch reviews due using PostgREST nested relational query
   const loadReviews = useCallback(async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/');
@@ -195,13 +201,24 @@ function ReviewPageContent() {
         const now = new Date().toISOString();
 
         // 1. Hitung total review yang jatuh tempo di server
-        const { count: dueCount, error: countError } = await supabase
+        const effectiveMin = minLevel !== null && !isNaN(minLevel) ? minLevel : null;
+        const effectiveMax = maxLevel !== null && !isNaN(maxLevel) ? maxLevel : null;
+
+        let countQuery = supabase
           .from('user_progress')
-          .select('*', { count: 'exact', head: true })
+          .select(isAdvancedFilter ? 'item_id, items!inner(level, type)' : '*', { count: 'exact', head: true })
           .eq('user_id', user.id)
           .gte('srs_stage', 1)
           .lte('srs_stage', 8)
           .lte('next_review', now);
+
+        if (isAdvancedFilter) {
+          if (effectiveMin !== null) countQuery = countQuery.gte('items.level', effectiveMin);
+          if (effectiveMax !== null) countQuery = countQuery.lte('items.level', effectiveMax);
+          if (filterTypes && filterTypes.length > 0) countQuery = countQuery.in('items.type', filterTypes);
+        }
+
+        const { count: dueCount, error: countError } = await countQuery;
 
         if (countError) throw countError;
         const totalDue = dueCount || 0;
@@ -227,11 +244,12 @@ function ReviewPageContent() {
 
         // 2. Ambil data batch menggunakan PostgREST nested relational query
         // Mengambil semua relasi meanings, readings, audios, dan sentences dalam 1 query terpadu tanpa URL query panjang
-        const { data, error } = await supabase
+        const itemsRelation = isAdvancedFilter ? 'items!inner' : 'items';
+        let batchQuery = supabase
           .from('user_progress')
           .select(`
             item_id, srs_stage, next_review,
-            items (
+            ${itemsRelation} (
               id, character, slug, level, type, lesson_position,
               parts_of_speech, meaning_mnemonic, reading_mnemonic,
               item_meanings (*),
@@ -246,6 +264,14 @@ function ReviewPageContent() {
           .lte('next_review', now)
           .order('next_review', { ascending: true })
           .limit(currentBatchLimit);
+
+        if (isAdvancedFilter) {
+          if (effectiveMin !== null) batchQuery = batchQuery.gte('items.level', effectiveMin);
+          if (effectiveMax !== null) batchQuery = batchQuery.lte('items.level', effectiveMax);
+          if (filterTypes && filterTypes.length > 0) batchQuery = batchQuery.in('items.type', filterTypes);
+        }
+
+        const { data, error } = await batchQuery;
 
         if (error) throw error;
         if (!data || data.length === 0) {
@@ -388,12 +414,14 @@ function ReviewPageContent() {
           }
         }, 50);
       }
-    } catch (err) {
-      console.error('Error fetching reviews:', err);
+    } catch (err: any) {
+      const msg = err?.message || err?.error_description || (typeof err === 'object' && Object.keys(err).length > 0 ? JSON.stringify(err) : String(err));
+      console.error('Error fetching reviews:', msg, err);
+      setErrorMessage(msg || 'Gagal memuat sesi review. Silakan periksa koneksi Anda dan coba lagi.');
     } finally {
       setLoading(false);
     }
-  }, [isLeechMode, router, initializeSession]);
+  }, [isLeechMode, router, initializeSession, minLevel, maxLevel, typesParam, isAdvancedFilter]);
 
   useEffect(() => {
     loadReviews();
@@ -416,41 +444,7 @@ function ReviewPageContent() {
   };
 
   const handleQuizSubmitAction = () => {
-    if (!isAnswerSubmitted) {
-      if (userInput.trim() !== '') {
-        submitAnswer();
-      }
-    } else {
-      handleProceedNext();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!isAnswerSubmitted) {
-        if (devMode && userInput.trim() === '') {
-          setUserInput(getDevModeAnswer());
-          setTimeout(() => {
-            submitAnswer();
-            inputRef.current?.focus();
-          }, 20);
-        } else if (userInput.trim() !== '') {
-          submitAnswer();
-          setTimeout(() => {
-            inputRef.current?.focus();
-          }, 20);
-        }
-      } else {
-        handleProceedNext();
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 20);
-      }
-    } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
-      e.preventDefault();
-      toggleItemInfo();
-    }
+    handleEnterAction();
   };
 
   const handleProceedNext = async () => {
@@ -517,6 +511,50 @@ function ReviewPageContent() {
       }
     }, 50);
   };
+
+  const handleEnterAction = () => {
+    if (!isAnswerSubmitted) {
+      if (devMode && userInput.trim() === '') {
+        setUserInput(getDevModeAnswer());
+        setTimeout(() => {
+          submitAnswer();
+          inputRef.current?.focus();
+        }, 20);
+      } else if (userInput.trim() !== '') {
+        submitAnswer();
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 20);
+      } else {
+        // Kotak input masih kosong: kembalikan fokus ke kotak jawaban
+        inputRef.current?.focus();
+      }
+    } else {
+      handleProceedNext();
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 20);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleEnterAction();
+    } else if (isAnswerSubmitted && (e.key === 'f' || e.key === 'F')) {
+      e.preventDefault();
+      toggleItemInfo();
+    }
+  };
+
+  // Keyboard shortcut handler
+  useQuizShortcuts({
+    onToggleInfo: toggleItemInfo,
+    onAdvance: () => handleProceedNext(),
+    onEnter: handleEnterAction,
+    onPlayAudio: playCurrentAudio,
+    isAnswerSubmitted,
+  });
 
   // Focus input automatically (skip on mobile)
   useEffect(() => {
@@ -627,6 +665,76 @@ function ReviewPageContent() {
     ? Math.round((accuracyStats.correct / (accuracyStats.correct + accuracyStats.wrong)) * 100)
     : 100;
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <CrabBackground />
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 animate-pulse">
+            Memuat sesi review...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 p-4">
+        <CrabBackground />
+        <div className="relative z-10 max-w-md w-full bg-white dark:bg-slate-900 p-6 rounded-3xl border border-rose-200 dark:border-rose-900/50 shadow-xl text-center space-y-4">
+          <div className="w-14 h-14 bg-rose-100 dark:bg-rose-950/60 text-rose-500 rounded-2xl flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">Gagal Memuat Review</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400 break-words">{errorMessage}</p>
+          <div className="flex gap-3 pt-2">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" /> Dashboard
+            </button>
+            <button
+              onClick={() => loadReviews()}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" /> Coba Lagi
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (phase === 'quiz' && !activeCard && totalDueCount === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-900 dark:bg-slate-950 p-4">
+        <CrabBackground />
+        <div className="relative z-10 max-w-md w-full bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl text-center space-y-4">
+          <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto">
+            <Flame className="w-7 h-7" />
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">
+            {isAdvancedFilter ? 'Tidak Ada Review Sesuai Filter' : 'Semua Review Selesai!'}
+          </h2>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {isAdvancedFilter
+              ? `Tidak ada item jatuh tempo untuk filter Level ${minLevel || 1}–${maxLevel || 60} (${filterTypes ? filterTypes.join(', ') : 'semua tipe'}).`
+              : 'Tidak ada item review yang jatuh tempo saat ini. Kerja bagus!'}
+          </p>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full py-2.5 px-4 rounded-xl bg-pink-500 hover:bg-pink-600 text-white text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+          >
+            Kembali ke Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col relative bg-slate-50 text-slate-900 dark:bg-slate-950 transition-colors duration-300">
       <CrabBackground />
@@ -660,12 +768,7 @@ function ReviewPageContent() {
 
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[420px] flex flex-col justify-start">
-              {isLeechMode && (
-                <div className="w-full bg-rose-500/15 dark:bg-rose-950/60 border-b border-rose-500/30 py-2 px-4 text-center text-xs text-rose-600 dark:text-rose-400 font-bold flex items-center justify-center space-x-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0 text-rose-500" />
-                  <span>Mode Latihan Leech (Self-Study) — Penguatan materi tanpa mengubah jadwal SRS resmi</span>
-                </div>
-              )}
+              
               {/* Header Colorful Character with Integrated Navbar */}
               <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
                 <QuizHeader
@@ -674,7 +777,17 @@ function ReviewPageContent() {
                       router.push('/dashboard');
                     }
                   }}
-                  title={isLeechMode ? 'Latihan Leech' : totalDueCount > totalItemsCount ? `Batch ${totalItemsCount} Item` : 'Review'}
+                  title={
+                    isLeechMode
+                      ? 'Latihan Leech'
+                      : isAdvancedFilter
+                      ? totalDueCount > totalItemsCount
+                        ? `Batch ${totalItemsCount} (Filter ${totalDueCount})`
+                        : `Advanced Review (${totalDueCount} Item)`
+                      : totalDueCount > totalItemsCount
+                      ? `Batch ${totalItemsCount} Item`
+                      : 'Review'
+                  }
                   accuracyPct={accuracyPct}
                   completedCount={submittedItemIds.length}
                   remainingCount={displayRemainingReviews}

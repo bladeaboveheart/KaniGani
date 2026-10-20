@@ -35,12 +35,7 @@ export default function QuizHeader({
       </button>
 
       <div className="flex items-center space-x-4 text-xs sm:text-sm font-bold text-white/90">
-        {title && (
-          <span className="hidden sm:inline-flex items-center px-2 py-0.5 bg-black/25 rounded-lg text-xs font-semibold text-white/90 border border-white/10">
-            {title}
-          </span>
-        )}
-
+        
         {/* Accuracy stats - Reviews only */}
         {accuracyPct !== null && (
           <div className="flex items-center space-x-1" title="Akurasi Sesi">
