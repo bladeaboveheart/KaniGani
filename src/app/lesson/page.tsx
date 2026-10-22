@@ -410,13 +410,19 @@ export default function LessonPage() {
         // Phase 2: Asynchronous background fetch of heavy drawer data (sentences, prereqs, similar kanji)
         (async () => {
           try {
-            const [sentencesRes, prereqsRes, itemPrereqsRes, similarRes] = await Promise.all([
+            const [sentencesRes, prereqsRes, kanjiDependentsRes, itemPrereqsRes, similarRes] = await Promise.all([
               supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
               radicalIds.length > 0
                 ? supabase
                     .from('item_prerequisites')
                     .select('requires_item_id, items!item_id(id, character, slug, level, type)')
                     .in('requires_item_id', radicalIds)
+                : Promise.resolve({ data: [] }),
+              kanjiIds.length > 0
+                ? supabase
+                    .from('item_prerequisites')
+                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                    .in('requires_item_id', kanjiIds)
                 : Promise.resolve({ data: [] }),
               (kanjiIds.length > 0 || vocabIds.length > 0)
                 ? supabase
@@ -449,6 +455,7 @@ export default function LessonPage() {
 
             const sentences = sentencesRes.data || [];
             const prereqs = prereqsRes.data || [];
+            const kanjiDependents = kanjiDependentsRes.data || [];
             const itemPrereqs = itemPrereqsRes.data || [];
 
             // Map radical kanji dependencies
@@ -464,6 +471,21 @@ export default function LessonPage() {
 
             kanjisMap.forEach((list) => {
               list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
+            });
+
+            // Map kanji vocab dependencies
+            const vocabsMap = new Map<string, any[]>();
+            kanjiDependents.forEach((row: any) => {
+              const reqId = row.requires_item_id;
+              const vocabItem = row.items;
+              if (vocabItem && vocabItem.type === 'vocabulary') {
+                if (!vocabsMap.has(reqId)) vocabsMap.set(reqId, []);
+                vocabsMap.get(reqId)!.push(vocabItem);
+              }
+            });
+
+            vocabsMap.forEach((list) => {
+              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
             });
 
             // Map radicals composed in kanji AND kanjis composed in vocabularies
@@ -518,6 +540,7 @@ export default function LessonPage() {
                 ? (vocabKanjisMap.get(item.id) || [])
                 : item.kanjis,
               radicals: item.type === 'kanji' ? (radicalsMap.get(item.id) || []) : item.radicals,
+              vocabularies: item.type === 'kanji' ? (vocabsMap.get(item.id) || []) : item.vocabularies,
               similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : item.similar_kanjis,
             });
 

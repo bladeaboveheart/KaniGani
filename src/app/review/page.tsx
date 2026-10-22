@@ -348,20 +348,37 @@ function ReviewPageContent() {
       submittedIdsRef.current = new Set();
       setAccuracyStats({ correct: 0, wrong: 0 });
 
-      // Background prefetch: Prerequisites & Similar Kanji untuk drawer (batching kecil < 100 item)
+      // Background prefetch: Prerequisites, Dependents & Similar Kanji untuk drawer (batching kecil < 100 item)
       const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
       const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
+      const vocabIds = rawItems.filter((i: any) => i.type === 'vocabulary').map((i: any) => i.id);
 
-      if (radicalIds.length > 0 || kanjiIds.length > 0) {
+      if (radicalIds.length > 0 || kanjiIds.length > 0 || vocabIds.length > 0) {
         setTimeout(async () => {
           try {
-            const [prereqsRes, similarRes] = await Promise.all([
+            const [radicalPrereqsRes, kanjiDependentsRes, itemPrereqsRes, similarRes] = await Promise.all([
+              // 1. Radikal -> Kanjis (Ditemukan di Kanji)
               radicalIds.length > 0
                 ? supabase
                     .from('item_prerequisites')
                     .select('requires_item_id, items!item_id(id, character, slug, level, type)')
                     .in('requires_item_id', radicalIds)
                 : Promise.resolve({ data: [] }),
+              // 2. Kanji -> Vocabularies (Ditemukan di Kosakata)
+              kanjiIds.length > 0
+                ? supabase
+                    .from('item_prerequisites')
+                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
+                    .in('requires_item_id', kanjiIds)
+                : Promise.resolve({ data: [] }),
+              // 3. Kanji -> Radikals (Terdiri Dari Radikal) & Vocab -> Kanjis (Terdiri Dari Kanji)
+              (kanjiIds.length > 0 || vocabIds.length > 0)
+                ? supabase
+                    .from('item_prerequisites')
+                    .select('item_id, requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+                    .in('item_id', [...kanjiIds, ...vocabIds])
+                : Promise.resolve({ data: [] }),
+              // 4. Kanji -> Similar Kanji
               kanjiIds.length > 0
                 ? supabase
                     .from('item_similar_kanji')
@@ -378,14 +395,38 @@ function ReviewPageContent() {
                 : Promise.resolve({ data: [] }),
             ]);
 
-            const prereqs = prereqsRes.data || [];
             const kanjisMap = new Map<string, any[]>();
-            prereqs.forEach((row: any) => {
+            radicalPrereqsRes.data?.forEach((row: any) => {
               const reqId = row.requires_item_id;
               const kanjiItem = row.items;
               if (kanjiItem && kanjiItem.type === 'kanji') {
                 if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
                 kanjisMap.get(reqId)!.push(kanjiItem);
+              }
+            });
+
+            const vocabsMap = new Map<string, any[]>();
+            kanjiDependentsRes.data?.forEach((row: any) => {
+              const reqId = row.requires_item_id;
+              const vocabItem = row.items;
+              if (vocabItem && vocabItem.type === 'vocabulary') {
+                if (!vocabsMap.has(reqId)) vocabsMap.set(reqId, []);
+                vocabsMap.get(reqId)!.push(vocabItem);
+              }
+            });
+
+            const radicalsMap = new Map<string, any[]>();
+            const vocabKanjisMap = new Map<string, any[]>();
+            itemPrereqsRes.data?.forEach((row: any) => {
+              const parentId = row.item_id;
+              const childItem = row.items;
+              if (!childItem) return;
+              if (childItem.type === 'radical') {
+                if (!radicalsMap.has(parentId)) radicalsMap.set(parentId, []);
+                radicalsMap.get(parentId)!.push(childItem);
+              } else if (childItem.type === 'kanji') {
+                if (!vocabKanjisMap.has(parentId)) vocabKanjisMap.set(parentId, []);
+                vocabKanjisMap.get(parentId)!.push(childItem);
               }
             });
 
@@ -409,7 +450,14 @@ function ReviewPageContent() {
 
             initialItemsWithDetails.forEach(item => {
               if (item.type === 'radical') item.kanjis = kanjisMap.get(item.id) || [];
-              if (item.type === 'kanji') item.similar_kanjis = similarKanjiMap.get(item.id) || [];
+              if (item.type === 'kanji') {
+                item.radicals = radicalsMap.get(item.id) || [];
+                item.vocabularies = vocabsMap.get(item.id) || [];
+                item.similar_kanjis = similarKanjiMap.get(item.id) || [];
+              }
+              if (item.type === 'vocabulary') {
+                item.kanjis = vocabKanjisMap.get(item.id) || [];
+              }
             });
           } catch (bgErr) {
             console.warn('Background drawer enrich deferred:', bgErr);

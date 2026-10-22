@@ -7,8 +7,14 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 - **Contextual Collapsible Info Drawer in Review & Lesson Quiz (`QuizInfoDrawer.tsx`):**
   - **Context-Aware Default Expansion**: The detail drawer (`F` / "Tampilkan Info Detail") now intelligently expands only the relevant section matching the active quiz question (`cardType`):
-    - **Reading Quiz** (e.g. Kanji '八' asking for 'Bacaan Onyomi Kanji' or Vocab asking for Kana): Only the **Cara Baca** section is expanded by default. Sections for Meaning, Radical Relations, and Visually Similar Kanji appear as minimalist collapsible headers with chevrons, collapsed by default.
-    - **Meaning Quiz**: Only the **Arti & Mnemonic** section is expanded by default. Other sections (Cara Baca, Radical Relations, Visually Similar Kanji) are collapsed by default.
+    - **Reading Quiz** (e.g. Kanji '八' asking for 'Bacaan Onyomi Kanji' or Vocab asking for Kana): Only the **Cara Baca** section is expanded by default. Sections for Meaning, Relations, and Visually Similar Kanji appear as minimalist collapsible headers with chevrons, collapsed by default.
+    - **Meaning Quiz**: Only the **Arti & Mnemonic** section is expanded by default. Other sections (Cara Baca, Relations, Visually Similar Kanji) are collapsed by default.
+  - **Comprehensive Cross-Item Relations**:
+    - **Kanji Items**: Added **"Terdiri Dari Radikal"** (radicals composed in this kanji) and **"Ditemukan di Kosakata"** (vocabularies featuring this kanji).
+    - **Vocabulary Items**: Added **"Terdiri Dari Kanji"** (kanjis composed in this vocabulary).
+    - **Radical Items**: Maintained **"Ditemukan di Kanji"** (kanjis featuring this radical).
+    - **Pagination & Grid Display**: Relations display in responsive grids up to 8 items, with a smooth "Muat Lebih Banyak (+X)" and "Tampilkan Lebih Sedikit" toggle button for items with large relation counts.
+    - **Multi-Level Fallback & Background Prefetch**: Integrated background prefetching in `/review` and `/lesson` along with robust on-demand fallback queries in `QuizInfoDrawer` to ensure instant loading.
   - **Minimalist Interactive Headers**: Clean, uppercase section titles with arrow chevrons allowing users to toggle any section open or closed with a single click.
   - **State Reset**: Section expansion states cleanly reset on item or card transition (`[item?.id, cardType]`).
 - **Database Meanings Overhaul (Full Database 100% Complete: Levels 1–60):**

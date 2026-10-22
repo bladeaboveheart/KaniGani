@@ -34,6 +34,7 @@ export interface Item {
   // Related items
   kanjis?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[]; item_readings?: any[] }>;
   radicals?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[] }>;
+  vocabularies?: Array<{ id: string; character: string; slug?: string; level?: number; type?: string; item_meanings?: any[]; item_readings?: any[] }>;
   similar_kanjis?: SimilarKanji[];
 }
 

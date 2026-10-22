@@ -148,4 +148,60 @@ describe('QuizInfoDrawer Component', () => {
     expect(html).not.toContain('Mnemonic (Cara Baca)');
     expect(html).not.toContain('Bayangkan seseorang memakai topi hachi');
   });
+
+  it('renders Terdiri Dari Radikal and Ditemukan di Kosakata as collapsed headers by default for kanji', () => {
+    const kanjiWithRelations: Item = {
+      id: 'kj-8',
+      type: 'kanji',
+      character: '八',
+      slug: 'delapan',
+      level: 1,
+      lesson_position: 8,
+      primary_meaning: 'Delapan',
+      primary_reading: 'はち',
+      radicals: [
+        { id: 'rad-8', character: '八', slug: 'delapan', level: 1, type: 'radical' }
+      ],
+      vocabularies: [
+        { id: 'voc-80', character: '八つ', slug: 'delapan buah', level: 1, type: 'vocabulary' }
+      ]
+    };
+
+    const html = renderToStaticMarkup(
+      <QuizInfoDrawer item={kanjiWithRelations} cardType="meaning" />
+    );
+
+    // Header buttons should be present
+    expect(html).toContain('Terdiri Dari Radikal (1)');
+    expect(html).toContain('Ditemukan di Kosakata (1)');
+
+    // But inner elements are collapsed by default
+    expect(html).not.toContain('八つ');
+  });
+
+  it('renders Terdiri Dari Kanji as collapsed header by default for vocabulary', () => {
+    const vocabWithKanji: Item = {
+      id: 'voc-80',
+      type: 'vocabulary',
+      character: '八つ',
+      slug: 'delapan buah',
+      level: 1,
+      lesson_position: 8,
+      primary_meaning: 'Delapan buah',
+      primary_reading: 'やっつ',
+      kanjis: [
+        { id: 'kj-8', character: '八', slug: 'delapan', level: 1, type: 'kanji' }
+      ]
+    };
+
+    const html = renderToStaticMarkup(
+      <QuizInfoDrawer item={vocabWithKanji} cardType="reading" />
+    );
+
+    // Header button should be present
+    expect(html).toContain('Terdiri Dari Kanji (1)');
+
+    // But inner kanji cards are collapsed by default (slug 'delapan' in kanji card is not rendered)
+    expect(html).not.toContain('delapan');
+  });
 });

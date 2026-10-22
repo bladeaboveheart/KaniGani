@@ -7,6 +7,7 @@ import { ChevronDown, ChevronUp, Edit3 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
 import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
+import CharacterDisplay from '@/components/CharacterDisplay';
 
 import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
@@ -29,19 +30,32 @@ export default function QuizInfoDrawer({
   onSynonymAdded,
 }: QuizInfoDrawerProps) {
   const [showAllKanjis, setShowAllKanjis] = useState(false);
+  const [showAllRadicals, setShowAllRadicals] = useState(false);
+  const [showAllVocabs, setShowAllVocabs] = useState(false);
+
   const [fallbackSimilar, setFallbackSimilar] = useState<SimilarKanji[]>([]);
   const [fallbackAudios, setFallbackAudios] = useState<any[]>([]);
+  const [fallbackRadicals, setFallbackRadicals] = useState<any[]>([]);
+  const [fallbackVocabularies, setFallbackVocabularies] = useState<any[]>([]);
+  const [fallbackKanjis, setFallbackKanjis] = useState<any[]>([]);
 
   const [isMeaningExpanded, setIsMeaningExpanded] = useState(cardType === 'meaning' || item?.type === 'radical');
   const [isReadingExpanded, setIsReadingExpanded] = useState(cardType === 'reading');
   const [isKanjisExpanded, setIsKanjisExpanded] = useState(false);
+  const [isRadicalsExpanded, setIsRadicalsExpanded] = useState(false);
+  const [isVocabulariesExpanded, setIsVocabulariesExpanded] = useState(false);
   const [isSimilarExpanded, setIsSimilarExpanded] = useState(false);
 
   useEffect(() => {
     setIsMeaningExpanded(cardType === 'meaning' || item?.type === 'radical');
     setIsReadingExpanded(cardType === 'reading');
     setIsKanjisExpanded(false);
+    setIsRadicalsExpanded(false);
+    setIsVocabulariesExpanded(false);
     setIsSimilarExpanded(false);
+    setShowAllKanjis(false);
+    setShowAllRadicals(false);
+    setShowAllVocabs(false);
   }, [item?.id, cardType, item?.type]);
 
   const similarKanjis = (item?.similar_kanjis && item.similar_kanjis.length > 0)
@@ -52,11 +66,33 @@ export default function QuizInfoDrawer({
     ? item.audios
     : fallbackAudios;
 
+  const allRadicals = (item?.radicals && item.radicals.length > 0)
+    ? item.radicals
+    : fallbackRadicals;
+
+  const allVocabularies = (item?.vocabularies && item.vocabularies.length > 0)
+    ? item.vocabularies
+    : fallbackVocabularies;
+
+  const allKanjis = (item?.kanjis && item.kanjis.length > 0)
+    ? item.kanjis
+    : fallbackKanjis;
+
+  const displayedRadicals = showAllRadicals ? allRadicals : allRadicals.slice(0, 8);
+  const hasMoreRadicals = allRadicals.length > 8;
+
+  const displayedVocabs = showAllVocabs ? allVocabularies : allVocabularies.slice(0, 8);
+  const hasMoreVocabs = allVocabularies.length > 8;
+
+  const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
+  const hasMoreKanjis = allKanjis.length > 8;
+
   useEffect(() => {
     if (!item) return;
 
     let isMounted = true;
 
+    // 1. Fallback audios for vocab
     if (item.type === 'vocabulary' && (!item.audios || item.audios.length === 0)) {
       supabase
         .from('item_audios')
@@ -67,24 +103,22 @@ export default function QuizInfoDrawer({
         });
     }
 
-    async function loadSimilar() {
-      if (item!.type !== 'kanji' || (item!.similar_kanjis && item!.similar_kanjis.length > 0)) return;
-      try {
-        const { data } = await supabase
-          .from('item_similar_kanji')
-          .select(`
-            similar_item_id,
-            items!similar_item_id(
-              id, character, slug, level, type,
-              item_meanings(meaning, primary_meaning),
-              item_readings(reading, primary_reading)
-            )
-          `)
-          .eq('item_id', item!.id);
-
-        if (!isMounted) return;
-        const list: SimilarKanji[] = [];
-        if (data) {
+    // 2. Fallback similar kanji for kanji
+    if (item.type === 'kanji' && (!item.similar_kanjis || item.similar_kanjis.length > 0)) {
+      supabase
+        .from('item_similar_kanji')
+        .select(`
+          similar_item_id,
+          items!similar_item_id(
+            id, character, slug, level, type,
+            item_meanings(meaning, primary_meaning),
+            item_readings(reading, primary_reading)
+          )
+        `)
+        .eq('item_id', item.id)
+        .then(({ data }) => {
+          if (!isMounted || !data) return;
+          const list: SimilarKanji[] = [];
           for (const s of data) {
             const it: any = Array.isArray((s as any).items) ? (s as any).items[0] : (s as any).items;
             if (it) {
@@ -101,17 +135,82 @@ export default function QuizInfoDrawer({
               });
             }
           }
-        }
+          setFallbackSimilar(list);
+        })
+        .catch(e => console.error('Error loading similar kanji in drawer:', e));
+    }
 
-        setFallbackSimilar(list);
-      } catch (e) {
-        console.error('Error loading similar kanji in drawer:', e);
+    // 3. For Kanji: Fallback Radicals (prerequisites) & Vocabularies (dependents)
+    if (item.type === 'kanji') {
+      if (!item.radicals || item.radicals.length === 0) {
+        supabase
+          .from('item_prerequisites')
+          .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+          .eq('item_id', item.id)
+          .then(({ data }) => {
+            if (!isMounted || !data) return;
+            const rads = data
+              .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+              .filter((it: any) => it && it.type === 'radical');
+            rads.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+            setFallbackRadicals(rads);
+          })
+          .catch(e => console.error('Error loading radicals in drawer:', e));
+      }
+
+      if (!item.vocabularies || item.vocabularies.length === 0) {
+        supabase
+          .from('item_prerequisites')
+          .select('item_id, items!item_id(id, character, slug, level, type)')
+          .eq('requires_item_id', item.id)
+          .then(({ data }) => {
+            if (!isMounted || !data) return;
+            const vocabs = data
+              .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+              .filter((it: any) => it && it.type === 'vocabulary');
+            vocabs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+            setFallbackVocabularies(vocabs);
+          })
+          .catch(e => console.error('Error loading vocabularies in drawer:', e));
       }
     }
 
-    loadSimilar();
+    // 4. For Vocabulary: Fallback Kanjis (prerequisites)
+    if (item.type === 'vocabulary' && (!item.kanjis || item.kanjis.length === 0)) {
+      supabase
+        .from('item_prerequisites')
+        .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+        .eq('item_id', item.id)
+        .then(({ data }) => {
+          if (!isMounted || !data) return;
+          const kjs = data
+            .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+            .filter((it: any) => it && it.type === 'kanji');
+          kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+          setFallbackKanjis(kjs);
+        })
+        .catch(e => console.error('Error loading kanjis for vocab in drawer:', e));
+    }
+
+    // 5. For Radical: Fallback Kanjis (dependents)
+    if (item.type === 'radical' && (!item.kanjis || item.kanjis.length === 0)) {
+      supabase
+        .from('item_prerequisites')
+        .select('item_id, items!item_id(id, character, slug, level, type)')
+        .eq('requires_item_id', item.id)
+        .then(({ data }) => {
+          if (!isMounted || !data) return;
+          const kjs = data
+            .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+            .filter((it: any) => it && it.type === 'kanji');
+          kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+          setFallbackKanjis(kjs);
+        })
+        .catch(e => console.error('Error loading kanjis for radical in drawer:', e));
+    }
+
     return () => { isMounted = false; };
-  }, [item?.id, item?.type, item?.similar_kanjis, item?.audios]);
+  }, [item?.id, item?.type, item?.similar_kanjis, item?.audios, item?.radicals, item?.vocabularies, item?.kanjis]);
 
   if (!item) return null;
 
@@ -119,10 +218,6 @@ export default function QuizInfoDrawer({
   const onyomiList = readings.filter(r => r.reading_type === 'onyomi');
   const kunyomiList = readings.filter(r => r.reading_type === 'kunyomi');
   const nanoriList = readings.filter(r => r.reading_type === 'nanori');
-
-  const allKanjis = item.kanjis || [];
-  const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
-  const hasMoreKanjis = allKanjis.length > 8;
 
   const rawMeanings = item.meanings || [];
   const primaryMeaning = item.primary_meaning || rawMeanings.find((m: any) => m.primary_meaning)?.meaning || item.slug || '';
@@ -366,8 +461,122 @@ export default function QuizInfoDrawer({
         </div>
       )}
 
-      {/* 3. Radical Relations: Found in Kanji */}
-      {item.type === 'radical' && allKanjis.length > 0 && (
+      {/* 3. Kanji Relations: Composed of Radicals (Kanji only) */}
+      {item.type === 'kanji' && allRadicals.length > 0 && (
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsRadicalsExpanded(!isRadicalsExpanded)}
+            className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+            aria-expanded={isRadicalsExpanded}
+          >
+            <span>Terdiri Dari Radikal ({allRadicals.length})</span>
+            {isRadicalsExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+          </button>
+
+          {isRadicalsExpanded && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {displayedRadicals.map((rd: any) => (
+                  <div
+                    key={rd.id}
+                    className="p-3 bg-radical/5 border border-radical/15 hover:border-radical/40 dark:bg-radical/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/rd transition-all duration-200"
+                  >
+                    <div>
+                      <span className="text-2xl font-black text-radical group-hover/rd:scale-110 transition-transform duration-200 block leading-tight">
+                        <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-6 h-6" />
+                      </span>
+                      <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
+                        {rd.slug}
+                      </span>
+                    </div>
+                    {rd.level && (
+                      <span className="px-1.5 py-0.5 text-4xs font-black bg-radical/10 dark:bg-radical/20 rounded-md text-radical">
+                        Lvl {rd.level}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {hasMoreRadicals && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllRadicals(!showAllRadicals)}
+                  className="w-full py-2.5 px-4 bg-radical/10 hover:bg-radical/20 dark:bg-radical/15 dark:hover:bg-radical/25 text-radical font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
+                >
+                  <span>
+                    {showAllRadicals
+                      ? 'Tampilkan Lebih Sedikit'
+                      : `Muat Lebih Banyak (+${allRadicals.length - 8} Radikal)`}
+                  </span>
+                  {showAllRadicals ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 4. Kanji Relations: Found in Vocabulary (Kanji only) */}
+      {item.type === 'kanji' && allVocabularies.length > 0 && (
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsVocabulariesExpanded(!isVocabulariesExpanded)}
+            className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+            aria-expanded={isVocabulariesExpanded}
+          >
+            <span>Ditemukan di Kosakata ({allVocabularies.length})</span>
+            {isVocabulariesExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+          </button>
+
+          {isVocabulariesExpanded && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {displayedVocabs.map((vc: any) => (
+                  <div
+                    key={vc.id}
+                    className="p-3 bg-vocab/5 border border-vocab/15 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/vc transition-all duration-200"
+                  >
+                    <div className="min-w-0 pr-1.5">
+                      <span className="text-xl font-black font-japanese text-vocab group-hover/vc:scale-110 transition-transform duration-200 block leading-tight truncate">
+                        {vc.character}
+                      </span>
+                      <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
+                        {vc.slug}
+                      </span>
+                    </div>
+                    {vc.level && (
+                      <span className="px-1.5 py-0.5 text-4xs font-black bg-vocab/10 dark:bg-vocab/20 rounded-md text-vocab shrink-0">
+                        Lvl {vc.level}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {hasMoreVocabs && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllVocabs(!showAllVocabs)}
+                  className="w-full py-2.5 px-4 bg-vocab/10 hover:bg-vocab/20 dark:bg-vocab/15 dark:hover:bg-vocab/25 text-vocab font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
+                >
+                  <span>
+                    {showAllVocabs
+                      ? 'Tampilkan Lebih Sedikit'
+                      : `Muat Lebih Banyak (+${allVocabularies.length - 8} Kosakata)`}
+                  </span>
+                  {showAllVocabs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 5. Kanji Relations: Found in Kanji (Radical) OR Composed of Kanji (Vocabulary) */}
+      {(item.type === 'radical' || item.type === 'vocabulary') && allKanjis.length > 0 && (
         <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-3">
           <button
             type="button"
@@ -375,14 +584,16 @@ export default function QuizInfoDrawer({
             className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
             aria-expanded={isKanjisExpanded}
           >
-            <span>Ditemukan di Kanji ({allKanjis.length})</span>
+            <span>
+              {item.type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'} ({allKanjis.length})
+            </span>
             {isKanjisExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
           </button>
 
           {isKanjisExpanded && (
             <div className="space-y-3 animate-fade-in">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                {displayedKanjis.map((kj) => (
+                {displayedKanjis.map((kj: any) => (
                   <div
                     key={kj.id}
                     className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
