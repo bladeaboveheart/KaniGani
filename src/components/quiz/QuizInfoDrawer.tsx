@@ -23,7 +23,7 @@ interface QuizInfoDrawerProps {
 
 export default function QuizInfoDrawer({
   item,
-  cardType: _cardType,
+  cardType,
   devMode = false,
   onEditItem,
   onSynonymAdded,
@@ -31,6 +31,18 @@ export default function QuizInfoDrawer({
   const [showAllKanjis, setShowAllKanjis] = useState(false);
   const [fallbackSimilar, setFallbackSimilar] = useState<SimilarKanji[]>([]);
   const [fallbackAudios, setFallbackAudios] = useState<any[]>([]);
+
+  const [isMeaningExpanded, setIsMeaningExpanded] = useState(cardType === 'meaning' || item?.type === 'radical');
+  const [isReadingExpanded, setIsReadingExpanded] = useState(cardType === 'reading');
+  const [isKanjisExpanded, setIsKanjisExpanded] = useState(false);
+  const [isSimilarExpanded, setIsSimilarExpanded] = useState(false);
+
+  useEffect(() => {
+    setIsMeaningExpanded(cardType === 'meaning' || item?.type === 'radical');
+    setIsReadingExpanded(cardType === 'reading');
+    setIsKanjisExpanded(false);
+    setIsSimilarExpanded(false);
+  }, [item?.id, cardType, item?.type]);
 
   const similarKanjis = (item?.similar_kanjis && item.similar_kanjis.length > 0)
     ? item.similar_kanjis
@@ -141,188 +153,214 @@ export default function QuizInfoDrawer({
       )}
 
       {/* 1. Meaning Info */}
-      <div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
-          {/* Sub-kolom 1: Arti Utama */}
-          <div>
-            <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-              Arti Utama
-            </h4>
-            <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-              {primaryMeaning}
-            </p>
-          </div>
+      <div className="space-y-4">
+        <button
+          type="button"
+          onClick={() => setIsMeaningExpanded(!isMeaningExpanded)}
+          className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+          aria-expanded={isMeaningExpanded}
+        >
+          <span>{item.type === 'radical' ? 'Informasi & Penjelasan Radikal' : 'Informasi & Mnemonic Arti'}</span>
+          {isMeaningExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+        </button>
 
-          {/* Sub-kolom 2: Arti Alternatif */}
-          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4 space-y-3">
-            <div>
-              <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                Arti Alternatif
-              </h4>
-              <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                {alternativeMeaningsText}
-              </p>
+        {isMeaningExpanded && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
+              {/* Sub-kolom 1: Arti Utama */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                  Arti Utama
+                </h4>
+                <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
+                  {primaryMeaning}
+                </p>
+              </div>
+
+              {/* Sub-kolom 2: Arti Alternatif */}
+              <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4 space-y-3">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
+                    Arti Alternatif
+                  </h4>
+                  <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
+                    {alternativeMeaningsText}
+                  </p>
+                </div>
+
+                {/* User Synonyms */}
+                <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
+                  <UserSynonymsEditor
+                    itemId={item.id}
+                    initialSynonyms={item.user_synonyms}
+                    onSynonymAdded={onSynonymAdded}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* User Synonyms */}
-            <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-              <UserSynonymsEditor
-                itemId={item.id}
-                initialSynonyms={item.user_synonyms}
-                onSynonymAdded={onSynonymAdded}
-              />
-            </div>
-          </div>
-        </div>
+            {item.type === 'vocabulary' && item.parts_of_speech && item.parts_of_speech.length > 0 && (
+              <div className="mt-2.5">
+                <PartOfSpeechList partsOfSpeech={item.parts_of_speech} size="sm" />
+              </div>
+            )}
 
-        {item.type === 'vocabulary' && item.parts_of_speech && item.parts_of_speech.length > 0 && (
-          <div className="mt-2.5">
-            <PartOfSpeechList partsOfSpeech={item.parts_of_speech} size="sm" />
-          </div>
-        )}
+            {(item.meaning_mnemonic || item.description) && (
+              <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
+                <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">
+                  {item.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic (Arti)'}
+                </h5>
+                <MnemonicVisual slug={item.slug} character={item.character} type={item.type} />
+                <p className="text-teal-900 dark:text-teal-100 mt-1.5 leading-relaxed">
+                  <FormattedText text={item.meaning_mnemonic || item.description} />
+                </p>
+              </div>
+            )}
 
-        {(item.meaning_mnemonic || item.description) && (
-          <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
-            <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">
-              {item.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic (Arti)'}
-            </h5>
-            <MnemonicVisual slug={item.slug} character={item.character} type={item.type} />
-            <p className="text-teal-900 dark:text-teal-100 mt-1.5 leading-relaxed">
-              <FormattedText text={item.meaning_mnemonic || item.description} />
-            </p>
-          </div>
-        )}
+            {/* User Meaning Note */}
+            <UserNoteEditor
+              itemId={item.id}
+              type="meaning"
+              initialNote={item.user_meaning_note}
+            />
 
-        {/* User Meaning Note */}
-        <UserNoteEditor
-          itemId={item.id}
-          type="meaning"
-          initialNote={item.user_meaning_note}
-        />
-
-        {item.description && item.meaning_mnemonic && item.description.trim() !== item.meaning_mnemonic.trim() && (
-          <div className="p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
-            <h5 className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-widest block select-none">Deskripsi Detail</h5>
-            <p className="text-slate-700 dark:text-slate-200 mt-1.5"><FormattedText text={item.description} /></p>
+            {item.description && item.meaning_mnemonic && item.description.trim() !== item.meaning_mnemonic.trim() && (
+              <div className="p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
+                <h5 className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-widest block select-none">Deskripsi Detail</h5>
+                <p className="text-slate-700 dark:text-slate-200 mt-1.5"><FormattedText text={item.description} /></p>
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* 2. Reading Info */}
       {item.type !== 'radical' && (
-        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 space-y-4">
-          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-            {item.type === 'kanji'
-              ? `Cara Baca Jepang (${item.readings?.find((r: any) => r.primary_reading)?.reading_type === 'onyomi'
-                ? 'Onyomi'
-                : 'Kunyomi'
-              })`
-              : 'Cara Baca Jepang (Kana)'}
-          </h4>
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-4">
+          <button
+            type="button"
+            onClick={() => setIsReadingExpanded(!isReadingExpanded)}
+            className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+            aria-expanded={isReadingExpanded}
+          >
+            <span>
+              {item.type === 'kanji'
+                ? `Cara Baca Jepang (${item.readings?.find((r: any) => r.primary_reading)?.reading_type === 'onyomi'
+                  ? 'Onyomi'
+                  : 'Kunyomi'
+                })`
+                : 'Cara Baca Jepang (Kana)'}
+            </span>
+            {isReadingExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+          </button>
 
-          {item.type === 'kanji' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-100/40 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/45">
-              <div>
-                <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Onyomi</span>
-                {onyomiList.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {onyomiList.map((r, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                        }`}
-                      >
-                        {r.reading}
-                      </span>
-                    ))}
+          {isReadingExpanded && (
+            <div className="space-y-4 animate-fade-in">
+              {item.type === 'kanji' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-100/40 dark:bg-slate-800/20 p-4 rounded-2xl border border-slate-200 dark:border-slate-800/45">
+                  <div>
+                    <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Onyomi</span>
+                    {onyomiList.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {onyomiList.map((r, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                            }`}
+                          >
+                            {r.reading}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
-                )}
-              </div>
-              <div>
-                <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Kunyomi</span>
-                {kunyomiList.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {kunyomiList.map((r, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                        }`}
-                      >
-                        {r.reading}
-                      </span>
-                    ))}
+                  <div>
+                    <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Kunyomi</span>
+                    {kunyomiList.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {kunyomiList.map((r, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                            }`}
+                          >
+                            {r.reading}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
-                )}
-              </div>
-              <div>
-                <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Nanori</span>
-                {nanoriList.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {nanoriList.map((r, idx) => (
-                      <span
-                        key={idx}
-                        className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
-                        }`}
-                      >
-                        {r.reading}
-                      </span>
-                    ))}
+                  <div>
+                    <span className="text-xxs font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Nanori</span>
+                    {nanoriList.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {nanoriList.map((r, idx) => (
+                          <span
+                            key={idx}
+                            className={`px-2 py-0.5 text-sm font-black rounded-lg ${r.primary_reading
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-350'
+                            }`}
+                          >
+                            {r.reading}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
+                    )}
                   </div>
-                ) : (
-                  <span className="text-sm text-slate-400 dark:text-slate-650 italic mt-1.5 block">n/a</span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-3 mt-1">
-              <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                {item.primary_reading}
-              </p>
-              {item.type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
-                <AudioPlayerButton
-                  audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
-                  variant="compact"
-                />
+                </div>
+              ) : (
+                <div className="flex items-center space-x-3 mt-1">
+                  <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
+                    {item.primary_reading}
+                  </p>
+                  {item.type === 'vocabulary' && (item.audios?.length || localAudios.length) > 0 && (
+                    <AudioPlayerButton
+                      audios={item.audios && item.audios.length > 0 ? item.audios : localAudios}
+                      variant="compact"
+                    />
+                  )}
+                </div>
               )}
-            </div>
-          )}
 
-          {item.reading_mnemonic && (
-            <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
-              <h5 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic (Cara Baca)</h5>
-              <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={item.reading_mnemonic} /></p>
-            </div>
-          )}
+              {item.reading_mnemonic && (
+                <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
+                  <h5 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic (Cara Baca)</h5>
+                  <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={item.reading_mnemonic} /></p>
+                </div>
+              )}
 
-          {/* User Reading Note */}
-          <UserNoteEditor
-            itemId={item.id}
-            type="reading"
-            initialNote={item.user_reading_note}
-          />
+              {/* User Reading Note */}
+              <UserNoteEditor
+                itemId={item.id}
+                type="reading"
+                initialNote={item.user_reading_note}
+              />
 
-          {/* Context sentence - Vocab only */}
-          {item.type === 'vocabulary' && item.context_sentences && item.context_sentences.length > 0 && (
-            <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 mt-6 space-y-4">
-              <h5 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Contoh Kalimat Kontekstual</h5>
-              <div className="space-y-4">
-                {item.context_sentences.map((s, idx) => (
-                  <div key={idx} className="p-4 bg-slate-100/30 dark:bg-slate-950/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 space-y-2">
-                    <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 select-all">{s.japanese}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{s.indonesian}</p>
+              {/* Context sentence - Vocab only */}
+              {item.type === 'vocabulary' && item.context_sentences && item.context_sentences.length > 0 && (
+                <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 mt-6 space-y-4">
+                  <h5 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Contoh Kalimat Kontekstual</h5>
+                  <div className="space-y-4">
+                    {item.context_sentences.map((s, idx) => (
+                      <div key={idx} className="p-4 bg-slate-100/30 dark:bg-slate-950/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 space-y-2">
+                        <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 select-all">{s.japanese}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{s.indonesian}</p>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -330,63 +368,91 @@ export default function QuizInfoDrawer({
 
       {/* 3. Radical Relations: Found in Kanji */}
       {item.type === 'radical' && allKanjis.length > 0 && (
-        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-6 space-y-3">
-          <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-            Ditemukan di Kanji
-          </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-            {displayedKanjis.map((kj) => (
-              <div
-                key={kj.id}
-                className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
-              >
-                <div>
-                  <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
-                    {kj.character}
-                  </span>
-                  <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
-                    {kj.slug}
-                  </span>
-                </div>
-                {kj.level && (
-                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
-                    Lvl {kj.level}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsKanjisExpanded(!isKanjisExpanded)}
+            className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+            aria-expanded={isKanjisExpanded}
+          >
+            <span>Ditemukan di Kanji ({allKanjis.length})</span>
+            {isKanjisExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+          </button>
 
-          {hasMoreKanjis && (
-            <button
-              type="button"
-              onClick={() => setShowAllKanjis(!showAllKanjis)}
-              className="w-full py-2.5 px-4 bg-kanji/10 hover:bg-kanji/20 dark:bg-kanji/15 dark:hover:bg-kanji/25 text-kanji font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
-            >
-              <span>
-                {showAllKanjis
-                  ? 'Tampilkan Lebih Sedikit'
-                  : `Muat Lebih Banyak (+${allKanjis.length - 8} Kanji)`}
-              </span>
-              {showAllKanjis ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
+          {isKanjisExpanded && (
+            <div className="space-y-3 animate-fade-in">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                {displayedKanjis.map((kj) => (
+                  <div
+                    key={kj.id}
+                    className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200"
+                  >
+                    <div>
+                      <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
+                        {kj.character}
+                      </span>
+                      <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
+                        {kj.slug}
+                      </span>
+                    </div>
+                    {kj.level && (
+                      <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
+                        Lvl {kj.level}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {hasMoreKanjis && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllKanjis(!showAllKanjis)}
+                  className="w-full py-2.5 px-4 bg-kanji/10 hover:bg-kanji/20 dark:bg-kanji/15 dark:hover:bg-kanji/25 text-kanji font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
+                >
+                  <span>
+                    {showAllKanjis
+                      ? 'Tampilkan Lebih Sedikit'
+                      : `Muat Lebih Banyak (+${allKanjis.length - 8} Kanji)`}
+                  </span>
+                  {showAllKanjis ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
 
       {/* 4. Visually Similar Kanji */}
       {item.type === 'kanji' && similarKanjis.length > 0 && (
-        <SimilarKanjiSection
-          currentKanji={{
-            character: item.character,
-            slug: item.slug,
-            level: item.level,
-            primary_meaning: item.primary_meaning,
-            primary_reading: item.primary_reading,
-          }}
-          similarKanjis={similarKanjis}
-          variant="drawer"
-        />
+        <div className="border-t border-slate-200/50 dark:border-slate-800/50 pt-4 space-y-3">
+          <button
+            type="button"
+            onClick={() => setIsSimilarExpanded(!isSimilarExpanded)}
+            className="w-full flex items-center justify-between py-1 text-left font-bold text-xs uppercase tracking-widest text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer select-none"
+            aria-expanded={isSimilarExpanded}
+          >
+            <span>Kanji Mirip Secara Visual ({similarKanjis.length})</span>
+            {isSimilarExpanded ? <ChevronUp className="w-4 h-4 text-slate-400 dark:text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-400 dark:text-slate-500" />}
+          </button>
+
+          {isSimilarExpanded && (
+            <div className="animate-fade-in">
+              <SimilarKanjiSection
+                currentKanji={{
+                  character: item.character,
+                  slug: item.slug,
+                  level: item.level,
+                  primary_meaning: item.primary_meaning,
+                  primary_reading: item.primary_reading,
+                }}
+                similarKanjis={similarKanjis}
+                variant="drawer"
+                className="!pt-0 !border-t-0"
+              />
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

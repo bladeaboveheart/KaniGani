@@ -5,6 +5,12 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Changed
+- **Contextual Collapsible Info Drawer in Review & Lesson Quiz (`QuizInfoDrawer.tsx`):**
+  - **Context-Aware Default Expansion**: The detail drawer (`F` / "Tampilkan Info Detail") now intelligently expands only the relevant section matching the active quiz question (`cardType`):
+    - **Reading Quiz** (e.g. Kanji '八' asking for 'Bacaan Onyomi Kanji' or Vocab asking for Kana): Only the **Cara Baca** section is expanded by default. Sections for Meaning, Radical Relations, and Visually Similar Kanji appear as minimalist collapsible headers with chevrons, collapsed by default.
+    - **Meaning Quiz**: Only the **Arti & Mnemonic** section is expanded by default. Other sections (Cara Baca, Radical Relations, Visually Similar Kanji) are collapsed by default.
+  - **Minimalist Interactive Headers**: Clean, uppercase section titles with arrow chevrons allowing users to toggle any section open or closed with a single click.
+  - **State Reset**: Section expansion states cleanly reset on item or card transition (`[item?.id, cardType]`).
 - **Database Meanings Overhaul (Full Database 100% Complete: Levels 1–60):**
   - **Batch 1 (Levels 1–20)**: Standardized 112 items (32 kanji, 80 vocabulary) to have strictly one concise Primary Meaning.
   - **Batch 2 (Levels 21–30)**: Standardized 463 items (4 radicals, 116 kanji, 343 vocabulary) to have strictly one concise Primary Meaning.

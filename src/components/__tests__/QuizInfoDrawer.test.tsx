@@ -82,4 +82,70 @@ describe('QuizInfoDrawer Component', () => {
     expect(html).toContain('Mnemonic (Arti)');
     expect(html).toContain('Kanji ini sama dengan kanji radikal');
   });
+
+  it('expands only Cara Baca and collapses Meaning when cardType is reading', () => {
+    const kanjiItem: Item = {
+      id: 'kj-8',
+      type: 'kanji',
+      character: '八',
+      slug: 'delapan',
+      level: 1,
+      lesson_position: 8,
+      meaning_mnemonic: 'Bentuknya menyerupai gunung atau angka delapan.',
+      reading_mnemonic: 'Bayangkan seseorang memakai topi hachi (hachi = 8).',
+      meanings: [{ id: 'm-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
+      primary_meaning: 'Delapan',
+      readings: [
+        { id: 'r-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
+      ],
+      primary_reading: 'はち',
+    };
+
+    const html = renderToStaticMarkup(
+      <QuizInfoDrawer item={kanjiItem} cardType="reading" />
+    );
+
+    // Reading section is expanded
+    expect(html).toContain('Mnemonic (Cara Baca)');
+    expect(html).toContain('Bayangkan seseorang memakai topi hachi');
+    expect(html).toContain('はち');
+
+    // Meaning section header is rendered but inner meaning content is collapsed
+    expect(html).toContain('Informasi &amp; Mnemonic Arti');
+    expect(html).not.toContain('Mnemonic (Arti)');
+    expect(html).not.toContain('Bentuknya menyerupai gunung atau angka delapan');
+  });
+
+  it('expands only Meaning and collapses Cara Baca when cardType is meaning', () => {
+    const kanjiItem: Item = {
+      id: 'kj-8',
+      type: 'kanji',
+      character: '八',
+      slug: 'delapan',
+      level: 1,
+      lesson_position: 8,
+      meaning_mnemonic: 'Bentuknya menyerupai gunung atau angka delapan.',
+      reading_mnemonic: 'Bayangkan seseorang memakai topi hachi (hachi = 8).',
+      meanings: [{ id: 'm-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
+      primary_meaning: 'Delapan',
+      readings: [
+        { id: 'r-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
+      ],
+      primary_reading: 'はち',
+    };
+
+    const html = renderToStaticMarkup(
+      <QuizInfoDrawer item={kanjiItem} cardType="meaning" />
+    );
+
+    // Meaning section is expanded
+    expect(html).toContain('Mnemonic (Arti)');
+    expect(html).toContain('Bentuknya menyerupai gunung atau angka delapan');
+    expect(html).toContain('Delapan');
+
+    // Reading section header is rendered but inner reading content is collapsed
+    expect(html).toContain('Cara Baca Jepang (Onyomi)');
+    expect(html).not.toContain('Mnemonic (Cara Baca)');
+    expect(html).not.toContain('Bayangkan seseorang memakai topi hachi');
+  });
 });
