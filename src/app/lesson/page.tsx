@@ -7,6 +7,7 @@ import CharacterDisplay from '@/components/CharacterDisplay';
 import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item, SimilarKanji } from '@/lib/types';
+import { expandAcceptedReadings } from '@/lib/kanaHelper';
 import { ensureLevel1RadicalsUnlocked } from '@/lib/userProgress';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
@@ -359,7 +360,8 @@ export default function LessonPage() {
             accepted_meanings: baseAcceptedMeanings,
             accepted_readings: (() => {
               const list = rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim());
-              return list.length ? list : (primaryReading ? [primaryReading.toLowerCase().trim()] : []);
+              const raw = list.length ? list : (primaryReading ? [primaryReading.toLowerCase().trim()] : []);
+              return expandAcceptedReadings(raw);
             })(),
             kanjis: item.type === 'radical' ? [] : undefined,
             similar_kanjis: item.type === 'kanji' ? [] : undefined,
@@ -960,7 +962,9 @@ export default function LessonPage() {
 
                   {currentItem.description && (
                     <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Deskripsi Detail</h3>
+                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
+                        {currentItem.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Deskripsi Detail'}
+                      </h3>
                       <p className="text-slate-600 dark:text-slate-350 mt-1"><FormattedText text={currentItem.description} /></p>
                     </div>
                   )}
@@ -1067,11 +1071,13 @@ export default function LessonPage() {
                     </div>
                   )}
 
-                  {currentItem.meaning_mnemonic && (
+                  {(currentItem.meaning_mnemonic || currentItem.description) && (
                     <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
-                      <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Arti)</h3>
+                      <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">
+                        {currentItem.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic Jembatan Keledai (Arti)'}
+                      </h3>
                       <MnemonicVisual slug={currentItem.slug} character={currentItem.character} type={currentItem.type} />
-                      <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic} /></p>
+                      <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic || currentItem.description} /></p>
                     </div>
                   )}
 

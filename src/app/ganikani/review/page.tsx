@@ -6,6 +6,7 @@ import Link from 'next/link';
 import * as wanakana from 'wanakana';
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
+import { isAnyReadingMatch } from '@/lib/kanaHelper';
 import {
   getGanikaniReviewQueue,
   getGanikaniSettings,
@@ -206,7 +207,7 @@ export default function GanikaniReviewPage() {
     const kanaInput = wanakana.toKana(trimmed);
     const accepted = (activeItem.accepted_readings || []).map((r) => r.trim());
     const isAnswerMatch =
-      accepted.includes(kanaInput) || accepted.includes(trimmed);
+      isAnyReadingMatch(trimmed, accepted) || isAnyReadingMatch(kanaInput, accepted);
 
     if (isAnswerMatch) {
       setIsCorrect(true);

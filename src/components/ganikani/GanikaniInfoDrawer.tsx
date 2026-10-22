@@ -114,13 +114,13 @@ export default function GanikaniInfoDrawer({
         </div>
       )}
 
-      {item.meaning_mnemonic && (
+      {(item.meaning_mnemonic || item.description) && (
         <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
           <span className="text-xxs font-extrabold text-emerald-400 uppercase tracking-widest block mb-1">
-            Mnemonic Arti (Meaning)
+            {item.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic Arti (Meaning)'}
           </span>
           <div className="text-sm text-text-primary leading-relaxed">
-            <FormattedText text={item.meaning_mnemonic} />
+            <FormattedText text={item.meaning_mnemonic || item.description} />
           </div>
         </div>
       )}

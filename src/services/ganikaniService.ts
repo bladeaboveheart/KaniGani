@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
 import { calculatePenalty, getNextReviewDate } from '@/lib/levelLogic';
 import { generateChunkRanges } from '@/lib/userProgress';
+import { expandAcceptedReadings } from '@/lib/kanaHelper';
 
 export interface GanikaniSettings {
   user_id: string;
@@ -346,6 +347,7 @@ async function fetchDetailedItemsForGanikani(itemIds: string[], userId: string):
         level,
         type,
         lesson_position,
+        description,
         meaning_mnemonic,
         reading_mnemonic,
         parts_of_speech,
@@ -403,6 +405,7 @@ async function fetchDetailedItemsForGanikani(itemIds: string[], userId: string):
       level: raw.level,
       type: raw.type,
       lesson_position: raw.lesson_position,
+      description: raw.description,
       meaning_mnemonic: raw.meaning_mnemonic,
       reading_mnemonic: raw.reading_mnemonic,
       parts_of_speech: raw.parts_of_speech,
@@ -413,7 +416,7 @@ async function fetchDetailedItemsForGanikani(itemIds: string[], userId: string):
       primary_meaning: primaryMeaning,
       primary_reading: primaryReading,
       accepted_meanings: acceptedMeanings,
-      accepted_readings: Array.from(new Set(acceptedReadings)),
+      accepted_readings: expandAcceptedReadings(acceptedReadings),
       user_synonyms: userData?.meaning_synonyms || [],
     } as Item;
   });

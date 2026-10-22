@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase';
 import CharacterDisplay from '@/components/CharacterDisplay';
 import { useQuizStore } from '@/store/useQuizStore';
 import { Item, SimilarKanji } from '@/lib/types';
+import { expandAcceptedReadings } from '@/lib/kanaHelper';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
 import CrabBackground from '@/components/CrabBackground';
@@ -185,7 +186,7 @@ function ReviewPageContent() {
           .from('items')
           .select(`
             id, character, slug, level, type, lesson_position,
-            parts_of_speech, meaning_mnemonic, reading_mnemonic,
+            description, parts_of_speech, meaning_mnemonic, reading_mnemonic,
             item_meanings (*),
             item_readings (*),
             item_audios (*),
@@ -251,7 +252,7 @@ function ReviewPageContent() {
             item_id, srs_stage, next_review,
             ${itemsRelation} (
               id, character, slug, level, type, lesson_position,
-              parts_of_speech, meaning_mnemonic, reading_mnemonic,
+              description, parts_of_speech, meaning_mnemonic, reading_mnemonic,
               item_meanings (*),
               item_readings (*),
               item_audios (*),
@@ -314,12 +315,13 @@ function ReviewPageContent() {
           }
         });
 
-        const acceptedReadings = rList
+        const rawAcceptedReadings = rList
           .filter((r: any) => r.accepted_answer)
           .map((r: any) => r.reading.toLowerCase().trim());
-        if (acceptedReadings.length === 0 && primaryReading) {
-          acceptedReadings.push(primaryReading.toLowerCase().trim());
+        if (rawAcceptedReadings.length === 0 && primaryReading) {
+          rawAcceptedReadings.push(primaryReading.toLowerCase().trim());
         }
+        const acceptedReadings = expandAcceptedReadings(rawAcceptedReadings);
 
         return {
           ...item,

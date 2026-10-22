@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { Item, ItemType } from '@/lib/types';
 import * as wanakana from 'wanakana';
 import { generateChunkRanges } from '@/lib/userProgress';
+import { expandAcceptedReadings } from '@/lib/kanaHelper';
 
 /**
  * Fetches all items of a given type in parallel chunks to bypass PostgREST 1000 row limits.
@@ -101,7 +102,7 @@ export async function fetchDictionaryTierItems(
       primary_meaning: pMeaning,
       primary_reading: pReading,
       accepted_meanings: meanings.filter((m: any) => m.accepted_answer).map((m: any) => m.meaning.toLowerCase().trim()),
-      accepted_readings: readings.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim()),
+      accepted_readings: expandAcceptedReadings(readings.filter((r: any) => r.accepted_answer).map((r: any) => r.reading.toLowerCase().trim())),
     };
   });
 }

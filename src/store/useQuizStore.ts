@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Item, ItemType } from '../lib/types';
 import { supabase } from '../lib/supabase';
 import * as wanakana from 'wanakana';
+import { isAnyReadingMatch } from '../lib/kanaHelper';
 
 export interface QuizCard {
   itemId: string;
@@ -508,11 +509,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     // 0. JAPANESE READING INPUT WARNING (When they input Romaji/Kana for Meaning)
     if (activeCard.cardType === 'meaning' && !isCorrectMeaning) {
       const acceptedReadings = activeCard.item.accepted_readings || [];
-      const kanaInput = wanakana.toKana(trimmedInput);
-
-      const isReadingInput = acceptedReadings.some(
-        r => r.toLowerCase().trim() === trimmedInput || r.toLowerCase().trim() === kanaInput
-      );
+      const isReadingInput = isAnyReadingMatch(trimmedInput, acceptedReadings);
 
       if (isReadingInput) {
         set({
@@ -625,7 +622,7 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
       }
     } else {
       const acceptedReadings = activeCard.item.accepted_readings || [];
-      isCorrectAns = acceptedReadings.some(r => r.toLowerCase().trim() === trimmedInput);
+      isCorrectAns = isAnyReadingMatch(trimmedInput, acceptedReadings);
     }
 
     if (isCorrectAns) {

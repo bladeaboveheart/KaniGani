@@ -181,11 +181,15 @@ export default function QuizInfoDrawer({
           </div>
         )}
 
-        {item.meaning_mnemonic && (
+        {(item.meaning_mnemonic || item.description) && (
           <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl mt-3">
-            <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">Mnemonic (Arti)</h5>
+            <h5 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">
+              {item.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic (Arti)'}
+            </h5>
             <MnemonicVisual slug={item.slug} character={item.character} type={item.type} />
-            <p className="text-teal-900 dark:text-teal-100 mt-1.5"><FormattedText text={item.meaning_mnemonic} /></p>
+            <p className="text-teal-900 dark:text-teal-100 mt-1.5 leading-relaxed">
+              <FormattedText text={item.meaning_mnemonic || item.description} />
+            </p>
           </div>
         )}
 
@@ -196,7 +200,7 @@ export default function QuizInfoDrawer({
           initialNote={item.user_meaning_note}
         />
 
-        {item.description && (
+        {item.description && item.meaning_mnemonic && item.description.trim() !== item.meaning_mnemonic.trim() && (
           <div className="p-4 bg-slate-100/50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 rounded-2xl mt-3">
             <h5 className="text-xs font-bold text-slate-500 dark:text-slate-450 uppercase tracking-widest block select-none">Deskripsi Detail</h5>
             <p className="text-slate-700 dark:text-slate-200 mt-1.5"><FormattedText text={item.description} /></p>

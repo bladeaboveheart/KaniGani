@@ -6,6 +6,7 @@ import Link from 'next/link';
 import * as wanakana from 'wanakana';
 import { supabase } from '@/lib/supabase';
 import { Item } from '@/lib/types';
+import { isAnyReadingMatch } from '@/lib/kanaHelper';
 import {
   getGanikaniLessonQueue,
   completeGanikaniLesson,
@@ -219,7 +220,7 @@ export default function GanikaniLessonPage() {
 
     const kanaInput = wanakana.toKana(trimmed);
     const accepted = (activeQuizItem.accepted_readings || []).map((r) => r.trim());
-    const match = accepted.includes(kanaInput) || accepted.includes(trimmed);
+    const match = isAnyReadingMatch(trimmed, accepted) || isAnyReadingMatch(kanaInput, accepted);
 
     setIsCorrect(match);
     setIsAnswerSubmitted(true);
@@ -562,13 +563,13 @@ export default function GanikaniLessonPage() {
                     <p className="text-xs text-text-muted italic">Tidak ada mnemonic bacaan khusus.</p>
                   )}
 
-                  {item.meaning_mnemonic && (
+                  {(item.meaning_mnemonic || item.description) && (
                     <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 space-y-1">
                       <span className="text-xxs font-extrabold text-emerald-400 uppercase tracking-widest block">
-                        Mnemonic Arti (Meaning)
+                        {item.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic Arti (Meaning)'}
                       </span>
                       <div className="text-sm text-text-primary leading-relaxed">
-                        <FormattedText text={item.meaning_mnemonic} />
+                        <FormattedText text={item.meaning_mnemonic || item.description} />
                       </div>
                     </div>
                   )}

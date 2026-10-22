@@ -35,6 +35,15 @@ Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - Updated database trigger `public.on_auth_user_created()` to extract and sanitize username from email prefix when signing up via Google.
 
 ### Fixed
+- **Interchangeable Katakana & Hiragana Reading Validation (e.g. 'ビル' / 'タバコ' / 'コーヒー'):**
+  - **Script Interchangeability**: Created central `kanaHelper.ts` (`isReadingMatch`, `isAnyReadingMatch`, `expandAcceptedReadings`) allowing users to answer Katakana vocabulary using either Hiragana or Katakana seamlessly (e.g. answering `'ビル'` with `'びる'`, `'タバコ'` with `'たばこ'`, `'コーヒー'` with `'こーひー'` or `'こうひい'`).
+  - **Wanakana IME Compatibility**: Since the review input converts typed Romaji into Hiragana (`biru` $\rightarrow$ `びる`), items stored in the database with Katakana readings previously failed exact string matching. Validation now normalizes both input and accepted answers bidirectionally across Hiragana and Katakana.
+  - **Global Synchronization**: Integrated across `useQuizStore.ts` (Review & Lesson quiz), `useGanikaniQuizStore.ts`, `review/page.tsx`, `lesson/page.tsx`, `itemsService.ts`, and `ganikaniService.ts`.
+- **Radical Mnemonic & Explanation Missing in Review Info Drawer ('辰', 'Paus', and all Radicals):**
+  - **Query Field Restoration**: Added missing `description` column to Supabase queries in `src/app/review/page.tsx` (for both standard SRS reviews and Leech cram mode) and in `src/services/ganikaniService.ts`. Previously, `description` was completely omitted from the item select query, causing `item.description` to be `undefined` during reviews.
+  - **Dynamic Radical Mnemonic Rendering**: Updated `src/components/quiz/QuizInfoDrawer.tsx` and `src/components/ganikani/GanikaniInfoDrawer.tsx` to evaluate `(item.meaning_mnemonic || item.description)` and display the prominent teal/emerald mnemonic container with title `"Penjelasan & Mnemonic Radikal"` and `MnemonicVisual` for radical cards.
+  - **Detail Description Deduplication**: The secondary `"Deskripsi Detail"` box now only renders when `description` is distinct from `meaning_mnemonic`, avoiding redundancy.
+  - Updated `src/app/lesson/page.tsx` and `src/app/ganikani/lesson/page.tsx` to ensure consistent radical explanation display across both lesson slides and quizzes.
 - **Unfocused 'Enter' Keyboard Navigation & Submission in Review and Lesson Quiz:**
   - Added global `onEnter` shortcut handler in `src/hooks/useQuizShortcuts.ts` and wired unified `handleEnterAction` in both Review (`src/app/review/page.tsx`) and Lesson Quiz (`src/app/lesson/page.tsx`).
   - **Advancing Cards**: When an answer has been submitted (`isAnswerSubmitted === true`), pressing `Enter` or `ArrowRight` anywhere on the screen (even after opening the detail drawer with `F` or clicking outside the input box) immediately proceeds to the next quiz item and automatically refocuses the input box.

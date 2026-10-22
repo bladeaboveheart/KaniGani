@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Item } from '@/lib/types';
 import * as wanakana from 'wanakana';
 import { submitGanikaniReview, addGanikaniReadingSynonym } from '@/services/ganikaniService';
+import { isAnyReadingMatch, expandAcceptedReadings } from '@/lib/kanaHelper';
 
 interface GanikaniQuizState {
   // Session Configuration & Items
@@ -105,7 +106,7 @@ export const useGanikaniQuizStore = create<GanikaniQuizState>((set, get) => ({
 
     // Check against accepted readings (including custom reading synonyms)
     const accepted = (activeItem.accepted_readings || []).map((r) => r.trim());
-    const isCorrect = accepted.includes(kanaInput) || accepted.includes(trimmed);
+    const isCorrect = isAnyReadingMatch(trimmed, accepted) || isAnyReadingMatch(kanaInput, accepted);
 
     if (isCorrect) {
       set({
@@ -253,9 +254,7 @@ export const useGanikaniQuizStore = create<GanikaniQuizState>((set, get) => ({
     await addGanikaniReadingSynonym(userId, activeItem.id, kanaSynonym);
 
     // 2. Update activeItem.accepted_readings
-    const updatedReadings = Array.from(
-      new Set([...(activeItem.accepted_readings || []), kanaSynonym])
-    );
+    const updatedReadings = expandAcceptedReadings([...(activeItem.accepted_readings || []), kanaSynonym, trimmed]);
     const updatedItem = {
       ...activeItem,
       accepted_readings: updatedReadings,
@@ -264,8 +263,8 @@ export const useGanikaniQuizStore = create<GanikaniQuizState>((set, get) => ({
     // 3. Check if user's input now matches
     const currentInputKana = wanakana.toHiragana(userInput.trim());
     const isNowMatch =
-      currentInputKana === kanaSynonym ||
-      updatedReadings.includes(currentInputKana);
+      isAnyReadingMatch(userInput.trim(), updatedReadings) ||
+      isAnyReadingMatch(currentInputKana, updatedReadings);
 
     if (isNowMatch) {
       // Revert penalty count
