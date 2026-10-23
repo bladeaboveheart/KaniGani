@@ -4,34 +4,24 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import CharacterDisplay from '@/components/CharacterDisplay';
-import FormattedText from '@/components/FormattedText';
 import { useQuizStore } from '@/store/useQuizStore';
-import { Item, SimilarKanji } from '@/lib/types';
-import { expandAcceptedReadings } from '@/lib/kanaHelper';
-import { ensureLevel1RadicalsUnlocked } from '@/lib/userProgress';
+import { Item } from '@/lib/types';
 import { useActiveTimer } from '@/hooks/useActiveTimer';
 import { useQuizShortcuts } from '@/hooks/useQuizShortcuts';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useLessonSession } from '@/hooks/useLessonSession';
 import CrabBackground from '@/components/CrabBackground';
-import SimilarKanjiSection from '@/components/dictionary/SimilarKanjiSection';
-import {
-  ArrowLeft, ArrowRight, BookOpen, Award, Home, ChevronDown, ChevronUp, Languages, Layers, ExternalLink, Edit3
-} from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
-// Modular Quiz Components
+// Modular Components
+import LessonSlideViewer from '@/components/lesson/LessonSlideViewer';
 import QuizHeader from '@/components/quiz/QuizHeader';
 import QuizInput from '@/components/quiz/QuizInput';
 import QuizFeedback from '@/components/quiz/QuizFeedback';
 import QuizActionButtons from '@/components/quiz/QuizActionButtons';
 import QuizInfoDrawer from '@/components/quiz/QuizInfoDrawer';
 import QuizSummaryView from '@/components/quiz/QuizSummaryView';
-import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
-import { PartOfSpeechList } from '@/components/ui/PartOfSpeechBadge';
-import { useSwipeGesture } from '@/hooks/useSwipeGesture';
-import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 import QuickItemEditorModal from '@/components/admin/QuickItemEditorModal';
-import UserSynonymsEditor from '@/components/user-annotations/UserSynonymsEditor';
-import UserNoteEditor from '@/components/user-annotations/UserNoteEditor';
-import { getUserItemDataBatch } from '@/services/userItemDataService';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -60,32 +50,35 @@ export default function LessonPage() {
     addCustomSynonymAndValidate,
   } = useQuizStore();
 
-  // Lesson states
-  const [lessons, setLessons] = useState<Item[]>([]);
-  const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<'learn' | 'quiz' | 'summary'>('learn');
-  const [currentBatch, setCurrentBatch] = useState<Item[]>([]);
-  const [itemIndex, setItemIndex] = useState(0); // Index item in active batch
   const [activeTab, setActiveTab] = useState<'info' | 'mnemonic' | 'kanjis'>('info');
   const [showAllKanjis, setShowAllKanjis] = useState(false);
-  const [prevItemIndex, setPrevItemIndex] = useState(0);
-
-  // Reset showAllKanjis when switching item in batch
-  if (itemIndex !== prevItemIndex) {
-    setPrevItemIndex(itemIndex);
-    setShowAllKanjis(false);
-  }
 
   const [devMode, setDevMode] = useState(false);
   const [globalDevMode, setGlobalDevMode] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const handleItemUpdated = (updatedItem: Item) => {
-    // 1. Update in-memory batch & lessons list
-    setCurrentBatch(prev => prev.map(it => it.id === updatedItem.id ? updatedItem : it));
-    setLessons(prev => prev.map(it => it.id === updatedItem.id ? updatedItem : it));
+  // Lesson data hook
+  const {
+    lessons,
+    setLessons,
+    currentBatch,
+    setCurrentBatch,
+    itemIndex,
+    setItemIndex,
+    loading,
+    setLoading,
+  } = useLessonSession();
 
-    // 2. If quiz is running, update quiz store state
+  // Reset showAllKanjis when switching item in batch
+  useEffect(() => {
+    setShowAllKanjis(false);
+  }, [itemIndex]);
+
+  const handleItemUpdated = (updatedItem: Item) => {
+    setCurrentBatch((prev) => prev.map((it) => (it.id === updatedItem.id ? updatedItem : it)));
+    setLessons((prev) => prev.map((it) => (it.id === updatedItem.id ? updatedItem : it)));
+
     const state = useQuizStore.getState();
     if (state.activeCard && state.activeCard.itemId === updatedItem.id) {
       useQuizStore.setState({
@@ -93,11 +86,11 @@ export default function LessonPage() {
           ...state.activeCard,
           item: updatedItem,
           character: updatedItem.character,
-        }
+        },
       });
     }
 
-    const updatedQueue = state.queue.map(c => {
+    const updatedQueue = state.queue.map((c) => {
       if (c.itemId === updatedItem.id) {
         return {
           ...c,
@@ -108,7 +101,9 @@ export default function LessonPage() {
       return c;
     });
 
-    const updatedOriginal = state.originalItems.map(it => it.id === updatedItem.id ? updatedItem : it);
+    const updatedOriginal = state.originalItems.map((it) =>
+      it.id === updatedItem.id ? updatedItem : it
+    );
 
     useQuizStore.setState({
       queue: updatedQueue,
@@ -141,13 +136,18 @@ export default function LessonPage() {
     const audios = targetItem.audios || (targetItem as any).item_audios || [];
     if (!audios.length) return;
 
-    const preferred = typeof window !== 'undefined'
-      ? (localStorage.getItem('kanigani-preferred-voice') || 'Kyoko')
-      : 'Kyoko';
+    const preferred =
+      typeof window !== 'undefined'
+        ? localStorage.getItem('kanigani-preferred-voice') || 'Kyoko'
+        : 'Kyoko';
 
-    const kyoko = audios.find((a: any) => a.voice_actor_name?.toLowerCase() === 'kyoko' || a.gender === 'female');
-    const kenichi = audios.find((a: any) => a.voice_actor_name?.toLowerCase() === 'kenichi' || a.gender === 'male');
-    const target = preferred === 'Kyoko' ? (kyoko || kenichi) : (kenichi || kyoko);
+    const kyoko = audios.find(
+      (a: any) => a.voice_actor_name?.toLowerCase() === 'kyoko' || a.gender === 'female'
+    );
+    const kenichi = audios.find(
+      (a: any) => a.voice_actor_name?.toLowerCase() === 'kenichi' || a.gender === 'male'
+    );
+    const target = preferred === 'Kyoko' ? kyoko || kenichi : kenichi || kyoko;
 
     if (target?.url) {
       if (!audioPlayerRef.current) {
@@ -185,16 +185,15 @@ export default function LessonPage() {
   const handleNext = useCallback(() => {
     if (!currentItem) return;
     if (itemIndex === currentBatch.length - 1 && activeTab !== 'info') {
-      // Reached the final slide; requires explicit tap on 'Mulai Kuis'
       return;
     }
     if (activeTab === 'info') {
       setActiveTab(currentItem.type === 'radical' ? 'kanjis' : 'mnemonic');
     } else {
-      setItemIndex(prev => prev + 1);
+      setItemIndex((prev) => prev + 1);
       setActiveTab('info');
     }
-  }, [currentItem, itemIndex, currentBatch.length, activeTab]);
+  }, [currentItem, itemIndex, currentBatch.length, activeTab, setItemIndex]);
 
   const handlePrev = useCallback(() => {
     if (itemIndex === 0 && activeTab === 'info') return;
@@ -210,356 +209,12 @@ export default function LessonPage() {
         setActiveTab('mnemonic');
       }
     }
-  }, [itemIndex, activeTab, currentBatch]);
+  }, [itemIndex, activeTab, currentBatch, setItemIndex]);
 
   const swipeHandlers = useSwipeGesture({
     onSwipeLeft: handleNext,
     onSwipeRight: handlePrev,
   });
-
-  // Fetch lessons available
-  useEffect(() => {
-    async function loadLessons() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          router.push('/');
-          return;
-        }
-
-        // Check custom lesson queue
-        const customQueueStr = localStorage.getItem('custom-lesson-queue');
-        const customInterleaveStr = localStorage.getItem('custom-lesson-interleave');
-        
-        let customQueueIds: string[] | null = null;
-        if (customQueueStr) {
-          try {
-            customQueueIds = JSON.parse(customQueueStr);
-          } catch (e) {
-            console.error('Failed to parse custom-lesson-queue from localStorage:', e);
-          }
-        }
-
-        // Fetch lesson items (srs_stage = 1 & next_review = null)
-        let query = supabase
-          .from('user_progress')
-          .select('item_id, srs_stage, unlocked_at, items(*)')
-          .eq('user_id', user.id)
-          .eq('srs_stage', 1)
-          .is('next_review', null);
-
-        if (customQueueIds && customQueueIds.length > 0) {
-          query = query.in('item_id', customQueueIds);
-        }
-
-        const { data: initialData, error } = await query;
-        let data = initialData;
-
-        if (error) throw error;
-
-        if (data && data.length > 0) {
-          const typeOrder: Record<string, number> = { radical: 1, kanji: 2, vocabulary: 3 };
-          data.sort((a: any, b: any) => {
-            const itemA = a.items;
-            const itemB = b.items;
-            if (!itemA || !itemB) return 0;
-            if (itemA.level !== itemB.level) return itemA.level - itemB.level;
-            const orderA = typeOrder[itemA.type] || 4;
-            const orderB = typeOrder[itemB.type] || 4;
-            if (orderA !== orderB) return orderA - orderB;
-            return (itemA.lesson_position || 0) - (itemB.lesson_position || 0);
-          });
-        }
-        if (!data || data.length === 0) {
-          // Self-healing check for brand new users entering /lesson directly
-          if (!customQueueIds || customQueueIds.length === 0) {
-            const { count } = await supabase
-              .from('user_progress')
-              .select('item_id', { count: 'exact', head: true })
-              .eq('user_id', user.id);
-
-            if (count === 0) {
-              const unlockedIds = await ensureLevel1RadicalsUnlocked(user.id);
-              if (unlockedIds.length > 0) {
-                const retryRes = await query;
-                if (!retryRes.error && retryRes.data && retryRes.data.length > 0) {
-                  data = retryRes.data;
-                }
-              }
-            }
-          }
-
-          if (!data || data.length === 0) {
-            setLessons([]);
-            setLoading(false);
-            return;
-          }
-        }
-
-        const rawItems = data.map((row: any) => row.items).filter(Boolean);
-        const itemIds = rawItems.map((i: any) => i.id);
-        const radicalIds = rawItems.filter((i: any) => i.type === 'radical').map((i: any) => i.id);
-        const kanjiIds = rawItems.filter((i: any) => i.type === 'kanji').map((i: any) => i.id);
-        const vocabIds = rawItems.filter((i: any) => i.type === 'vocabulary').map((i: any) => i.id);
-
-        // Phase 1: Critical card presentation path (meanings, readings, audios, user annotations)
-        const [meaningsRes, readingsRes, audiosRes, userAnnotationsMap] = await Promise.all([
-          supabase.from('item_meanings').select('*').in('item_id', itemIds),
-          supabase.from('item_readings').select('*').in('item_id', itemIds),
-          vocabIds.length > 0
-            ? supabase.from('item_audios').select('*').in('item_id', vocabIds)
-            : Promise.resolve({ data: [] }),
-          getUserItemDataBatch(itemIds),
-        ]);
-
-        const meanings = meaningsRes.data || [];
-        const readings = readingsRes.data || [];
-        const audios = audiosRes.data || [];
-
-        // Map vocabulary audios
-        const audiosMap = new Map<string, any[]>();
-        audios.forEach((a: any) => {
-          if (!audiosMap.has(a.item_id)) audiosMap.set(a.item_id, []);
-          audiosMap.get(a.item_id)!.push(a);
-        });
-
-        // Combine critical details
-        const itemsWithDetails: Item[] = rawItems.map((item: any) => {
-          const mList = meanings.filter((m) => m.item_id === item.id);
-          const rList = readings.filter((r) => r.item_id === item.id);
-
-          const primaryMeaning = mList.find((m) => m.primary_meaning)?.meaning || '';
-          const primaryReading = rList.find((r) => r.primary_reading)?.reading || null;
-
-          const progressRow = data.find((row: any) => row.item_id === item.id);
-          const srsStage = progressRow ? progressRow.srs_stage : 1;
-
-          const baseAcceptedMeanings = (() => {
-            const list = mList.filter(m => m.accepted_answer).map(m => m.meaning.toLowerCase().trim());
-            return list.length ? list : (primaryMeaning ? [primaryMeaning.toLowerCase().trim()] : []);
-          })();
-
-          // Merge custom user synonyms
-          const userAnnotation = userAnnotationsMap[item.id];
-          const userSynonyms: string[] = userAnnotation?.meaning_synonyms || [];
-          userSynonyms.forEach(syn => {
-            const clean = syn.toLowerCase().trim();
-            if (clean && !baseAcceptedMeanings.includes(clean)) {
-              baseAcceptedMeanings.push(clean);
-            }
-          });
-
-          return {
-            ...item,
-            srs_stage: srsStage,
-            meanings: mList,
-            readings: rList,
-            context_sentences: [],
-            primary_meaning: primaryMeaning,
-            primary_reading: primaryReading,
-            accepted_meanings: baseAcceptedMeanings,
-            accepted_readings: (() => {
-              const list = rList.filter(r => r.accepted_answer).map(r => r.reading.toLowerCase().trim());
-              const raw = list.length ? list : (primaryReading ? [primaryReading.toLowerCase().trim()] : []);
-              return expandAcceptedReadings(raw);
-            })(),
-            kanjis: item.type === 'radical' ? [] : undefined,
-            similar_kanjis: item.type === 'kanji' ? [] : undefined,
-            audios: item.type === 'vocabulary' ? (audiosMap.get(item.id) || []) : undefined,
-            user_synonyms: userSynonyms,
-            user_meaning_note: userAnnotation?.meaning_note ?? null,
-            user_reading_note: userAnnotation?.reading_note ?? null,
-          };
-        });
-
-        // Sort: level (ASC), type (radical→kanji→vocab), lesson_position
-        const typePriority: Record<string, number> = { radical: 0, kanji: 1, vocabulary: 2 };
-        itemsWithDetails.sort((a, b) => {
-          const levelDiff = a.level - b.level;
-          if (levelDiff !== 0) return levelDiff;
-          const typeDiff = (typePriority[a.type] ?? 3) - (typePriority[b.type] ?? 3);
-          if (typeDiff !== 0) return typeDiff;
-          return a.lesson_position - b.lesson_position;
-        });
-
-        // Interleave lessons if requested
-        let finalLessons = itemsWithDetails;
-        if (customInterleaveStr === 'true') {
-          const radicals = itemsWithDetails.filter(i => i.type === 'radical');
-          const kanjis = itemsWithDetails.filter(i => i.type === 'kanji');
-          const vocabs = itemsWithDetails.filter(i => i.type === 'vocabulary');
-          
-          const interleaved: Item[] = [];
-          const maxLen = Math.max(radicals.length, kanjis.length, vocabs.length);
-          for (let i = 0; i < maxLen; i++) {
-            if (i < radicals.length) interleaved.push(radicals[i]);
-            if (i < kanjis.length) interleaved.push(kanjis[i]);
-            if (i < vocabs.length) interleaved.push(vocabs[i]);
-          }
-          finalLessons = interleaved;
-        }
-
-        setLessons(finalLessons);
-
-        // Get first batch of 5 items and immediately show the card!
-        const batch = finalLessons.slice(0, 5);
-        setCurrentBatch(batch);
-        setItemIndex(0);
-        setLoading(false);
-
-        // Phase 2: Asynchronous background fetch of heavy drawer data (sentences, prereqs, similar kanji)
-        (async () => {
-          try {
-            const [sentencesRes, prereqsRes, kanjiDependentsRes, itemPrereqsRes, similarRes] = await Promise.all([
-              supabase.from('item_context_sentences').select('*').in('item_id', itemIds),
-              radicalIds.length > 0
-                ? supabase
-                    .from('item_prerequisites')
-                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
-                    .in('requires_item_id', radicalIds)
-                : Promise.resolve({ data: [] }),
-              kanjiIds.length > 0
-                ? supabase
-                    .from('item_prerequisites')
-                    .select('requires_item_id, items!item_id(id, character, slug, level, type)')
-                    .in('requires_item_id', kanjiIds)
-                : Promise.resolve({ data: [] }),
-              (kanjiIds.length > 0 || vocabIds.length > 0)
-                ? supabase
-                    .from('item_prerequisites')
-                    .select(`
-                      item_id,
-                      requires_item_id,
-                      items!requires_item_id(
-                        id, character, slug, level, type,
-                        item_meanings(meaning, primary_meaning),
-                        item_readings(reading, primary_reading)
-                      )
-                    `)
-                    .in('item_id', [...kanjiIds, ...vocabIds])
-                : Promise.resolve({ data: [] }),
-              kanjiIds.length > 0
-                ? supabase
-                    .from('item_similar_kanji')
-                    .select(`
-                      item_id,
-                      items!similar_item_id(
-                        id, character, slug, level, type,
-                        item_meanings(meaning, primary_meaning),
-                        item_readings(reading, primary_reading)
-                      )
-                    `)
-                    .in('item_id', kanjiIds)
-                : Promise.resolve({ data: [] }),
-            ]);
-
-            const sentences = sentencesRes.data || [];
-            const prereqs = prereqsRes.data || [];
-            const kanjiDependents = kanjiDependentsRes.data || [];
-            const itemPrereqs = itemPrereqsRes.data || [];
-
-            // Map radical kanji dependencies
-            const kanjisMap = new Map<string, any[]>();
-            prereqs.forEach((row: any) => {
-              const reqId = row.requires_item_id;
-              const kanjiItem = row.items;
-              if (kanjiItem && kanjiItem.type === 'kanji') {
-                if (!kanjisMap.has(reqId)) kanjisMap.set(reqId, []);
-                kanjisMap.get(reqId)!.push(kanjiItem);
-              }
-            });
-
-            kanjisMap.forEach((list) => {
-              list.sort((a, b) => (a.level - b.level) || (a.lesson_position - b.lesson_position) || a.character.localeCompare(b.character));
-            });
-
-            // Map kanji vocab dependencies
-            const vocabsMap = new Map<string, any[]>();
-            kanjiDependents.forEach((row: any) => {
-              const reqId = row.requires_item_id;
-              const vocabItem = row.items;
-              if (vocabItem && vocabItem.type === 'vocabulary') {
-                if (!vocabsMap.has(reqId)) vocabsMap.set(reqId, []);
-                vocabsMap.get(reqId)!.push(vocabItem);
-              }
-            });
-
-            vocabsMap.forEach((list) => {
-              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
-            });
-
-            // Map radicals composed in kanji AND kanjis composed in vocabularies
-            const radicalsMap = new Map<string, any[]>();
-            const vocabKanjisMap = new Map<string, any[]>();
-            itemPrereqs.forEach((row: any) => {
-              const parentId = row.item_id;
-              const childItem = row.items;
-              if (!childItem) return;
-              if (childItem.type === 'radical') {
-                if (!radicalsMap.has(parentId)) radicalsMap.set(parentId, []);
-                radicalsMap.get(parentId)!.push(childItem);
-              } else if (childItem.type === 'kanji') {
-                if (!vocabKanjisMap.has(parentId)) vocabKanjisMap.set(parentId, []);
-                vocabKanjisMap.get(parentId)!.push(childItem);
-              }
-            });
-
-            radicalsMap.forEach((list) => {
-              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
-            });
-
-            vocabKanjisMap.forEach((list) => {
-              list.sort((a, b) => (a.level - b.level) || a.character.localeCompare(b.character));
-            });
-
-            // Map similar kanji
-            const similarKanjiMap = new Map<string, SimilarKanji[]>();
-            similarRes.data?.forEach((row: any) => {
-              const it = row.items;
-              if (!it) return;
-              const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
-              const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
-              if (!similarKanjiMap.has(row.item_id)) similarKanjiMap.set(row.item_id, []);
-              similarKanjiMap.get(row.item_id)!.push({
-                id: it.id,
-                character: it.character,
-                slug: it.slug,
-                level: it.level,
-                type: it.type,
-                primary_meaning: primaryMeaning,
-                primary_reading: primaryReading,
-              });
-            });
-
-            const enrichItem = (item: Item): Item => ({
-              ...item,
-              context_sentences: sentences.filter((s: any) => s.item_id === item.id),
-              kanjis: item.type === 'radical'
-                ? (kanjisMap.get(item.id) || [])
-                : item.type === 'vocabulary'
-                ? (vocabKanjisMap.get(item.id) || [])
-                : item.kanjis,
-              radicals: item.type === 'kanji' ? (radicalsMap.get(item.id) || []) : item.radicals,
-              vocabularies: item.type === 'kanji' ? (vocabsMap.get(item.id) || []) : item.vocabularies,
-              similar_kanjis: item.type === 'kanji' ? (similarKanjiMap.get(item.id) || []) : item.similar_kanjis,
-            });
-
-            setLessons((prev) => prev.map(enrichItem));
-            setCurrentBatch((prev) => prev.map(enrichItem));
-          } catch (bgErr) {
-            console.error('Background lesson drawer enrichment failed (non-blocking):', bgErr);
-          }
-        })();
-      } catch (err) {
-        console.error('Error fetching lessons:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    loadLessons();
-    return () => resetStore();
-  }, [router, resetStore, initializeSession]);
 
   const handleProceedNext = () => {
     proceedNext();
@@ -573,25 +228,19 @@ export default function LessonPage() {
     if (phase !== 'quiz') return;
     if (!isAnswerSubmitted) {
       if (devMode && userInput.trim() === '') {
-        setUserInput(getDevModeAnswer());
-        setTimeout(() => {
-          submitAnswer();
-          inputRef.current?.focus();
-        }, 20);
+        const devAnswer = getDevModeAnswer();
+        setUserInput(devAnswer);
+        submitAnswer();
+        inputRef.current?.focus();
       } else if (userInput.trim() !== '') {
         submitAnswer();
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 20);
+        inputRef.current?.focus();
       } else {
-        // Kotak input masih kosong: kembalikan fokus ke kotak jawaban
         inputRef.current?.focus();
       }
     } else {
       handleProceedNext();
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 20);
+      inputRef.current?.focus();
     }
   };
 
@@ -621,10 +270,9 @@ export default function LessonPage() {
   // Focus input automatically (skip on mobile)
   useEffect(() => {
     if (phase === 'quiz' && activeCard && inputRef.current) {
-      const isMobile = typeof window !== 'undefined' && (
-        window.matchMedia('(pointer: coarse)').matches ||
-        window.innerWidth < 768
-      );
+      const isMobile =
+        typeof window !== 'undefined' &&
+        (window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 768);
       if (!isMobile) {
         inputRef.current.focus({ preventScroll: true });
       }
@@ -636,7 +284,9 @@ export default function LessonPage() {
     const handleLearnKeyDown = (e: KeyboardEvent) => {
       if (phase !== 'learn') return;
 
-      const isInputActive = document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA';
+      const isInputActive =
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA';
       if (isInputActive) return;
 
       if (e.key === 'ArrowLeft') {
@@ -672,24 +322,26 @@ export default function LessonPage() {
 
     window.addEventListener('keydown', handleLearnKeyDown);
     return () => window.removeEventListener('keydown', handleLearnKeyDown);
-  }, [phase, itemIndex, currentItem, activeTab, currentBatch, startQuiz]);
+  }, [phase, itemIndex, currentItem, activeTab, currentBatch, startQuiz, setItemIndex]);
 
   const completeBatch = async () => {
     setLoading(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const itemIds = currentBatch.map(i => i.id);
+      const itemIds = currentBatch.map((i) => i.id);
       const durationSeconds = getAndResetSeconds();
 
       const res = await fetch('/api/lesson/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ itemIds, durationSeconds })
+        body: JSON.stringify({ itemIds, durationSeconds }),
       });
 
       if (!res.ok) {
@@ -701,7 +353,7 @@ export default function LessonPage() {
       if (customQueueStr) {
         try {
           const customQueueIds = JSON.parse(customQueueStr) as string[];
-          const remainingCustomIds = customQueueIds.filter(id => !itemIds.includes(id));
+          const remainingCustomIds = customQueueIds.filter((id) => !itemIds.includes(id));
           if (remainingCustomIds.length === 0) {
             localStorage.removeItem('custom-lesson-queue');
             localStorage.removeItem('custom-lesson-interleave');
@@ -766,7 +418,8 @@ export default function LessonPage() {
           <BookOpen className="w-16 h-16 mx-auto text-teal-500 animate-bounce" />
           <h2 className="text-2xl font-black">Semua Bersih!</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Hebat! Tidak ada item lesson baru yang tersedia saat ini. Silakan kembali ke dashboard atau periksa level up prasyarat Anda.
+            Hebat! Tidak ada item lesson baru yang tersedia saat ini. Silakan kembali ke dashboard
+            atau periksa level up prasyarat Anda.
           </p>
           <button
             onClick={() => {
@@ -795,30 +448,42 @@ export default function LessonPage() {
 
     if (activeCard.type === 'radical') {
       return (
-        <span className="select-text">Nama <span className="font-black text-slate-850 dark:text-slate-100">Radikal</span></span>
+        <span className="select-text">
+          Nama <span className="font-black text-slate-850 dark:text-slate-100">Radikal</span>
+        </span>
       );
     }
 
     if (activeCard.type === 'kanji') {
       if (isMeaning) {
         return (
-          <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span></span>
+          <span className="select-text">
+            Arti <span className="font-black text-slate-850 dark:text-slate-100">Kanji</span>
+          </span>
         );
       }
       const readings = activeCard.item.readings || [];
-      const primaryReadingObj = readings.find(r => r.primary_reading);
+      const primaryReadingObj = readings.find((r) => r.primary_reading);
       const expectedType = primaryReadingObj?.reading_type;
       return expectedType === 'onyomi' ? (
-        <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Onyomi</span></span>
+        <span className="select-text">
+          Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Onyomi</span>
+        </span>
       ) : (
-        <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kunyomi</span></span>
+        <span className="select-text">
+          Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kunyomi</span>
+        </span>
       );
     }
 
     return isMeaning ? (
-      <span className="select-text">Arti <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
+      <span className="select-text">
+        Arti <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span>
+      </span>
     ) : (
-      <span className="select-text">Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span></span>
+      <span className="select-text">
+        Bacaan <span className="font-black text-slate-850 dark:text-slate-100">Kosakata</span>
+      </span>
     );
   };
 
@@ -829,616 +494,33 @@ export default function LessonPage() {
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 flex flex-col items-center justify-start pt-0 pb-6 sm:pb-12">
         {/* PHASE 1: BATCH LEARN SLIDES */}
         {phase === 'learn' && currentItem && (
-          <div
-            {...swipeHandlers}
-            className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col min-h-[500px] touch-pan-y transition-colors duration-200"
-          >
-            {/* Header Colorful Character Card */}
-            <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(currentItem.type)}`}>
-              <div className="absolute top-4 left-4 right-4 flex items-center justify-between text-white select-none w-[calc(100%-2rem)]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (confirm('Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.')) {
-                      localStorage.removeItem('custom-lesson-queue');
-                      localStorage.removeItem('custom-lesson-interleave');
-                      router.push('/dashboard');
-                    }
-                  }}
-                  title="Keluar Sesi"
-                  className="flex items-center justify-center text-white/85 hover:text-white hover:scale-105 active:scale-95 transition-all w-8 h-8 rounded-lg hover:bg-white/10 cursor-pointer"
-                >
-                  <Home className="w-5 h-5" />
-                </button>
-
-                <div className="text-xs sm:text-sm font-bold text-white/90">
-                  Lesson ({itemIndex + 1}/{currentBatch.length})
-                </div>
-              </div>
-
-              <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
-                <CharacterDisplay character={currentItem.character} slug={currentItem.slug} imgClassName="w-20 h-20" />
-              </h1>
-              <p className="text-lg font-bold tracking-wide mt-4 uppercase opacity-90">{currentItem.primary_meaning || currentItem.slug}</p>
-
-              {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
-                <div className="mt-3">
-                  <AudioPlayerButton audios={currentItem.audios} variant="compact" />
-                </div>
-              )}
-            </div>
-
-            {/* Explanation Navigation Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 select-none">
-              <button
-                onClick={() => setActiveTab('info')}
-                className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
-                  activeTab === 'info'
-                    ? 'border-teal-500 text-teal-500'
-                    : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                }`}
-              >
-                Arti & Deskripsi
-              </button>
-
-              {currentItem.type === 'radical' ? (
-                <button
-                  onClick={() => setActiveTab('kanjis')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
-                    activeTab === 'kanjis'
-                      ? 'border-teal-500 text-teal-500'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Ditemukan di Kanji
-                </button>
-              ) : (
-                <button
-                  onClick={() => setActiveTab('mnemonic')}
-                  className={`flex-1 py-4 text-center text-sm font-bold border-b-2 focus:outline-none transition-colors cursor-pointer ${
-                    activeTab === 'mnemonic'
-                      ? 'border-teal-500 text-teal-500'
-                      : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-                  }`}
-                >
-                  Cara Baca
-                </button>
-              )}
-            </div>
-
-            {/* Tab Explanation Details */}
-            <div className="p-6 sm:p-8 flex-1 space-y-6 text-sm leading-relaxed select-text">
-              {/* TAB 1: MEANINGS & INFO */}
-              {activeTab === 'info' && (
-                <div className="space-y-4">
-                  {/* Developer Quick Edit Action */}
-                  {globalDevMode && (
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                      <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-400 text-xs font-bold">
-                        <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-3xs font-black uppercase tracking-wider">DEV MODE</span>
-                        <span className="hidden sm:inline">Perbaiki atau tambah alternatif kata</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditModalOpen(true)}
-                        className="flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs transition-all shadow-sm shadow-amber-500/20 hover:scale-102 active:scale-98 cursor-pointer ml-auto"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Edit Item Ini</span>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Arti Utama & Arti Alternatif Dua Sub-kolom */}
-                  {(() => {
-                    const rawMeanings = currentItem.meanings || [];
-                    const primaryMeaning = currentItem.primary_meaning || rawMeanings.find((m: any) => m.primary_meaning)?.meaning || currentItem.slug || '';
-                    const altList = rawMeanings
-                      .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== primaryMeaning.toLowerCase().trim())
-                      .map((m: any) => m.meaning.trim());
-                    const uniqueAlts = Array.from(new Set(altList));
-                    const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
-
-                    return (
-                      <div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
-                          {/* Sub-kolom 1: Arti Utama */}
-                          <div>
-                            <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                              Arti Utama
-                            </h3>
-                            <p className="text-xl font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-                              {primaryMeaning}
-                            </p>
-                          </div>
-
-                          {/* Sub-kolom 2: Arti Alternatif */}
-                          <div className="border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-4 space-y-3">
-                            <div>
-                              <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                                Arti Alternatif
-                              </h3>
-                              <p className={`text-base font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-200'}`}>
-                                {alternativeMeaningsText}
-                              </p>
-                            </div>
-
-                            {/* User Synonyms */}
-                            <div className="pt-2 border-t border-slate-200/50 dark:border-slate-700/50">
-                              <UserSynonymsEditor
-                                itemId={currentItem.id}
-                                initialSynonyms={currentItem.user_synonyms}
-                                onSynonymAdded={(syn) => addCustomSynonymAndValidate(currentItem.id, syn)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {currentItem.type === 'vocabulary' && currentItem.parts_of_speech && currentItem.parts_of_speech.length > 0 && (
-                          <div className="mt-2.5">
-                            <PartOfSpeechList partsOfSpeech={currentItem.parts_of_speech} size="sm" />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })()}
-
-                  {currentItem.description && (
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                        {currentItem.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Deskripsi Detail'}
-                      </h3>
-                      <p className="text-slate-600 dark:text-slate-350 mt-1"><FormattedText text={currentItem.description} /></p>
-                    </div>
-                  )}
-
-                  {/* Radicals composed in Kanji */}
-                  {currentItem.type === 'kanji' && currentItem.radicals && currentItem.radicals.length > 0 && (
-                    <div className="space-y-2.5 pt-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-cyan-600 dark:text-cyan-400 uppercase tracking-widest flex items-center space-x-1.5 select-none">
-                          <Layers className="w-3.5 h-3.5 text-cyan-500" />
-                          <span>Terdiri Dari Radikal</span>
-                        </h3>
-                        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20 select-none">
-                          {currentItem.radicals.length}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
-                        {currentItem.radicals.map((rd: any) => {
-                          const meaning = rd.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || rd.slug;
-                          return (
-                            <a
-                              key={rd.id}
-                              href={`/radical/${encodeURIComponent(rd.slug || rd.character)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`Buka halaman penuh radikal ${meaning} di tab baru`}
-                              className="p-3 bg-radical/5 border border-radical/20 hover:border-radical/40 dark:bg-radical/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/rd transition-all duration-200 cursor-pointer"
-                            >
-                              <div className="min-w-0 pr-2">
-                                <span className="text-2xl font-black text-radical group-hover/rd:scale-110 transition-transform duration-200 block leading-tight">
-                                  <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-6 h-6" />
-                                </span>
-                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[90px] font-bold mt-0.5">
-                                  {meaning}
-                                </span>
-                              </div>
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                {rd.level && (
-                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-radical/10 dark:bg-radical/20 rounded-md text-radical">
-                                    Lvl {rd.level}
-                                  </span>
-                                )}
-                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/rd:text-radical transition-colors" />
-                              </div>
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Kanjis composed in Vocabulary */}
-                  {currentItem.type === 'vocabulary' && currentItem.kanjis && currentItem.kanjis.length > 0 && (
-                    <div className="space-y-2.5 pt-2">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-xs font-bold text-pink-600 dark:text-pink-400 uppercase tracking-widest flex items-center space-x-1.5 select-none">
-                          <Layers className="w-3.5 h-3.5 text-pink-500" />
-                          <span>Terdiri Dari Kanji</span>
-                        </h3>
-                        <span className="text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20 select-none">
-                          {currentItem.kanjis.length}
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
-                        {currentItem.kanjis.map((kj: any) => {
-                          const meaning = kj.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || kj.slug;
-                          const reading = kj.item_readings?.find((r: any) => r.primary_reading)?.reading || null;
-                          return (
-                            <a
-                              key={kj.id}
-                              href={`/kanji/${encodeURIComponent(kj.character)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`Buka halaman penuh kanji ${kj.character} (${meaning}) di tab baru`}
-                              className="p-3 bg-kanji/5 border border-kanji/20 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200 cursor-pointer"
-                            >
-                              <div className="min-w-0 pr-2">
-                                <span className="text-2xl font-black font-japanese text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight">
-                                  {kj.character}
-                                </span>
-                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[90px] font-bold mt-0.5">
-                                  {meaning}
-                                </span>
-                                {reading && (
-                                  <span className="text-[10px] text-slate-450 dark:text-slate-400 font-semibold block truncate">
-                                    {reading}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                {kj.level && (
-                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
-                                    Lvl {kj.level}
-                                  </span>
-                                )}
-                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/kj:text-kanji transition-colors" />
-                              </div>
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {(currentItem.meaning_mnemonic || currentItem.description) && (
-                    <div className="p-4 bg-teal-50 dark:bg-teal-950/20 border border-teal-100 dark:border-teal-900/50 rounded-2xl">
-                      <h3 className="text-xs font-bold text-teal-700 dark:text-teal-400 uppercase tracking-widest block select-none">
-                        {currentItem.type === 'radical' ? 'Penjelasan & Mnemonic Radikal' : 'Mnemonic Jembatan Keledai (Arti)'}
-                      </h3>
-                      <MnemonicVisual slug={currentItem.slug} character={currentItem.character} type={currentItem.type} />
-                      <p className="text-teal-900 dark:text-teal-300 mt-1.5"><FormattedText text={currentItem.meaning_mnemonic || currentItem.description} /></p>
-                    </div>
-                  )}
-
-                  {/* User Meaning Note */}
-                  <UserNoteEditor
-                    itemId={currentItem.id}
-                    type="meaning"
-                    initialNote={currentItem.user_meaning_note}
-                  />
-
-                  {/* Visually Similar Kanji in Lesson */}
-                  {currentItem.type === 'kanji' && currentItem.similar_kanjis && currentItem.similar_kanjis.length > 0 && (
-                    <SimilarKanjiSection
-                      currentKanji={{
-                        character: currentItem.character,
-                        slug: currentItem.slug,
-                        level: currentItem.level,
-                        primary_meaning: currentItem.primary_meaning,
-                        primary_reading: currentItem.primary_reading,
-                      }}
-                      similarKanjis={currentItem.similar_kanjis}
-                      variant="lesson"
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* TAB: RADICAL RELATED KANJIS */}
-              {activeTab === 'kanjis' && currentItem.type === 'radical' && (() => {
-                const allKanjis = currentItem.kanjis || [];
-                const displayedKanjis = showAllKanjis ? allKanjis : allKanjis.slice(0, 8);
-                const hasMore = allKanjis.length > 8;
-
-                return (
-                  <div className="space-y-4 animate-fade-in">
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block">
-                        Kanji yang Mengandung Radikal Ini
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Mempelajari radikal ini akan membantumu mengingat kanji-kanji berikut dengan lebih mudah:
-                      </p>
-                    </div>
-
-                    {allKanjis.length > 0 ? (
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
-                          {displayedKanjis.map((kj) => (
-                            <a
-                              key={kj.id}
-                              href={`/kanji/${encodeURIComponent(kj.character)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              title={`Buka halaman penuh kanji ${kj.character} di tab baru`}
-                              className="p-3 bg-kanji/5 border border-kanji/15 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-md rounded-2xl flex items-center justify-between text-left group/kj transition-all duration-200 cursor-pointer"
-                            >
-                              <div>
-                                <span className="text-2xl font-black text-kanji group-hover/kj:scale-110 transition-transform duration-200 block leading-tight font-japanese">
-                                  {kj.character}
-                                </span>
-                                <span className="text-4xs text-slate-600 dark:text-slate-350 uppercase tracking-wider block truncate max-w-[80px] font-bold mt-0.5">
-                                  {kj.slug}
-                                </span>
-                              </div>
-                              <div className="flex flex-col items-end gap-1 shrink-0">
-                                {kj.level && (
-                                  <span className="px-1.5 py-0.5 text-4xs font-black bg-kanji/10 dark:bg-kanji/20 rounded-md text-kanji">
-                                    Lvl {kj.level}
-                                  </span>
-                                )}
-                                <ExternalLink className="w-3 h-3 text-slate-400 group-hover/kj:text-kanji transition-colors" />
-                              </div>
-                            </a>
-                          ))}
-                        </div>
-
-                        {hasMore && (
-                          <button
-                            type="button"
-                            onClick={() => setShowAllKanjis(!showAllKanjis)}
-                            className="w-full py-2.5 px-4 bg-kanji/10 hover:bg-kanji/20 dark:bg-kanji/15 dark:hover:bg-kanji/25 text-kanji font-bold text-xs rounded-2xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer"
-                          >
-                            <span>
-                              {showAllKanjis
-                                ? 'Tampilkan Lebih Sedikit'
-                                : `Muat Lebih Banyak (+${allKanjis.length - 8} Kanji)`}
-                            </span>
-                            {showAllKanjis ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 text-center">
-                        <p className="text-slate-400 text-xs italic select-none">
-                          Belum ada data relasi kanji untuk radikal ini.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* TAB 2: READINGS & MNEMONICS (KANJI / VOCAB) */}
-              {activeTab === 'mnemonic' && currentItem.type !== 'radical' && (
-                <div className="space-y-4">
-                  {currentItem.type === 'kanji' ? (
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center space-x-1.5 select-none mb-2">
-                        <Languages className="w-3.5 h-3.5 text-pink-500" />
-                        <span>Cara Baca (Readings)</span>
-                      </h3>
-                      {(() => {
-                        const rawReadings = currentItem.readings || [];
-                        const onyomiList = rawReadings.filter(
-                          (r: any) => r.reading_type === 'onyomi' || (!r.reading_type && r.reading_type !== 'kunyomi' && r.reading_type !== 'nanori')
-                        );
-                        const kunyomiList = rawReadings.filter((r: any) => r.reading_type === 'kunyomi');
-                        const nanoriList = rawReadings.filter((r: any) => r.reading_type === 'nanori');
-
-                        return (
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 bg-white/70 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 sm:p-5">
-                            {/* On'yomi */}
-                            <div className="space-y-1.5">
-                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                                On’yomi
-                              </span>
-                              {onyomiList.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {onyomiList.map((r: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                        r.primary_reading
-                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
-                                      }`}
-                                    >
-                                      <span className="leading-none">{r.reading}</span>
-                                      {r.primary_reading && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                          Utama
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
-                                  None
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Kun'yomi */}
-                            <div className="space-y-1.5 border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-3.5">
-                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                                Kun’yomi
-                              </span>
-                              {kunyomiList.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {kunyomiList.map((r: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                        r.primary_reading
-                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
-                                      }`}
-                                    >
-                                      <span className="leading-none">{r.reading}</span>
-                                      {r.primary_reading && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                          Utama
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
-                                  None
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Nanori */}
-                            <div className="space-y-1.5 border-t sm:border-t-0 sm:border-l border-slate-200/60 dark:border-slate-700/60 pt-3 sm:pt-0 sm:pl-3.5">
-                              <span className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                                Nanori
-                              </span>
-                              {nanoriList.length > 0 ? (
-                                <div className="flex flex-wrap gap-1.5">
-                                  {nanoriList.map((r: any, idx: number) => (
-                                    <div
-                                      key={idx}
-                                      className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                        r.primary_reading
-                                          ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100'
-                                      }`}
-                                    >
-                                      <span className="leading-none">{r.reading}</span>
-                                      {r.primary_reading && (
-                                        <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                          Utama
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 italic block select-none">
-                                  None
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  ) : (
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">
-                        Bacaan Jepang Utama (Kana)
-                      </h3>
-                      <div className="flex items-center gap-3 mt-1">
-                        <p className="text-2xl font-black text-indigo-600 dark:text-indigo-400">
-                          {currentItem.primary_reading}
-                        </p>
-                        {currentItem.type === 'vocabulary' && currentItem.audios && currentItem.audios.length > 0 && (
-                          <AudioPlayerButton audios={currentItem.audios} variant="compact" />
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {currentItem.reading_mnemonic && (
-                    <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-100 dark:border-indigo-900/50 rounded-2xl">
-                      <h3 className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-widest block select-none">Mnemonic Jembatan Keledai (Bacaan)</h3>
-                      <p className="text-indigo-900 dark:text-indigo-300 mt-1.5"><FormattedText text={currentItem.reading_mnemonic} /></p>
-                    </div>
-                  )}
-
-                  {/* User Reading Note */}
-                  <UserNoteEditor
-                    itemId={currentItem.id}
-                    type="reading"
-                    initialNote={currentItem.user_reading_note}
-                  />
-
-                  {/* Context sentence - Vocab only */}
-                  {currentItem.type === 'vocabulary' && (
-                    <div className="border-t border-slate-200 dark:border-slate-800 pt-6 mt-6 space-y-4">
-                      <h3 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest block select-none">Contoh Kalimat Kontekstual</h3>
-
-                      {currentItem.context_sentences && currentItem.context_sentences.length > 0 ? (
-                        <div className="space-y-4">
-                          {currentItem.context_sentences.map((s, idx) => (
-                            <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 space-y-2">
-                              <p className="text-lg font-bold text-indigo-600 dark:text-indigo-400 select-all">{s.japanese}</p>
-                              <p className="text-xs text-slate-505 dark:text-slate-400">{s.indonesian}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-slate-400 text-xs italic select-none">Belum ada contoh kalimat untuk kosakata ini.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Slide Navigation Buttons */}
-            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-55 dark:bg-slate-900 flex flex-col items-center gap-3 sm:gap-0 select-none">
-              {/* Progress dots - Mobile Only */}
-              <div className="flex space-x-1.5 sm:hidden">
-                {currentBatch.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                      idx === itemIndex
-                        ? 'bg-teal-500 scale-125'
-                        : idx < itemIndex
-                        ? 'bg-teal-300 dark:bg-teal-800'
-                        : 'bg-slate-200 dark:bg-slate-850'
-                    }`}
-                  ></div>
-                ))}
-              </div>
-
-              {/* Navigation Controls Row */}
-              <div className="flex items-center justify-between w-full">
-                <button
-                  disabled={itemIndex === 0 && activeTab === 'info'}
-                  onClick={handlePrev}
-                  className="px-4 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:cursor-not-allowed font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-colors shrink-0 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Sebelumnya</span>
-                </button>
-
-                {/* Progress dots - Desktop Only */}
-                <div className="hidden sm:flex space-x-1.5">
-                  {currentBatch.map((_, idx) => (
-                    <div
-                      key={idx}
-                      className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
-                        idx === itemIndex
-                          ? 'bg-teal-500 scale-125'
-                          : idx < itemIndex
-                          ? 'bg-teal-300 dark:bg-teal-800'
-                          : 'bg-slate-200 dark:bg-slate-850'
-                      }`}
-                    ></div>
-                  ))}
-                </div>
-
-                {itemIndex === currentBatch.length - 1 && activeTab !== 'info' ? (
-                  <button
-                    onClick={startQuiz}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer shadow-sm"
-                  >
-                    <span>Mulai Kuis</span>
-                    <Award className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleNext}
-                    className="px-5 py-2 bg-teal-500 hover:bg-teal-600 text-white font-bold rounded-xl text-xs flex items-center space-x-1.5 transition-all duration-200 shrink-0 cursor-pointer shadow-sm"
-                  >
-                    <span>Berikutnya</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
+          <LessonSlideViewer
+            currentItem={currentItem}
+            itemIndex={itemIndex}
+            currentBatch={currentBatch}
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            showAllKanjis={showAllKanjis}
+            setShowAllKanjis={setShowAllKanjis}
+            globalDevMode={globalDevMode}
+            setEditModalOpen={setEditModalOpen}
+            onExit={() => {
+              if (
+                confirm(
+                  'Apakah Anda yakin ingin keluar dari sesi pembelajaran? Progres batch ini belum disimpan.'
+                )
+              ) {
+                localStorage.removeItem('custom-lesson-queue');
+                localStorage.removeItem('custom-lesson-interleave');
+                router.push('/dashboard');
+              }
+            }}
+            startQuiz={startQuiz}
+            handleNext={handleNext}
+            handlePrev={handlePrev}
+            addCustomSynonymAndValidate={addCustomSynonymAndValidate}
+            swipeHandlers={swipeHandlers}
+          />
         )}
 
         {/* PHASE 2: BATCH QUIZ (ZUSTAND SESSION) */}
@@ -1464,7 +546,11 @@ export default function LessonPage() {
           return (
             <div className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden animate-fade-in min-h-[400px] flex flex-col justify-start">
               {/* Header quiz card */}
-              <div className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(activeCard.type)}`}>
+              <div
+                className={`relative pt-16 pb-12 flex flex-col items-center justify-center text-white ${getItemColorClass(
+                  activeCard.type
+                )}`}
+              >
                 <QuizHeader
                   onExit={() => {
                     if (confirm('Keluar dari sesi kuis pembelajaran?')) {
@@ -1479,7 +565,11 @@ export default function LessonPage() {
                   setDevMode={setDevMode}
                 />
                 <h1 className="text-7xl font-black tracking-tight select-text text-center mt-6 flex items-center justify-center">
-                  <CharacterDisplay character={activeCard.character} slug={activeCard.item.slug} imgClassName="w-20 h-20" />
+                  <CharacterDisplay
+                    character={activeCard.character}
+                    slug={activeCard.item.slug}
+                    imgClassName="w-20 h-20"
+                  />
                 </h1>
               </div>
 
@@ -1533,7 +623,9 @@ export default function LessonPage() {
                     cardType={activeCard.cardType}
                     devMode={globalDevMode}
                     onEditItem={() => setEditModalOpen(true)}
-                    onSynonymAdded={(synonym) => addCustomSynonymAndValidate(activeCard.itemId, synonym)}
+                    onSynonymAdded={(synonym) =>
+                      addCustomSynonymAndValidate(activeCard.itemId, synonym)
+                    }
                   />
                 </div>
               )}
@@ -1546,7 +638,7 @@ export default function LessonPage() {
           <QuickItemEditorModal
             isOpen={editModalOpen}
             setIsOpen={setEditModalOpen}
-            item={phase === 'learn' ? currentItem : (activeCard?.item || null)}
+            item={phase === 'learn' ? currentItem : activeCard?.item || null}
             onItemUpdated={handleItemUpdated}
           />
         )}

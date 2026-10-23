@@ -12,6 +12,9 @@ import AudioPlayerButton from '@/components/audio/AudioPlayerButton';
 import { supabase } from '@/lib/supabase';
 import MnemonicVisual from '@/components/mnemonic/MnemonicVisual';
 import { UserSynonymsEditor, UserNoteEditor } from '@/components/user-annotations';
+import ItemMeaningBlock from '@/components/dictionary/details/ItemMeaningBlock';
+import ItemReadingBlock from '@/components/dictionary/details/ItemReadingBlock';
+import ItemRelationsBlock from '@/components/dictionary/details/ItemRelationsBlock';
 
 interface ItemDetailModalProps {
   item: DictionaryItem | null;
@@ -202,190 +205,26 @@ export default function ItemDetailModal({
             </span>
           </div>
 
-          {/* Meanings Section: Arti Utama & Arti Alternatif Dua Sub-kolom */}
-          {(() => {
-            const rawMeanings = item.meanings || (item as any).item_meanings || [];
-            const pMeaning = primaryMeaning;
-            const altList = rawMeanings
-              .filter((m: any) => !m.primary_meaning && m.meaning && m.meaning.toLowerCase().trim() !== pMeaning.toLowerCase().trim())
-              .map((m: any) => m.meaning.trim());
-            const uniqueAlts = Array.from(new Set(altList));
-            const alternativeMeaningsText = uniqueAlts.length > 0 ? uniqueAlts.join(', ') : '-';
-
-            return (
-              <div className="space-y-2">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 bg-card-muted/40 p-3.5 sm:p-4 rounded-2xl border border-card-border">
-                  {/* Sub-kolom 1: Arti Utama */}
-                  <div>
-                    <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
-                      Arti Utama
-                    </h3>
-                    <p className="text-lg font-bold text-teal-600 dark:text-teal-400 mt-1 capitalize">
-                      {pMeaning}
-                    </p>
-                  </div>
-
-                  {/* Sub-kolom 2: Arti Alternatif */}
-                  <div className="border-t sm:border-t-0 sm:border-l border-card-border pt-3 sm:pt-0 sm:pl-4 space-y-2">
-                    <div>
-                      <h3 className="text-xs font-bold text-muted uppercase tracking-widest block">
-                        Arti Alternatif
-                      </h3>
-                      <p className={`text-sm font-semibold mt-1 ${alternativeMeaningsText === '-' ? 'text-muted' : 'text-primary'}`}>
-                        {alternativeMeaningsText}
-                      </p>
-                    </div>
-
-                    {/* User Synonyms */}
-                    <div className="pt-2 border-t border-card-border">
-                      <UserSynonymsEditor
-                        itemId={item.id}
-                        initialSynonyms={(item as any).user_synonyms}
-                        onSynonymsChange={(syns) => {
-                          if (onItemUpdated) {
-                            onItemUpdated({ ...item, user_synonyms: syns });
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          {/* Meanings Section */}
+          <ItemMeaningBlock
+            primaryMeaning={primaryMeaning}
+            meanings={item.meanings || (item as any).item_meanings || []}
+            itemId={item.id}
+            userSynonyms={(item as any).user_synonyms}
+            onItemUpdated={(fields) => {
+              if (onItemUpdated) {
+                onItemUpdated({ ...item, ...fields });
+              }
+            }}
+            variant="modal"
+          />
 
           {/* Readings Section (Kanji & Vocab) */}
-          {item.readings && item.readings.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-muted uppercase tracking-widest flex items-center space-x-1.5">
-                  <Languages className="w-3.5 h-3.5 text-pink-500" />
-                  <span>Cara Baca (Readings)</span>
-                </h3>
-              </div>
-
-              {type === 'kanji' ? (
-                (() => {
-                  const onyomiList = item.readings.filter(
-                    (r: any) => r.reading_type === 'onyomi' || (!r.reading_type && r.reading_type !== 'kunyomi' && r.reading_type !== 'nanori')
-                  );
-                  const kunyomiList = item.readings.filter((r: any) => r.reading_type === 'kunyomi');
-                  const nanoriList = item.readings.filter((r: any) => r.reading_type === 'nanori');
-
-                  return (
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-card-muted/40 p-3.5 rounded-2xl border border-card-border">
-                      {/* On'yomi */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
-                          On’yomi
-                        </span>
-                        {onyomiList.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {onyomiList.map((r: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                  r.primary_reading
-                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-card border-card-border text-primary'
-                                }`}
-                              >
-                                <span className="leading-none">{r.reading}</span>
-                                {r.primary_reading && (
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                    Utama
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs font-medium text-muted italic block">
-                            None
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Kun'yomi */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
-                          Kun’yomi
-                        </span>
-                        {kunyomiList.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {kunyomiList.map((r: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                  r.primary_reading
-                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-card border-card-border text-primary'
-                                }`}
-                              >
-                                <span className="leading-none">{r.reading}</span>
-                                {r.primary_reading && (
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                    Utama
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs font-medium text-muted italic block">
-                            None
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Nanori */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-extrabold text-muted uppercase tracking-widest block">
-                          Nanori
-                        </span>
-                        {nanoriList.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {nanoriList.map((r: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className={`px-2.5 py-1 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-1.5 transition-all ${
-                                  r.primary_reading
-                                    ? 'bg-pink-500/10 border-pink-500/30 text-pink-600 dark:text-pink-300 shadow-xs'
-                                    : 'bg-card border-card-border text-primary'
-                                }`}
-                              >
-                                <span className="leading-none">{r.reading}</span>
-                                {r.primary_reading && (
-                                  <span className="text-[9px] font-black uppercase tracking-wider text-pink-500 bg-pink-100 dark:bg-pink-950/60 px-1 py-0.5 rounded">
-                                    Utama
-                                  </span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-xs font-medium text-muted italic block">
-                            None
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {item.readings.map((r: any, idx: number) => (
-                    <div
-                      key={idx}
-                      className="px-3 py-1.5 rounded-xl border text-xs font-japanese font-bold flex items-center space-x-2 bg-purple-500/10 border-purple-500/30 text-purple-700 dark:text-purple-300 shadow-xs"
-                    >
-                      <span>{r.reading}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <ItemReadingBlock
+            type={type}
+            readings={item.readings || (item as any).item_readings || []}
+            variant="modal"
+          />
 
           {/* Meaning Mnemonic / Radical Description */}
           {(item.meaning_mnemonic || item.description) && (
@@ -499,121 +338,18 @@ export default function ItemDetailModal({
             </div>
           )}
 
-          {/* Relations: Radicals composed in Kanji */}
-          {item.radicals && item.radicals.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-cyan-500 uppercase tracking-widest block flex items-center space-x-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Terdiri Dari Radikal</span>
-                </h3>
-                <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
-                  {item.radicals.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
-                {item.radicals.map((rd: any) => (
-                  <div
-                    key={rd.id}
-                    onClick={() => {
-                      if (onNavigateItem) {
-                        onNavigateItem(rd);
-                      } else {
-                        onClose();
-                        router.push(`/radical?character=${encodeURIComponent(rd.character || rd.slug)}`);
-                      }
-                    }}
-                    className="p-3 bg-radical/5 border border-radical/20 hover:border-radical/40 dark:bg-radical/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                  >
-                    <span className="text-2xl font-black text-radical group-hover:scale-110 transition-transform leading-tight block">
-                      <CharacterDisplay character={rd.character || '—'} slug={rd.slug} imgClassName="w-7 h-7" />
-                    </span>
-                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
-                      {rd.slug}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Relations: Found in Kanji (Radical) */}
-          {item.kanjis && item.kanjis.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-pink-500 uppercase tracking-widest block flex items-center space-x-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>
-                    {type === 'vocabulary' ? 'Terdiri Dari Kanji' : 'Ditemukan di Kanji'}
-                  </span>
-                </h3>
-                <span className="text-xs font-bold text-pink-600 dark:text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-500/20">
-                  {item.kanjis.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
-                {item.kanjis.map((kj: any) => (
-                  <div
-                    key={kj.id}
-                    onClick={() => {
-                      if (onNavigateItem) {
-                        onNavigateItem(kj);
-                      } else {
-                        onClose();
-                        router.push(`/kanji?character=${encodeURIComponent(kj.character)}`);
-                      }
-                    }}
-                    className="p-3 bg-kanji/5 border border-kanji/20 hover:border-kanji/40 dark:bg-kanji/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                  >
-                    <span className="text-2xl font-black font-japanese text-kanji group-hover:scale-110 transition-transform leading-tight block">
-                      {kj.character}
-                    </span>
-                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
-                      {kj.slug}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Relations: Found in Vocabulary (Kanji) */}
-          {item.vocabularies && item.vocabularies.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-card-border">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold text-purple-500 uppercase tracking-widest block flex items-center space-x-1.5">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Ditemukan di Kosakata</span>
-                </h3>
-                <span className="text-xs font-bold text-purple-600 dark:text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full border border-purple-500/20">
-                  {item.vocabularies.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-2 max-h-[220px] overflow-y-auto pr-1.5 custom-scrollbar">
-                {item.vocabularies.map((vc: any) => (
-                  <div
-                    key={vc.id}
-                    onClick={() => {
-                      if (onNavigateItem) {
-                        onNavigateItem(vc);
-                      } else {
-                        onClose();
-                        router.push(`/vocabulary?character=${encodeURIComponent(vc.character)}`);
-                      }
-                    }}
-                    className="p-3 bg-vocab/5 border border-vocab/20 hover:border-vocab/40 dark:bg-vocab/10 hover:shadow-xs rounded-xl flex flex-col items-center justify-center text-center group cursor-pointer transition-all duration-200 hover:-translate-y-0.5"
-                  >
-                    <span className="text-xl font-black font-japanese text-vocab group-hover:scale-110 transition-transform leading-tight block truncate max-w-full px-1">
-                      {vc.character}
-                    </span>
-                    <span className="text-[10px] text-muted uppercase tracking-wider font-semibold truncate max-w-full block mt-1">
-                      {vc.slug}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Relations: Radicals, Kanji, Vocabularies */}
+          <ItemRelationsBlock
+            type={type}
+            radicals={item.radicals}
+            kanjis={item.kanjis}
+            vocabularies={item.vocabularies}
+            variant="modal"
+            onNavigateItem={onNavigateItem}
+            onClose={() => {
+              onClose();
+            }}
+          />
 
         </div>
 

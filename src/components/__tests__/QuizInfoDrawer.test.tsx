@@ -26,7 +26,7 @@ describe('QuizInfoDrawer Component', () => {
       level: 10,
       lesson_position: 5,
       description: 'Jika Anda menendang tebing dua kali, Anda akan memulai <radikal>longsor</radikal>! Oh tidak!',
-      meanings: [{ id: 'm-1', meaning: 'Tanah longsor', primary_meaning: true, accepted_answer: true }],
+      meanings: [{ id: 'm-1', item_id: 'rad-123', meaning: 'Tanah longsor', primary_meaning: true, accepted_answer: true }],
       primary_meaning: 'Tanah longsor',
     };
 
@@ -48,7 +48,7 @@ describe('QuizInfoDrawer Component', () => {
       level: 10,
       lesson_position: 15,
       description: 'Ini adalah radikal <radikal>paus</radikal>. Mengapa? Karena bentuknya seperti topi paus! Yang ini mempunyai salib tua yang besar di atasnya, dan hanya dapat dipakai oleh Paus.',
-      meanings: [{ id: 'm-2', meaning: 'Paus', primary_meaning: true, accepted_answer: true }],
+      meanings: [{ id: 'm-2', item_id: 'rad-pope', meaning: 'Paus', primary_meaning: true, accepted_answer: true }],
       primary_meaning: 'Paus',
     };
 
@@ -71,7 +71,7 @@ describe('QuizInfoDrawer Component', () => {
       lesson_position: 20,
       meaning_mnemonic: 'Kanji ini sama dengan kanji radikal — <kanji>lurus</kanji>.',
       reading_mnemonic: 'Masukkan makanan langsung ke kerongkongan Anda...',
-      meanings: [{ id: 'm-3', meaning: 'Lurus', primary_meaning: true, accepted_answer: true }],
+      meanings: [{ id: 'm-3', item_id: 'kj-1', meaning: 'Lurus', primary_meaning: true, accepted_answer: true }],
       primary_meaning: 'Lurus',
     };
 
@@ -93,10 +93,10 @@ describe('QuizInfoDrawer Component', () => {
       lesson_position: 8,
       meaning_mnemonic: 'Bentuknya menyerupai gunung atau angka delapan.',
       reading_mnemonic: 'Bayangkan seseorang memakai topi hachi (hachi = 8).',
-      meanings: [{ id: 'm-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
+      meanings: [{ id: 'm-8', item_id: 'kj-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
       primary_meaning: 'Delapan',
       readings: [
-        { id: 'r-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
+        { id: 'r-8', item_id: 'kj-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
       ],
       primary_reading: 'はち',
     };
@@ -126,10 +126,10 @@ describe('QuizInfoDrawer Component', () => {
       lesson_position: 8,
       meaning_mnemonic: 'Bentuknya menyerupai gunung atau angka delapan.',
       reading_mnemonic: 'Bayangkan seseorang memakai topi hachi (hachi = 8).',
-      meanings: [{ id: 'm-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
+      meanings: [{ id: 'm-8', item_id: 'kj-8', meaning: 'Delapan', primary_meaning: true, accepted_answer: true }],
       primary_meaning: 'Delapan',
       readings: [
-        { id: 'r-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
+        { id: 'r-8', item_id: 'kj-8', reading: 'はち', reading_type: 'onyomi', primary_reading: true, accepted_answer: true },
       ],
       primary_reading: 'はち',
     };

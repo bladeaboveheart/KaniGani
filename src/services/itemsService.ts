@@ -239,6 +239,16 @@ export async function fetchItemFullDetails(itemId: string) {
   };
 }
 
+const MAX_CACHE_SIZE = 250;
+
+function setBoundedCache<K, V>(map: Map<K, V>, key: K, value: V, max = MAX_CACHE_SIZE) {
+  if (map.size >= max) {
+    const firstKey = map.keys().next().value;
+    if (firstKey !== undefined) map.delete(firstKey);
+  }
+  map.set(key, value);
+}
+
 const itemIdentifierCache = new Map<string, any>();
 const adjacentItemsCache = new Map<string, any>();
 
@@ -313,12 +323,12 @@ export async function fetchItemByIdentifier(type: ItemType, identifier: string) 
     primary_reading: primaryReading,
   };
 
-  itemIdentifierCache.set(cacheKey, fullItem);
+  setBoundedCache(itemIdentifierCache, cacheKey, fullItem);
   if (fullItem.character) {
-    itemIdentifierCache.set(`${type}_${fullItem.character.toLowerCase()}`, fullItem);
+    setBoundedCache(itemIdentifierCache, `${type}_${fullItem.character.toLowerCase()}`, fullItem);
   }
   if (fullItem.slug) {
-    itemIdentifierCache.set(`${type}_${fullItem.slug.toLowerCase()}`, fullItem);
+    setBoundedCache(itemIdentifierCache, `${type}_${fullItem.slug.toLowerCase()}`, fullItem);
   }
 
   return fullItem;
@@ -354,7 +364,7 @@ export async function fetchAdjacentItems(type: ItemType, level: number, currentI
   const next = currentIndex < levelItems.length - 1 ? levelItems[currentIndex + 1] : null;
   const result = { prev, next };
 
-  adjacentItemsCache.set(cacheKey, result);
+  setBoundedCache(adjacentItemsCache, cacheKey, result);
   return result;
 }
 

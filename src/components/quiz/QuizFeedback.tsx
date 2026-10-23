@@ -74,28 +74,19 @@ export default function QuizFeedback({
             </span>
           )
         ) : (
-          <div className="flex flex-col items-center space-y-1">
-            <div className="flex items-center space-x-2 text-rose-600 dark:text-rose-400">
-              <XCircle className="w-5 h-5 shrink-0" />
-              <div className="flex items-center">
-                <span>Jawaban Salah!</span>
-                {showSrs && srsStage !== undefined && (
-                  <span className="relative inline-flex items-center ml-2">
-                    <span className="px-2.5 py-0.5 bg-rose-500 text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1">
-                      <span>{getSrsStageName(srsStage)}</span>
-                      <ArrowDown className="w-3 h-3 stroke-[3]" />
-                    </span>
+          <div className="flex items-center space-x-2 text-rose-600 dark:text-rose-400">
+            <XCircle className="w-5 h-5 shrink-0" />
+            <div className="flex items-center">
+              <span>Jawaban Salah!</span>
+              {showSrs && srsStage !== undefined && (
+                <span className="relative inline-flex items-center ml-2">
+                  <span className="px-2.5 py-0.5 bg-rose-500 text-white font-extrabold text-xs rounded-lg shadow-xxs flex items-center space-x-1">
+                    <span>{getSrsStageName(srsStage)}</span>
+                    <ArrowDown className="w-3 h-3 stroke-[3]" />
                   </span>
-                )}
-              </div>
+                </span>
+              )}
             </div>
-            <span className="font-extrabold block text-sm mt-1 uppercase tracking-wide">
-              Jawaban benar: {
-                cardType === 'meaning'
-                  ? acceptedMeanings.join(', ')
-                  : acceptedReadings.join(', ')
-              }
-            </span>
           </div>
         )}
       </div>

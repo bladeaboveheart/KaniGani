@@ -13,91 +13,42 @@ export interface QuizCard {
   attempts: number;
 }
 
-// Levenshtein Distance Helper
-function getLevenshteinDistance(a: string, b: string): number {
-  const matrix = [];
-  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
-  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+import { getLevenshteinDistance, isAlmostCorrect } from '../lib/levenshtein';
+import { expandAcceptedMeanings } from '../lib/meaningHelper';
 
-  for (let i = 1; i <= b.length; i++) {
-    for (let j = 1; j <= a.length; j++) {
-      if (b.charAt(i - 1) === a.charAt(j - 1)) {
-        matrix[i][j] = matrix[i - 1][j - 1];
-      } else {
-        matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // substitution
-          Math.min(
-            matrix[i][j - 1] + 1, // insertion
-            matrix[i - 1][j] + 1 // deletion
-          )
-        );
-      }
-    }
-  }
-  return matrix[b.length][a.length];
-}
+// Re-export for external modules / test backward compatibility
+export { getLevenshteinDistance, isAlmostCorrect, expandAcceptedMeanings };
 
-// Typo tolerance: Levenshtein distance <= 1 for short words, <= 2 for longer ones
-function isAlmostCorrect(input: string, accepted: string): boolean {
-  const dist = getLevenshteinDistance(input, accepted);
-  if (dist === 0) return false;
-  const len = accepted.length;
-  if (len <= 3) return dist === 1;
-  if (len <= 5) return dist <= 1;
-  return dist <= 2;
-}
+// In-memory cache for counterpart meaning lookups (character:type -> accepted meanings) to eliminate network lag during quiz
+const confusionMeaningsCache = new Map<string, string[]>();
 
-/**
- * Expands accepted meanings to be extremely resilient during typing review:
- * - Splits combined options like "Unggul / Berbakat / Jenius" into separate answers ("unggul", "berbakat", "jenius").
- * - Strips explanations in parentheses like "Pengar (Mabuk Pasca Minum / Hangover)" -> "pengar", "mabuk pasca minum", "hangover".
- * - Ignores terminal punctuation like exclamation marks or dots ("kamu brengsek!" -> "kamu brengsek").
- */
-export function expandAcceptedMeanings(meanings: string[]): string[] {
-  const result = new Set<string>();
-
-  const addCandidate = (val: string) => {
-    const v = val.toLowerCase().trim();
-    if (!v) return;
-    result.add(v);
-    const noPunct = v.replace(/[!?,.]/g, '').trim();
-    if (noPunct && noPunct !== v) {
-      result.add(noPunct);
-    }
-  };
-
-  for (const raw of meanings) {
-    const trimmed = raw.toLowerCase().trim();
-    if (!trimmed) continue;
-    addCandidate(trimmed);
-
-    // 1. Extract without parenthesis & extract contents inside parentheses
-    if (trimmed.includes('(') && trimmed.includes(')')) {
-      const withoutParen = trimmed.replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
-      if (withoutParen) addCandidate(withoutParen);
-
-      const matches = trimmed.matchAll(/\((.*?)\)/g);
-      for (const match of matches) {
-        const inner = match[1].trim();
-        if (inner) {
-          inner.split(/[/,]/).forEach(part => {
-            addCandidate(part);
-          });
-        }
-      }
-    }
-
-    // 2. Split by slash '/' or comma ','
-    if (trimmed.includes('/') || trimmed.includes(',')) {
-      const parts = trimmed.split(/[/,]/);
-      for (const part of parts) {
-        const cleanPart = part.replace(/\(.*?\)/g, '').replace(/\s+/g, ' ').trim();
-        if (cleanPart) addCandidate(cleanPart);
-      }
-    }
+async function getCounterpartMeanings(character: string, type: 'radical' | 'kanji'): Promise<string[]> {
+  const cacheKey = `${character}:${type}`;
+  if (confusionMeaningsCache.has(cacheKey)) {
+    return confusionMeaningsCache.get(cacheKey)!;
   }
 
-  return Array.from(result);
+  const { data: items } = await supabase
+    .from('items')
+    .select('id')
+    .eq('character', character)
+    .eq('type', type);
+
+  if (items && items.length > 0) {
+    const itemId = items[0].id;
+    const { data: meanings } = await supabase
+      .from('item_meanings')
+      .select('meaning')
+      .eq('item_id', itemId)
+      .eq('accepted_answer', true);
+
+    const accepted = meanings?.map((m) => m.meaning.toLowerCase().trim()) || [];
+    confusionMeaningsCache.set(cacheKey, accepted);
+    return accepted;
+  }
+
+  confusionMeaningsCache.set(cacheKey, []);
+  return [];
 }
 
 /**
@@ -523,52 +474,20 @@ export const useQuizStore = create<QuizStore>((set, get) => ({
     if (activeCard.cardType === 'meaning' && !isCorrectMeaning) {
       try {
         if (activeCard.type === 'kanji') {
-          // Check if there is a radical with the same character
-          const { data: radicalItems } = await supabase
-            .from('items')
-            .select('id')
-            .eq('character', activeCard.character)
-            .eq('type', 'radical');
-
-          if (radicalItems && radicalItems.length > 0) {
-            const radicalId = radicalItems[0].id;
-            const { data: radicalMeanings } = await supabase
-              .from('item_meanings')
-              .select('meaning')
-              .eq('item_id', radicalId)
-              .eq('accepted_answer', true);
-
-            const acceptedRadicalMeanings = radicalMeanings?.map(m => m.meaning.toLowerCase().trim()) || [];
-            if (acceptedRadicalMeanings.includes(trimmedInput)) {
-              set({
-                warningMsg: "Itu adalah arti Radikal. Yang kami minta adalah arti dari Kanjinya!",
-              });
-              return;
-            }
+          const acceptedRadicalMeanings = await getCounterpartMeanings(activeCard.character, 'radical');
+          if (acceptedRadicalMeanings.includes(trimmedInput)) {
+            set({
+              warningMsg: "Itu adalah arti Radikal. Yang kami minta adalah arti dari Kanjinya!",
+            });
+            return;
           }
         } else if (activeCard.type === 'radical') {
-          // Check if there is a kanji with the same character
-          const { data: kanjiItems } = await supabase
-            .from('items')
-            .select('id')
-            .eq('character', activeCard.character)
-            .eq('type', 'kanji');
-
-          if (kanjiItems && kanjiItems.length > 0) {
-            const kanjiId = kanjiItems[0].id;
-            const { data: kanjiMeanings } = await supabase
-              .from('item_meanings')
-              .select('meaning')
-              .eq('item_id', kanjiId)
-              .eq('accepted_answer', true);
-
-            const acceptedKanjiMeanings = kanjiMeanings?.map(m => m.meaning.toLowerCase().trim()) || [];
-            if (acceptedKanjiMeanings.includes(trimmedInput)) {
-              set({
-                warningMsg: "Itu adalah arti Kanji. Yang kami minta adalah arti dari Radikalnya!",
-              });
-              return;
-            }
+          const acceptedKanjiMeanings = await getCounterpartMeanings(activeCard.character, 'kanji');
+          if (acceptedKanjiMeanings.includes(trimmedInput)) {
+            set({
+              warningMsg: "Itu adalah arti Kanji. Yang kami minta adalah arti dari Radikalnya!",
+            });
+            return;
           }
         }
       } catch (err) {

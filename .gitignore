@@ -25,6 +25,7 @@
 *.pem
 /scratch/
 .vscode/
+LEARNING_JOURNAL.md
 
 # debug
 npm-debug.log*

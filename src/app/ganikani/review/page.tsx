@@ -689,14 +689,9 @@ export default function GanikaniReviewPage() {
                     )}
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center space-y-1">
-                    <div className="flex items-center space-x-1.5 text-rose-600 dark:text-rose-400 font-bold">
-                      <XCircle className="w-4 h-4 shrink-0" />
-                      <span>Jawaban Salah!</span>
-                    </div>
-                    <span className="font-extrabold text-xs sm:text-sm tracking-wide select-text">
-                      Jawaban benar: {activeItem?.primary_reading} {activeItem?.character ? `(${activeItem.character})` : ''}
-                    </span>
+                  <div className="flex items-center space-x-1.5 text-rose-600 dark:text-rose-400 font-bold">
+                    <XCircle className="w-4 h-4 shrink-0" />
+                    <span>Jawaban Salah!</span>
                   </div>
                 )}
               </div>

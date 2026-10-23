@@ -92,125 +92,153 @@ export default function QuizInfoDrawer({
 
     let isMounted = true;
 
-    // 1. Fallback audios for vocab
-    if (item.type === 'vocabulary' && (!item.audios || item.audios.length === 0)) {
-      supabase
-        .from('item_audios')
-        .select('*')
-        .eq('item_id', item.id)
-        .then(({ data }) => {
+    async function loadFallbackData() {
+      // 1. Fallback audios for vocab
+      if (item!.type === 'vocabulary' && (!item!.audios || item!.audios.length === 0)) {
+        try {
+          const { data } = await supabase
+            .from('item_audios')
+            .select('*')
+            .eq('item_id', item!.id);
           if (isMounted && data) setFallbackAudios(data);
-        });
-    }
+        } catch (e) {
+          console.error('Error loading fallback audios in drawer:', e);
+        }
+      }
 
-    // 2. Fallback similar kanji for kanji
-    if (item.type === 'kanji' && (!item.similar_kanjis || item.similar_kanjis.length > 0)) {
-      supabase
-        .from('item_similar_kanji')
-        .select(`
-          similar_item_id,
-          items!similar_item_id(
-            id, character, slug, level, type,
-            item_meanings(meaning, primary_meaning),
-            item_readings(reading, primary_reading)
-          )
-        `)
-        .eq('item_id', item.id)
-        .then(({ data }) => {
-          if (!isMounted || !data) return;
-          const list: SimilarKanji[] = [];
-          for (const s of data) {
-            const it: any = Array.isArray((s as any).items) ? (s as any).items[0] : (s as any).items;
-            if (it) {
-              const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
-              const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
-              list.push({
-                id: it.id,
-                character: it.character,
-                slug: it.slug,
-                level: it.level,
-                type: it.type,
-                primary_meaning: primaryMeaning,
-                primary_reading: primaryReading,
-              });
+      // 2. Fallback similar kanji for kanji
+      if (item!.type === 'kanji' && (!item!.similar_kanjis || item!.similar_kanjis.length === 0)) {
+        try {
+          const { data } = await supabase
+            .from('item_similar_kanji')
+            .select(`
+              similar_item_id,
+              items!similar_item_id(
+                id, character, slug, level, type,
+                item_meanings(meaning, primary_meaning),
+                item_readings(reading, primary_reading)
+              )
+            `)
+            .eq('item_id', item!.id);
+
+          if (isMounted && data) {
+            const list: SimilarKanji[] = [];
+            for (const s of data) {
+              const it: any = Array.isArray((s as any).items) ? (s as any).items[0] : (s as any).items;
+              if (it) {
+                const primaryMeaning = it.item_meanings?.find((m: any) => m.primary_meaning)?.meaning || it.item_meanings?.[0]?.meaning || it.slug;
+                const primaryReading = it.item_readings?.find((r: any) => r.primary_reading)?.reading || it.item_readings?.[0]?.reading || null;
+                list.push({
+                  id: it.id,
+                  character: it.character,
+                  slug: it.slug,
+                  level: it.level,
+                  type: it.type,
+                  primary_meaning: primaryMeaning,
+                  primary_reading: primaryReading,
+                });
+              }
             }
+            setFallbackSimilar(list);
           }
-          setFallbackSimilar(list);
-        })
-        .catch(e => console.error('Error loading similar kanji in drawer:', e));
-    }
-
-    // 3. For Kanji: Fallback Radicals (prerequisites) & Vocabularies (dependents)
-    if (item.type === 'kanji') {
-      if (!item.radicals || item.radicals.length === 0) {
-        supabase
-          .from('item_prerequisites')
-          .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
-          .eq('item_id', item.id)
-          .then(({ data }) => {
-            if (!isMounted || !data) return;
-            const rads = data
-              .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
-              .filter((it: any) => it && it.type === 'radical');
-            rads.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
-            setFallbackRadicals(rads);
-          })
-          .catch(e => console.error('Error loading radicals in drawer:', e));
+        } catch (e) {
+          console.error('Error loading similar kanji in drawer:', e);
+        }
       }
 
-      if (!item.vocabularies || item.vocabularies.length === 0) {
-        supabase
-          .from('item_prerequisites')
-          .select('item_id, items!item_id(id, character, slug, level, type)')
-          .eq('requires_item_id', item.id)
-          .then(({ data }) => {
-            if (!isMounted || !data) return;
-            const vocabs = data
+      // 3. For Kanji: Fallback Radicals (prerequisites) & Vocabularies (dependents)
+      if (item!.type === 'kanji') {
+        if (!item!.radicals || item!.radicals.length === 0) {
+          try {
+            const { data } = await supabase
+              .from('item_prerequisites')
+              .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+              .eq('item_id', item!.id);
+
+            if (isMounted && data) {
+              const rads = data
+                .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+                .filter((it: any) => it && it.type === 'radical');
+              rads.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+              setFallbackRadicals(rads);
+            }
+          } catch (e) {
+            console.error('Error loading radicals in drawer:', e);
+          }
+        }
+
+        if (!item!.vocabularies || item!.vocabularies.length === 0) {
+          try {
+            const { data } = await supabase
+              .from('item_prerequisites')
+              .select('item_id, items!item_id(id, character, slug, level, type)')
+              .eq('requires_item_id', item!.id);
+
+            if (isMounted && data) {
+              const vocabs = data
+                .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+                .filter((it: any) => it && it.type === 'vocabulary');
+              vocabs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+              setFallbackVocabularies(vocabs);
+            }
+          } catch (e) {
+            console.error('Error loading vocabularies in drawer:', e);
+          }
+        }
+      }
+
+      // 4. For Vocabulary: Fallback Kanjis (prerequisites)
+      if (item!.type === 'vocabulary' && (!item!.kanjis || item!.kanjis.length === 0)) {
+        try {
+          const { data } = await supabase
+            .from('item_prerequisites')
+            .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
+            .eq('item_id', item!.id);
+
+          if (isMounted && data) {
+            const kjs = data
               .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
-              .filter((it: any) => it && it.type === 'vocabulary');
-            vocabs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
-            setFallbackVocabularies(vocabs);
-          })
-          .catch(e => console.error('Error loading vocabularies in drawer:', e));
+              .filter((it: any) => it && it.type === 'kanji');
+            kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+            setFallbackKanjis(kjs);
+          }
+        } catch (e) {
+          console.error('Error loading kanjis for vocab in drawer:', e);
+        }
+      }
+
+      // 5. For Radical: Fallback Kanjis (dependents)
+      if (item!.type === 'radical' && (!item!.kanjis || item!.kanjis.length === 0)) {
+        try {
+          const { data } = await supabase
+            .from('item_prerequisites')
+            .select('item_id, items!item_id(id, character, slug, level, type)')
+            .eq('requires_item_id', item!.id);
+
+          if (isMounted && data) {
+            const kjs = data
+              .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
+              .filter((it: any) => it && it.type === 'kanji');
+            kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
+            setFallbackKanjis(kjs);
+          }
+        } catch (e) {
+          console.error('Error loading kanjis for radical in drawer:', e);
+        }
       }
     }
 
-    // 4. For Vocabulary: Fallback Kanjis (prerequisites)
-    if (item.type === 'vocabulary' && (!item.kanjis || item.kanjis.length === 0)) {
-      supabase
-        .from('item_prerequisites')
-        .select('requires_item_id, items!requires_item_id(id, character, slug, level, type)')
-        .eq('item_id', item.id)
-        .then(({ data }) => {
-          if (!isMounted || !data) return;
-          const kjs = data
-            .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
-            .filter((it: any) => it && it.type === 'kanji');
-          kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
-          setFallbackKanjis(kjs);
-        })
-        .catch(e => console.error('Error loading kanjis for vocab in drawer:', e));
-    }
-
-    // 5. For Radical: Fallback Kanjis (dependents)
-    if (item.type === 'radical' && (!item.kanjis || item.kanjis.length === 0)) {
-      supabase
-        .from('item_prerequisites')
-        .select('item_id, items!item_id(id, character, slug, level, type)')
-        .eq('requires_item_id', item.id)
-        .then(({ data }) => {
-          if (!isMounted || !data) return;
-          const kjs = data
-            .map((row: any) => Array.isArray(row.items) ? row.items[0] : row.items)
-            .filter((it: any) => it && it.type === 'kanji');
-          kjs.sort((a: any, b: any) => (a.level - b.level) || a.character?.localeCompare(b.character));
-          setFallbackKanjis(kjs);
-        })
-        .catch(e => console.error('Error loading kanjis for radical in drawer:', e));
-    }
-
+    loadFallbackData();
     return () => { isMounted = false; };
-  }, [item?.id, item?.type, item?.similar_kanjis, item?.audios, item?.radicals, item?.vocabularies, item?.kanjis]);
+  }, [
+    item?.id,
+    item?.type,
+    item?.similar_kanjis?.length,
+    item?.audios?.length,
+    item?.radicals?.length,
+    item?.vocabularies?.length,
+    item?.kanjis?.length,
+  ]);
 
   if (!item) return null;
 

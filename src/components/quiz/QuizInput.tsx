@@ -11,7 +11,7 @@ interface QuizInputProps {
   cardType: 'meaning' | 'reading';
   isAnswerSubmitted: boolean;
   incorrectActive: boolean;
-  warningMsg: string;
+  warningMsg: string | null;
   onSubmit: () => void;
   devMode: boolean;
   getDevModeAnswer: () => string;
